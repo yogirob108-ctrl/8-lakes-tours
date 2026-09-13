@@ -27,7 +27,7 @@ export default function TermsAndConditions() {
           },
           {
             title: '2. Booking & Payment Structure',
-            body: 'All official prices are in USD. For bookings of 1–2 guests on a fixed departure, a $999 USD online booking payment per guest is required to confirm your place with 8 Lakes Tours. For groups of 3–8 booking together, submitting the form creates a group booking and Rob sends a single personal Stripe invoice covering every guest in the group. The per-guest online payment for group bookings is $974 USD for 3–4 guests, $949 for 5–6, and $899 for 7–8, reflecting the group discount. Your spot is not guaranteed until the required online payment has been received and confirmed by us. The remaining local family payment is paid directly in clean USD cash to the nomadic host families in Mongolia and is not collected online by 8 Lakes Tours.',
+            body: 'All official prices are in USD. For bookings of 1–2 guests on a fixed departure, a $999 USD online booking payment per guest is required to confirm your place with 8 Lakes Tours. Scheduled groups of 1–8 submit one booking and pay the exact group online amount together in a single Stripe checkout. The per-guest online payment for group bookings is $974 USD for 3–4 guests, $949 for 5–6, and $899 for 7–8, reflecting the group discount. Your spot is not guaranteed until the required online payment has been received and confirmed by us. The remaining local family payment is paid directly in clean USD cash to the nomadic host families in Mongolia and is not collected online by 8 Lakes Tours.',
           },
           {
             title: '3. Tour Price',

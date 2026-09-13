@@ -176,20 +176,9 @@ async function reconcileBookingPaymentBalance({
     const rawEvent = typeof payment.raw_event === 'object' && payment.raw_event
       ? payment.raw_event as Record<string, unknown>
       : {};
-    const originalAmountUsd = Number(payment.amount_usd ?? 0);
-    const latestRefundEvent = rawEvent.latest_refund_event as { cumulative_refunded_usd?: unknown; refunded_usd?: unknown } | undefined;
-    const cumulativeRefundedUsd = payment.status === 'refunded'
-      ? originalAmountUsd
-      : Math.max(
-        Number(rawEvent.cumulative_refunded_usd ?? 0) || 0,
-        Number(latestRefundEvent?.cumulative_refunded_usd ?? latestRefundEvent?.refunded_usd ?? 0) || 0,
-      );
-    const onlinePaidUsd = Math.max(0, originalAmountUsd - cumulativeRefundedUsd);
-    const { error: bookingError } = await supabase
-      .from('bookings')
-      .update({ online_paid_usd: onlinePaidUsd, updated_at: new Date().toISOString() })
-      .eq('id', bookingId);
-    if (bookingError) throw new Error(`Booking payment reconciliation failed: ${bookingError.message}`);
+    const {data:reconciledAmount,error:bookingError}=await supabase.rpc('reconcile_paid_booking_v2',{p_booking_id:bookingId});
+    if(bookingError || reconciledAmount == null) throw new Error('Booking ledger reconciliation unavailable; retry.');
+    const onlinePaidUsd=Number(reconciledAmount);
 
     if (processingToken) {
       let completionUpdate = supabase
@@ -231,31 +220,13 @@ async function reconcileBookingPaymentBalance({
   throw new Error('Payment/booking reconciliation conflicted repeatedly; retry the Stripe event.');
 }
 
-async function transitionBookingAfterPaymentClaim(bookingId: string, confirmedAt: string) {
+async function transitionBookingAfterPaymentClaim(bookingId: string, confirmedAt: string, sessionId: string, expected: Record<string, unknown>, token: string) {
   const supabase = createSupabaseAdminClient();
-  const confirmableStatuses = ['application_received', 'awaiting_payment'];
-
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    const { data: booking, error: lookupError } = await supabase
-      .from('bookings')
-      .select('status')
-      .eq('id', bookingId)
-      .single();
-    if (lookupError) throw new Error(`Claimed booking status lookup failed: ${lookupError.message}`);
-    if (!confirmableStatuses.includes(booking.status)) return booking.status;
-
-    const { data: confirmedBooking, error: confirmError } = await supabase
-      .from('bookings')
-      .update({ status: 'confirmed', confirmed_at: confirmedAt, updated_at: confirmedAt })
-      .eq('id', bookingId)
-      .eq('status', booking.status)
-      .select('status')
-      .maybeSingle();
-    if (confirmError) throw new Error(`Claimed booking confirmation failed: ${confirmError.message}`);
-    if (confirmedBooking) return confirmedBooking.status;
-  }
-
-  throw new Error('Booking status changed repeatedly during payment confirmation; retry the Stripe event.');
+  const {data,error}=await supabase.rpc('confirm_paid_booking_v2',{
+    p_booking_id:bookingId,p_session_id:sessionId,p_expected:expected,p_token:token,p_confirmed_at:confirmedAt,
+  });
+  if(error || !data) throw new Error('Authoritative payment confirmation unavailable; retry.');
+  return data;
 }
 
 async function readBookingStatus(bookingId: string) {
@@ -263,25 +234,6 @@ async function readBookingStatus(bookingId: string) {
   const { data, error } = await supabase.from('bookings').select('status').eq('id', bookingId).single();
   if (error) throw new Error(`Booking status verification failed: ${error.message}`);
   return data.status;
-}
-
-const BOOKING_CONFIRMATION_LEASE_MS = 5 * 60 * 1000;
-
-async function claimBookingConfirmationLease(bookingId: string) {
-  const supabase = createSupabaseAdminClient();
-  const token = crypto.randomUUID();
-  const claimedAt = new Date().toISOString();
-  const staleBefore = new Date(Date.now() - BOOKING_CONFIRMATION_LEASE_MS).toISOString();
-  const { data, error } = await supabase
-    .from('bookings')
-    .update({ payment_confirmation_token: token, payment_confirmation_claimed_at: claimedAt })
-    .eq('id', bookingId)
-    .neq('status', 'cancelled')
-    .or(`payment_confirmation_token.is.null,payment_confirmation_claimed_at.lt.${staleBefore}`)
-    .select('id')
-    .maybeSingle();
-  if (error) throw new Error(`Booking confirmation lease claim failed: ${error.message}`);
-  return data ? token : null;
 }
 
 async function releaseBookingConfirmationLease(bookingId: string, token: string) {
@@ -301,7 +253,7 @@ async function handleCheckoutSessionPaid(session: Stripe.Checkout.Session) {
 
   const stripeReference = getCheckoutReference(session);
 
-  if (session.payment_status && session.payment_status !== 'paid') {
+  if (session.payment_status !== 'paid') {
     console.info('Ignoring checkout session that is not paid', {
       sessionId: session.id,
       reference: stripeReference,
@@ -326,7 +278,7 @@ async function handleCheckoutSessionPaid(session: Stripe.Checkout.Session) {
     lookup: async (column: string, value: string) => {
       const { data, error } = await supabase
         .from('payments')
-        .select('id, booking_id, status, amount_usd, raw_event, paid_at, refunded_at')
+        .select('id, booking_id, stripe_checkout_session_id, stripe_payment_intent_id, status, amount_usd, raw_event, paid_at, refunded_at')
         .eq(column, value)
         .maybeSingle();
       if (error) throw new Error(`Payment lookup failed: ${error.message}`);
@@ -360,6 +312,30 @@ async function handleCheckoutSessionPaid(session: Stripe.Checkout.Session) {
   }
 
   const booking = bookingResolution.booking;
+  if ((existingPayment?.stripe_checkout_session_id && existingPayment.stripe_checkout_session_id !== session.id)
+    || (existingPayment?.stripe_payment_intent_id && existingPayment.stripe_payment_intent_id !== paymentIntentId)) {
+    return { matched: false, reason: 'payment_relationship_conflict' };
+  }
+  // The frozen payment row is the amount authority on replay (including refunds).
+  // A new public intake must never be confirmed by an old generic payment link.
+  const expectedAmountUsd = existingPayment?.amount_usd ?? booking.online_due_usd;
+  const expectedCents = Math.round(Number(expectedAmountUsd) * 100);
+  if (!Number.isSafeInteger(session.amount_total) || !session.amount_total || session.amount_total <= 0
+    || !Number.isSafeInteger(expectedCents) || expectedCents <= 0 || session.amount_total !== expectedCents) {
+    return { matched: false, reason: 'payment_amount_conflict' };
+  }
+  const issuance = existingPayment?.raw_event?.checkout_issuance;
+  // A ledger-bound Session remains money evidence after commercial edits.
+  // Only frozen issuance (never mutable booking terms) validates its count/date.
+  const frozenTerms = issuance?.expected ?? (existingPayment ? null : booking);
+  if ([session.client_reference_id, session.metadata?.booking_reference, session.metadata?.public_reference]
+    .some(value => value != null && value !== booking.public_reference)
+    || (session.metadata?.booking_id && session.metadata.booking_id !== booking.id)
+    || (session.metadata?.customer_id && session.metadata.customer_id !== booking.customer_id)
+    || (session.metadata?.guest_count && frozenTerms && session.metadata.guest_count !== String(frozenTerms.guest_count))
+    || (session.metadata?.tour_date && frozenTerms && session.metadata.tour_date !== frozenTerms.tour_date)) {
+    return { matched: false, reason: 'payment_metadata_conflict' };
+  }
   const reference = booking.public_reference;
   const existingRawEvent = typeof existingPayment?.raw_event === 'object' && existingPayment.raw_event
     ? existingPayment.raw_event as Record<string, unknown>
@@ -504,8 +480,16 @@ async function handleCheckoutSessionPaid(session: Stripe.Checkout.Session) {
 
   if (currentBookingStatus === 'cancelled') return finishCancelledPayment();
 
-  const automaticConfirmationAllowed = canAutomaticallyConfirmBooking(booking.tour_date, booking.guest_count);
-  if (!automaticConfirmationAllowed) {
+  const inventoryAllowed = canAutomaticallyConfirmBooking(booking.tour_date, booking.guest_count)
+    && !(session.metadata?.guest_count && session.metadata.guest_count !== String(booking.guest_count));
+  const confirmationToken = crypto.randomUUID();
+  const confirmation = inventoryAllowed ? await transitionBookingAfterPaymentClaim(booking.id, now, session.id, {
+    customer_id: booking.customer_id, tour_date: booking.tour_date, guest_count: booking.guest_count,
+    online_due_usd: booking.online_due_usd,
+  }, confirmationToken) : {allowed:false};
+  const automaticConfirmationAllowed = confirmation.allowed === true;
+  if (automaticConfirmationAllowed) bookingConfirmationToken = confirmationToken;
+  const finishManualReview = async () => {
     const { data: existingManualReviewEvent, error: manualReviewLookupError } = await supabase
       .from('booking_events')
       .select('id')
@@ -522,7 +506,7 @@ async function handleCheckoutSessionPaid(session: Stripe.Checkout.Session) {
         event_type: 'payment',
         direction: 'system',
         title: 'Stripe payment received — manual confirmation required',
-        body: `Stripe checkout session ${session.id} paid ${amountToRecord} ${currency}. Booking remains ${currentBookingStatus}; request-only, group, expired, or invalid inventory is never confirmed automatically. An operator must verify the booking and payment before confirmation.`,
+        body: `Stripe checkout session ${session.id} paid ${amountToRecord} ${currency}. Ordinary confirmation is not authorized by current funding, commercial terms, issuance evidence, or dispatch ownership. Payment/refund history is retained; an operator must review the booking before further confirmation.`,
         metadata: {
           stripe_checkout_session_id: session.id,
           stripe_payment_intent_id: paymentIntentId,
@@ -533,6 +517,10 @@ async function handleCheckoutSessionPaid(session: Stripe.Checkout.Session) {
       if (manualReviewEventError) throw new Error(`Manual-review payment event insert failed: ${manualReviewEventError.message}`);
     }
 
+    if (bookingConfirmationToken) {
+      await releaseBookingConfirmationLease(booking.id, bookingConfirmationToken);
+      bookingConfirmationToken = null;
+    }
     await reconcileBookingPaymentBalance({ paymentId, bookingId: booking.id, processingToken });
     return {
       matched: true,
@@ -544,7 +532,42 @@ async function handleCheckoutSessionPaid(session: Stripe.Checkout.Session) {
     };
   }
 
-  await transitionBookingAfterPaymentClaim(booking.id, now);
+  if (!automaticConfirmationAllowed) return finishManualReview();
+
+  // Dispatch authorization is a durable, booking-locked boundary, not the
+  // earlier confirmation lease. Each destination is authorized separately.
+  const authorizeDispatch = async (destination: string) => {
+    const { data: livePayment, error: paymentError } = await supabase.from('payments')
+      .select('status, raw_event').eq('id', paymentId).single();
+    if (paymentError) throw new Error(`Dispatch payment read failed: ${paymentError.message}`);
+    if (livePayment?.status !== 'paid' || Number(livePayment.raw_event?.cumulative_refunded_usd ?? 0) > 0) return false;
+    const { data, error } = await supabase.rpc('authorize_payment_dispatch_v3', {
+      p_booking_id: booking.id, p_session_id: session.id, p_token: bookingConfirmationToken, p_destination: destination,
+    });
+    if (error) throw new Error(`Payment dispatch authorization failed: ${error.message}`);
+    if (data !== true) return false;
+    // Narrow the unavoidable DB/network gap: a refund observed after dispatch
+    // reservation still suppresses transport. Once transport starts we cannot
+    // retract acceptance; the journal preserves any subsequent refund race.
+    const { data: fence, error: fenceError } = await supabase.from('bookings')
+      .select('payment_confirmation_token, status').eq('id', booking.id).single();
+    if (fenceError) throw new Error(`Dispatch fence read failed: ${fenceError.message}`);
+    if (fence?.payment_confirmation_token !== bookingConfirmationToken || fence?.status !== 'confirmed') {
+      const { error: suppressError } = await supabase.from('payment_confirmation_dispatch')
+        .update({ status: 'suppressed' }).eq('booking_id', booking.id).eq('session_id', session.id).eq('destination', destination);
+      if (suppressError) throw new Error(`Dispatch suppression write failed: ${suppressError.message}`);
+      return false;
+    }
+    return true;
+  };
+
+  const recordDispatch = async (destination: string, result: { sent: boolean; id?: string }) => {
+    const { error } = await supabase.from('payment_confirmation_dispatch').update({
+      status: result.sent ? 'accepted' : 'failed', provider_message_id: result.id ?? null,
+    }).eq('booking_id', booking.id).eq('session_id', session.id).eq('destination', destination).eq('token', bookingConfirmationToken);
+    if (error) throw new Error(`Payment dispatch outcome write failed: ${error.message}`);
+  };
+
   currentBookingStatus = await readBookingStatus(booking.id);
   if (currentBookingStatus === 'cancelled') return finishCancelledPayment();
 
@@ -619,7 +642,6 @@ async function handleCheckoutSessionPaid(session: Stripe.Checkout.Session) {
       if (gaEventError) throw new Error(`GA4 event record failed: ${gaEventError.message}`);
     }
 
-    bookingConfirmationToken = await claimBookingConfirmationLease(booking.id);
     if (!bookingConfirmationToken) {
       currentBookingStatus = await readBookingStatus(booking.id);
       if (currentBookingStatus === 'cancelled') return finishCancelledPayment();
@@ -657,6 +679,7 @@ async function handleCheckoutSessionPaid(session: Stripe.Checkout.Session) {
           tourDate: booking.tour_date || 'TBC',
           amountUsd: amountToRecord,
         });
+        if (!await authorizeDispatch('customer')) return finishManualReview();
         const emailResult = await sendEmail({
           to: customerEmail,
           replyTo: getInternalEmailRecipients()[0],
@@ -664,6 +687,7 @@ async function handleCheckoutSessionPaid(session: Stripe.Checkout.Session) {
           ...confirmationEmail,
         });
 
+        await recordDispatch('customer', emailResult);
         const { data: customerBookingEvent, error: customerBookingEventLookupError } = await supabase
           .from('booking_events')
           .select('id')
@@ -729,6 +753,7 @@ async function handleCheckoutSessionPaid(session: Stripe.Checkout.Session) {
           amountUsd: amountToRecord,
           stripeReference: paymentIntentId ?? session.id,
         });
+        if (!await authorizeDispatch('internal')) return finishManualReview();
         const internalEmailResult = await sendEmail({
           to: internalRecipients,
           replyTo: customerEmail || internalRecipients[0],
@@ -736,6 +761,7 @@ async function handleCheckoutSessionPaid(session: Stripe.Checkout.Session) {
           ...internalPaymentEmail,
         });
 
+        await recordDispatch('internal', internalEmailResult);
         const { data: internalBookingEvent, error: internalBookingEventLookupError } = await supabase
           .from('booking_events')
           .select('id')

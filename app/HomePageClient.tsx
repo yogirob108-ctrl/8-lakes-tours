@@ -1,10 +1,10 @@
 "use client";
 import Image from 'next/image';
-import Script from 'next/script';
 import { track } from '@vercel/analytics';
 import { type FormEvent, type MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { GROUP_INVOICE, manualPaymentReason } from '@/lib/tour-booking.mjs';
 import { BASE_LOCAL_FAMILY_PAYMENT_USD, BASE_ONLINE_PAYMENT_USD, BASE_PRICE_USD, GROUP_PRICING_TIERS, MAX_GROUP_SIZE, clampGuestCount, getGroupPricing } from '@/lib/group-pricing.mjs';
+import { normalizeBookingTravellers } from '@/lib/booking-travellers.mjs';
 
 type FunnelEventProperties = Record<string, string | number | boolean>;
 
@@ -144,19 +144,6 @@ function collectAttribution(): AttributionPayload {
     current_url: current.current_url,
     ga_client_id: current.ga_client_id || first.ga_client_id || '',
   };
-}
-
-const STRIPE_LINK = 'https://book.stripe.com/6oUaEQc6R8jecsUaip0gw05';
-const STRIPE_BUY_BUTTON_ID = 'buy_btn_1TkyTO3OYuYvjeqEXmuFK4aq';
-const STRIPE_PUBLISHABLE_KEY = 'pk_live_51TKXhu3OYuYvjeqE8C4eWygroOMleiInT2mBECzwPdsKBNGY1C5AbaFRN8fmn2I8srp5oKHY6k8hL2toCLAKvgrT000S89GE2w';
-
-function stripePaymentLink(reference: string, email: string) {
-  const params = new URLSearchParams();
-  if (reference) params.set('client_reference_id', reference);
-  if (email) params.set('prefilled_email', email);
-
-  const query = params.toString();
-  return query ? `${STRIPE_LINK}?${query}` : STRIPE_LINK;
 }
 
 type CurrencyCode = 'USD' | 'EUR' | 'GBP' | 'RUB' | 'MNT';
@@ -312,7 +299,7 @@ function WaiverModal({ onClose, onAgree }: { onClose: () => void; onAgree: () =>
           <h2 style={{fontFamily:"var(--font-cormorant), 'Cormorant Garamond', serif",fontSize:'1.6rem',color:'var(--cream)',fontWeight:300,marginBottom:'1.2rem'}}>Liability Waiver & Release</h2>
         </div>
         <div style={{overflowY:'auto',padding:'1.5rem 2rem',fontSize:'0.82rem',color:'var(--mist)',lineHeight:1.8,flex:1}}>
-          <p style={{marginBottom:'1rem'}}>Please read this waiver carefully before proceeding. By signing below, you acknowledge and agree to the following terms:</p>
+          <p style={{marginBottom:'1rem'}}>Please read this waiver carefully before proceeding. This signature records the lead booker&apos;s own waiver agreement only; it does not sign or fabricate a waiver for any companion. By signing below, you acknowledge and agree to the following terms for yourself:</p>
 
           <p style={{fontSize:'0.65rem',letterSpacing:'0.2em',textTransform:'uppercase',color:'var(--gold)',marginBottom:'0.4rem',marginTop:'1.2rem'}}>1. Nature of Activity</p>
           <p style={{marginBottom:'1rem'}}>8 Lakes Tours operates multi-day horseback trekking expeditions in remote wilderness areas of Mongolia. These activities take place in the Orkhon Valley and surrounding steppe, far from medical facilities, emergency services, and modern infrastructure. Participants acknowledge that this is an inherently adventurous and physically demanding experience.</p>
@@ -360,13 +347,13 @@ function WaiverModal({ onClose, onAgree }: { onClose: () => void; onAgree: () =>
             )}
             {canProceed && (
               <a
-                href={STRIPE_LINK}
-                target="_blank"
+                href="#application"
+                target="_self"
                 rel="noopener noreferrer"
                 onClick={onAgree}
                 style={{display:'flex',alignItems:'center',justifyContent:'center',padding:'0.8rem',background:'#635bff',border:'1px solid #635bff',color:'#fff',fontSize:'0.75rem',letterSpacing:'0.15em',textTransform:'uppercase',cursor:'pointer',borderRadius:'var(--radius-soft)',textDecoration:'none'}}
               >
-                Pay via Stripe →
+                Continue to booking →
               </a>
             )}
             <button
@@ -393,7 +380,9 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
   const [bookingReference, setBookingReference] = useState('');
+  const [paymentUrl, setPaymentUrl] = useState('');
   const [guestCount, setGuestCount] = useState(1);
+  const [travellerAnnouncement, setTravellerAnnouncement] = useState('1 traveller section ready.');
   const [leadName, setLeadName] = useState('');
   const [leadEmail, setLeadEmail] = useState('');
   const [leadStatus, setLeadStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -403,6 +392,8 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
   const groupPricing = useMemo(() => getGroupPricing(guestCount), [guestCount]);
   const bookingFormStartedRef = useRef(false);
   const stripeClickTrackedRef = useRef(false);
+  const formSubmittingRef = useRef(false);
+  const submissionKeyRef = useRef<string | null>(null);
   const [pricing, setPricing] = useState<LocalizedPricing>({
     currency: 'USD',
     countryLabel: COUNTRY_LABEL_BY_CURRENCY.USD,
@@ -416,8 +407,8 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
   const manualReason = manualPaymentReason(selectedTourDate, guestCount);
   const requiresHumanConfirmation = manualReason !== null;
   const awaitsGroupInvoice = manualReason === GROUP_INVOICE;
-  const canPay = formSubmitted && hasRequiredContact && !requiresHumanConfirmation;
-  const checkoutFallbackHref = canPay ? stripePaymentLink(bookingReference, email.trim()) : '#book';
+  const canPay = formSubmitted && Boolean(paymentUrl) && !requiresHumanConfirmation;
+  const checkoutFallbackHref = canPay ? paymentUrl : '#book';
   const lightboxImage = lightboxIndex === null ? null : GALLERY_IMAGES[lightboxIndex];
   const isLightboxOpen = lightboxIndex !== null;
   const openLightbox = (src: string, alt: string) => {
@@ -611,14 +602,56 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
     };
   }, []);
 
+  const openSecureCheckout = async (privateUrl: string) => {
+    const link = new URL(privateUrl, window.location.origin);
+    const response = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ reference: link.searchParams.get('reference') || '', token: link.searchParams.get('token') || '' }),
+    });
+    const checkout = await response.json().catch(() => null);
+    if (!response.ok || !checkout?.url) throw new Error('Secure checkout could not be opened. Use the private payment link below to retry without submitting another booking. Your place is not confirmed until payment is verified.');
+    const destination = new URL(checkout.url);
+    if (destination.origin !== 'https://checkout.stripe.com' || destination.username || destination.password) throw new Error('Secure checkout is unavailable. Please use the private payment link below.');
+    window.location.assign(destination.href);
+  };
+
   const submitBooking = async (form: HTMLFormElement) => {
-    if (formSubmitted) return;
+    if (formSubmitted || formSubmittingRef.current) return;
+    formSubmittingRef.current = true;
+    submissionKeyRef.current ||= crypto.randomUUID();
     setFormError('');
     setFormSubmitting(true);
     try {
       const formData = new FormData(form);
+      const travellerManifest = [
+        {
+          first_name: formData.get('first_name'),
+          last_name: formData.get('last_name'),
+          email: formData.get('email'),
+          phone: formData.get('phone'),
+          nationality: formData.get('nationality'),
+          date_of_birth: formData.get('date_of_birth'),
+          riding_experience: formData.get('riding_experience'),
+          dietary_notes: formData.get('dietary_restrictions'),
+        },
+        ...Array.from({ length: guestCount - 1 }, (_, index) => ({
+          first_name: formData.get(`travellers.${index + 1}.first_name`),
+          last_name: formData.get(`travellers.${index + 1}.last_name`),
+          email: formData.get(`travellers.${index + 1}.email`),
+          phone: formData.get(`travellers.${index + 1}.phone`),
+          nationality: formData.get(`travellers.${index + 1}.nationality`),
+          date_of_birth: formData.get(`travellers.${index + 1}.date_of_birth`),
+          riding_experience: formData.get(`travellers.${index + 1}.riding_experience`),
+          dietary_notes: formData.get(`travellers.${index + 1}.dietary_notes`),
+        })),
+      ];
+      const manifestResult = normalizeBookingTravellers(guestCount, travellerManifest);
+      if (!manifestResult.ok) throw new Error(manifestResult.error);
       const bookingPayload = {
         ...Object.fromEntries(formData.entries()),
+        submission_key: submissionKeyRef.current,
+        travellers: travellerManifest,
         attribution: await collectAttributionWithGaRetry(),
       };
       const response = await fetch('/api/bookings', {
@@ -626,13 +659,14 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
         body: JSON.stringify(bookingPayload),
       });
-      const payload = await response.json().catch(() => null) as { ok?: boolean; reference?: string; error?: string } | null;
+      const payload = await response.json().catch(() => null) as { ok?: boolean; reference?: string; error?: string; paymentUrl?: string | null } | null;
 
       if (!response.ok || !payload?.ok || !payload.reference) {
         throw new Error(payload?.error || 'The booking could not be saved. Please try again or email info@8lakestours.com.');
       }
 
       setBookingReference(payload.reference);
+      setPaymentUrl(payload.paymentUrl || '');
       stripeClickTrackedRef.current = false;
       trackFunnelEvent('booking_form_submit', {
         tour_date: String(formData.get('tour_date') || 'TBC'),
@@ -644,11 +678,13 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         value: groupPricing.onlinePaymentUsd,
       });
       setFormSubmitted(true);
+      if (payload.paymentUrl) await openSecureCheckout(payload.paymentUrl);
 
     } catch (error) {
       trackFunnelEvent('booking_form_error', { status: 'client' });
       setFormError(error instanceof Error ? error.message : 'The booking could not be saved. Please try again or email info@8lakestours.com.');
     } finally {
+      formSubmittingRef.current = false;
       setFormSubmitting(false);
     }
   };
@@ -733,10 +769,10 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         mainEntity: [
           { '@type': 'Question', name: 'Is this trip legit?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. 8 Lakes Tours is organised by Robert Zaher through a direct relationship with Ganbold’s family in the Orkhon Valley. Online bookings and preparation are handled by 8 Lakes Tours; the local family portion is paid directly to your hosts in Mongolia.' } },
           { '@type': 'Question', name: 'Can I speak to someone before booking?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Email info@8lakestours.com with any questions before paying. You can also check Rob’s Instagram at @robzaher108 while tour email communication stays centralised through the info@ address.' } },
-          { '@type': 'Question', name: 'What happens after I submit the form?', acceptedAnswer: { '@type': 'Answer', text: 'For standard 1–2 guest bookings, guests can continue to online payment and receive confirmation once payment is complete. For groups of 3–8, Rob reviews the request, confirms availability, and sends the correct payment link or custom order before payment. Before arrival, Rob or the tour operator coordinates timing and host-family pickup from Bat-Ulzii.' } },
+          { '@type': 'Question', name: 'What happens after I submit the form?', acceptedAnswer: { '@type': 'Answer', text: 'For standard 1–2 guest bookings, guests can continue to online payment and receive confirmation once payment is complete. Scheduled groups of 1–8 pay the exact group online amount in one Stripe checkout. Private, custom, and unconfirmed dates require Rob to confirm availability before payment. Before arrival, Rob or the tour operator coordinates timing and host-family pickup from Bat-Ulzii.' } },
           { '@type': 'Question', name: 'Do I need riding experience?', acceptedAnswer: { '@type': 'Answer', text: 'No experience necessary. Beginners are welcome — our local guides will teach you everything you need to know before the trek begins.' } },
           { '@type': 'Question', name: 'What departure dates are available?', acceptedAnswer: { '@type': 'Answer', text: 'Remaining 2026 fixed departures are listed while they are still bookable. 2027 small-group dates are being planned, and private 2027 departures can be requested for June through September. All 2027 requests require personal confirmation of the host family, horses, guide and logistics before payment.' } },
-          { '@type': 'Question', name: 'How does payment work?', acceptedAnswer: { '@type': 'Answer', text: 'All official prices are in USD. The 2026 rate depends on group size: $1,999 per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8. Bookings of 1–2 guests on a fixed date pay the $999 per-guest online booking payment straight after the form. Groups of 3–8 book together and Rob emails one personal invoice covering every guest. Group discounts are shared evenly between 8 Lakes Tours and the host family, so the online payment runs $899–$999 per guest and the local family cash runs $900–$1,000 per guest. The family portion is paid directly to the nomadic host families in Mongolia.' } },
+          { '@type': 'Question', name: 'How does payment work?', acceptedAnswer: { '@type': 'Answer', text: 'All official prices are in USD. The 2026 rate depends on group size: $1,999 per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8. Bookings of 1–2 guests on a fixed date pay the $999 per-guest online booking payment straight after the form. Groups of 1–8 book together and pay the exact group online amount in one secure Stripe checkout. Group discounts are shared evenly between 8 Lakes Tours and the host family, so the online payment runs $899–$999 per guest and the local family cash runs $900–$1,000 per guest. The family portion is paid directly to the nomadic host families in Mongolia.' } },
           { '@type': 'Question', name: 'What airport do I fly into?', acceptedAnswer: { '@type': 'Answer', text: "Fly into Chinggis Khaan International Airport in Ulaanbaatar (UB). From there you'll take a public bus to Bat-Ulzii — about an 8-hour ride through stunning countryside." } },
           { '@type': 'Question', name: 'Do I need a visa?', acceptedAnswer: { '@type': 'Answer', text: 'Many travellers can enter Mongolia visa-free for tourism, but the allowance depends on your passport. US and South Korean passport holders commonly receive up to 90 days; UK/EU, Australian, Canadian, Japanese, New Zealand, and many other passport holders commonly receive up to 30 days. Rules and temporary exemptions can change, so check the current Mongolian consular or e-visa guidance for your nationality before booking flights.' } },
           { '@type': 'Question', name: 'Is there WiFi or cell service?', acceptedAnswer: { '@type': 'Answer', text: 'Remote trek days are mostly offline, with little to no cell service. The host family camp has Starlink and solar-powered charging for phones, cameras, and essentials, so you can reconnect between riding days. For simple Mongolian communication, Grok has worked best for us so far; ChatGPT also works well for translation when you have signal.' } },
@@ -1106,7 +1142,9 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .tour-date-row.muted .tour-date-status { color: var(--mist); background: transparent; border-color: transparent; opacity: 0.5; }
         #application, #tour-dates { scroll-margin-top: 6rem; }
         .booking-form { display: flex; flex-direction: column; gap: 1rem; }
+        .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
         .form-section { border: 1px solid rgba(200,169,110,0.16); border-radius: var(--radius-card); background: rgba(245,240,232,0.025); padding: 1.2rem; display: flex; flex-direction: column; gap: 1rem; }
+        .companion-fields { min-width: 0; margin: 0; }
         .form-section-title { font-size: 0.62rem; letter-spacing: 0.24em; text-transform: uppercase; color: rgba(200,169,110,0.9); margin-bottom: 0.1rem; }
         .form-fields { border: 0; padding: 0; margin: 0; display: contents; }
         .form-fields:disabled { opacity: 0.58; }
@@ -1131,6 +1169,9 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .submit-btn:hover { background: var(--rust); color: var(--cream); }
         .submit-btn:disabled { background: var(--sage); color: var(--cream); cursor: default; }
         .payment-checkout-card { max-width:100%; box-sizing:border-box; overflow:hidden; margin-top: 1rem; padding: 1.2rem; background: linear-gradient(145deg, rgba(245,240,232,0.075), rgba(99,91,255,0.08)); border: 1px solid rgba(200,169,110,0.24); border-radius: var(--radius-payment); text-align: center; box-shadow: inset 0 1px 0 rgba(255,255,255,0.05); }
+        .booking-save-spinner { display:inline-block; width:1em; height:1em; margin-right:0.7em; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; vertical-align:middle; animation:booking-saving 0.8s linear infinite; }
+        @keyframes booking-saving { to { transform:rotate(360deg); } }
+        @media (prefers-reduced-motion: reduce) { .booking-save-spinner { animation:none; } }
         .checkout-eyebrow { font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); margin-bottom: 0.55rem; }
         .checkout-copy { font-size: 0.85rem; color: var(--mist); line-height: 1.6; margin-bottom: 1rem; }
         .checkout-copy strong { color: var(--cream); }
@@ -1751,7 +1792,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             <span className="price-badge">2026 Trips &amp; 2027 Requests — Limited Availability</span>
             <div className="price-amount">$1,799–$1,999</div>
             <div className="price-per">Per Person · 9 Days / 8 Nights · Group rates for 1–8 guests</div>
-            <div className="price-note">All official prices are in USD. Every fixed 2026 departure can be booked and paid online for 1–2 guests. Groups of 3–8 book together and Rob emails one personal invoice for the whole group. 2027 request options are personally confirmed before payment.</div>
+            <div className="price-note">All official prices are in USD. Every currently available fixed 2026 departure can be booked and paid online for 1–8 guests. Groups of 1–8 book together and pay the exact group amount in one secure Stripe checkout. 2027 request options are personally confirmed before payment.</div>
             <div className="group-rate-table" aria-label="8 Lakes Tours private group rates">
               {GROUP_PRICING_TIERS.map(tier => (
                 <div className="group-rate-row" key={tier.label}>
@@ -1778,7 +1819,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               <div className="payment-detail-body">
                 <p>Total trip price depends on group size: $1,999 per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8.</p>
                 <p>Group discounts are shared evenly between 8 Lakes Tours and your host family, so the online payment and the family&apos;s cash both come down together: $999 online and $1,000 cash for 1–2 guests, $974/$975 for 3–4, $949/$950 for 5–6, and $899/$900 for 7–8. The family is never asked to absorb the whole reduction.</p>
-                <p>The online payment goes through 8 Lakes Tours. Every fixed 2026 departure can be booked and paid online for 1–2 guests. Groups of 3–8 booking together are sent one personal invoice covering every guest, so the group pays in a single step instead of individually. 2027 request options are confirmed personally before Rob sends the correct payment link or custom order. The remaining local portion is paid directly in clean USD cash to the nomadic host families because they cannot reliably receive online transfers.</p>
+                <p>The online payment goes through 8 Lakes Tours. Every currently available fixed 2026 departure can be booked and paid online for 1–8 guests. Groups of 1–8 booking together pay the exact group amount in a single Stripe checkout instead of individually. 2027 request options are confirmed personally before Rob sends the correct payment link or custom order. The remaining local portion is paid directly in clean USD cash to the nomadic host families because they cannot reliably receive online transfers.</p>
                 <p>If your plans change more than 3 weeks / 21 days before departure, the online amount is refundable minus unrecoverable Stripe/payment processing fees. If you cancel within 3 weeks / 21 days, you&apos;re entitled to 50% of the online booking payment back, minus unrecoverable Stripe/payment processing fees. We&apos;ll still try to help with a date transfer or a replacement traveller too, which can recover more than the 50%.</p>
                 <p>We&apos;ll include exact cash instructions and timing in your confirmation notes.</p>
               </div>
@@ -1822,7 +1863,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         <div className="reveal reveal-delay-1" id="application">
           <span className="section-eyebrow">Booking Details</span>
           <h2 className="section-title" style={{fontSize:'2rem', marginBottom:'1rem'}}>Secure<br /><em>Your Place</em></h2>
-          <p className="section-body" style={{fontSize:'0.9rem', marginBottom:'2rem'}}>Choose a fixed date or a 2027 request option and tell us who&apos;s coming. Bookings of 1–2 guests on a fixed date continue straight to payment after submitting. Groups of 3–8 are invoiced personally so you can pay in one go, and 2027 requests are confirmed before payment.</p>
+          <p className="section-body" style={{fontSize:'0.9rem', marginBottom:'2rem'}}>Choose a fixed date or a 2027 request option and tell us who&apos;s coming. Bookings of 1–2 guests on a fixed date continue straight to payment after submitting. Scheduled groups of 1–8 pay the exact group amount in one checkout; private, custom, and 2027 requests are confirmed before payment.</p>
           <form className="booking-form" onFocusCapture={markBookingFormStarted} onSubmit={async e => { e.preventDefault(); await submitBooking(e.currentTarget); }}>
             <input type="hidden" name="display_currency" value={pricing.currency} />
             <input type="hidden" name="display_tour_price" value={pricing.tourPrice} />
@@ -1832,15 +1873,16 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             <div className="form-section">
               <p className="form-section-title">Contact details</p>
               <div className="form-grid compact-grid">
-                <div className="form-group"><label className="form-label" htmlFor="first_name">First Name</label><input id="first_name" className="form-input" name="first_name" type="text" placeholder="First name" required /></div>
-                <div className="form-group"><label className="form-label" htmlFor="last_name">Last Name</label><input id="last_name" className="form-input" name="last_name" type="text" placeholder="Last name" required /></div>
+                <div className="form-group"><label className="form-label" htmlFor="first_name">Passport/Legal First Name</label><input id="first_name" className="form-input" name="first_name" type="text" placeholder="First name" maxLength={100} required /></div>
+                <div className="form-group"><label className="form-label" htmlFor="last_name">Passport/Legal Last Name</label><input id="last_name" className="form-input" name="last_name" type="text" placeholder="Last name" maxLength={100} required /></div>
               </div>
-              <div className="form-group"><label className="form-label" htmlFor="email">Email Address — Required for Confirmation</label><input id="email" className="form-input" name="email" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} required /></div>
+              <div className="form-group"><label className="form-label" htmlFor="email">Email Address — Required for Confirmation</label><input id="email" className="form-input" name="email" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} maxLength={254} required /></div>
               <div className="form-grid compact-grid">
-                <div className="form-group"><label className="form-label" htmlFor="phone">Phone Number</label><input id="phone" className="form-input" name="phone" type="tel" placeholder="+1 (555) 000-0000" /></div>
-                <div className="form-group"><label className="form-label" htmlFor="nationality">Nationality</label><input id="nationality" className="form-input" name="nationality" type="text" placeholder="e.g. American" /></div>
+                <div className="form-group"><label className="form-label" htmlFor="phone">Phone Number</label><input id="phone" className="form-input" name="phone" type="tel" placeholder="+1 (555) 000-0000" maxLength={40} /></div>
+                <div className="form-group"><label className="form-label" htmlFor="nationality">Nationality</label><input id="nationality" className="form-input" name="nationality" type="text" placeholder="e.g. American" maxLength={80} required /></div>
               </div>
-              <div className="form-group"><label className="form-label" htmlFor="emergency_contact">Emergency Contact (Name & Phone)</label><input id="emergency_contact" className="form-input" name="emergency_contact" type="text" placeholder="Name · Phone number" /></div>
+              <div className="form-group"><label className="form-label" htmlFor="date_of_birth">Date of Birth</label><input id="date_of_birth" className="form-input" name="date_of_birth" type="date" required /></div>
+              <div className="form-group"><label className="form-label" htmlFor="emergency_contact">Emergency Contact (Name & Phone)</label><input id="emergency_contact" className="form-input" name="emergency_contact" type="text" placeholder="Name · Phone number" maxLength={200} /></div>
             </div>
 
             <div className="form-section">
@@ -1848,7 +1890,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               <div className="form-grid compact-grid">
                 <div className="form-group">
                   <label className="form-label" htmlFor="riding_experience">Riding Experience</label>
-                  <select id="riding_experience" className="form-select" name="riding_experience">
+                  <select id="riding_experience" className="form-select" name="riding_experience" required>
                     <option value="">Select level</option>
                     <option>Beginner — little to none</option>
                     <option>Intermediate — comfortable riding</option>
@@ -1867,12 +1909,13 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               </div>
               <div className="form-group">
                 <label className="form-label" htmlFor="guest_count">Guests booking together</label>
-                <select id="guest_count" className="form-select" name="guest_count" value={guestCount} onChange={e => setGuestCount(clampGuestCount(e.target.value))}>
+                <select id="guest_count" className="form-select" name="guest_count" value={guestCount} onChange={e => { const next = clampGuestCount(e.target.value); setGuestCount(next); setTravellerAnnouncement(`${next} traveller section${next === 1 ? '' : 's'} ready.`); }}>
                   {Array.from({ length: MAX_GROUP_SIZE }, (_, index) => index + 1).map(count => (
                     <option key={count} value={count}>{count} guest{count === 1 ? '' : 's'}</option>
                   ))}
                 </select>
               </div>
+              <p className="sr-only" aria-live="polite" aria-atomic="true">{travellerAnnouncement}</p>
               <div className="group-pricing-card" aria-live="polite">
                 <div>
                   <p className="group-pricing-eyebrow">Private group pricing</p>
@@ -1889,9 +1932,47 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               <input type="hidden" name="online_payment_usd" value={groupPricing.onlinePaymentUsd} />
               <input type="hidden" name="local_family_payment_usd" value={groupPricing.localFamilyPaymentUsd} />
               <input type="hidden" name="total_trip_value_usd" value={groupPricing.totalTripValueUsd} />
-              <div className="form-group"><label className="form-label" htmlFor="dietary_restrictions">Dietary Restrictions</label><input id="dietary_restrictions" className="form-input" name="dietary_restrictions" type="text" placeholder="None, vegetarian, allergies, serious dairy/lactose issues, etc." /></div>
-              <div className="form-group"><label className="form-label" htmlFor="how_heard">How did you hear about us?</label><input id="how_heard" className="form-input" name="how_heard" type="text" placeholder="Instagram, ChatGPT, friend, Google, retreat group, etc." /></div>
-              <div className="form-group"><label className="form-label" htmlFor="notes">Special Notes or Questions</label><textarea id="notes" className="form-textarea" name="notes" placeholder="Anything else we should know?"></textarea></div>
+              <div className="form-group"><label className="form-label" htmlFor="dietary_restrictions">Dietary Restrictions</label><input id="dietary_restrictions" className="form-input" name="dietary_restrictions" type="text" placeholder="None, vegetarian, allergies, serious dairy/lactose issues, etc." maxLength={1000} /></div>
+              {Array.from({ length: guestCount - 1 }, (_, index) => {
+                const travellerNumber = index + 2;
+                const fieldPrefix = `travellers.${index + 1}`;
+                return (
+                  <fieldset className="companion-fields form-section" key={fieldPrefix}>
+                    <legend className="form-section-title">Traveller {travellerNumber}</legend>
+                    <p className="section-body" style={{fontSize:'0.78rem', marginBottom:'1rem'}}>Enter names exactly as shown on this traveller&apos;s passport.</p>
+                    <div className="form-grid compact-grid">
+                      <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.first_name`}>Passport/Legal First Name</label><input id={`${fieldPrefix}.first_name`} className="form-input" name={`travellers.${index + 1}.first_name`} type="text" maxLength={100} required /></div>
+                      <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.last_name`}>Passport/Legal Last Name</label><input id={`${fieldPrefix}.last_name`} className="form-input" name={`travellers.${index + 1}.last_name`} type="text" maxLength={100} required /></div>
+                    </div>
+                    <div className="form-grid compact-grid">
+                      <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.date_of_birth`}>Date of Birth</label><input id={`${fieldPrefix}.date_of_birth`} className="form-input" name={`travellers.${index + 1}.date_of_birth`} type="date" required /></div>
+                      <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.nationality`}>Nationality</label><input id={`${fieldPrefix}.nationality`} className="form-input" name={`travellers.${index + 1}.nationality`} type="text" maxLength={80} required /></div>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label" htmlFor={`${fieldPrefix}.riding_experience`}>Riding Experience</label>
+                      <select id={`${fieldPrefix}.riding_experience`} className="form-select" name={`travellers.${index + 1}.riding_experience`} required>
+                        <option value="">Select level</option>
+                        <option>Beginner — little to none</option>
+                        <option>Intermediate — comfortable riding</option>
+                        <option>Advanced — experienced rider</option>
+                      </select>
+                    </div>
+                    <div className="form-grid compact-grid">
+                      <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.email`}>Email (Optional)</label><input id={`${fieldPrefix}.email`} className="form-input" name={`travellers.${index + 1}.email`} type="email" maxLength={254} /></div>
+                      <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.phone`}>Phone (Optional)</label><input id={`${fieldPrefix}.phone`} className="form-input" name={`travellers.${index + 1}.phone`} type="tel" maxLength={40} /></div>
+                    </div>
+                    <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.dietary_notes`}>Dietary Notes (Optional)</label><input id={`${fieldPrefix}.dietary_notes`} className="form-input" name={`travellers.${index + 1}.dietary_notes`} type="text" maxLength={1000} /></div>
+                  </fieldset>
+                );
+              })}
+              {guestCount > 1 && (
+                <label style={{display:'flex', gap:'0.7rem', alignItems:'flex-start', color:'var(--mist)', fontSize:'0.76rem', lineHeight:1.55, cursor:'pointer'}}>
+                  <input type="checkbox" name="companion_details_permission" value="on" required style={{marginTop:'0.2rem', accentColor:'var(--gold)'}} />
+                  <span>I am the lead booker supplying my companions&apos; details for trip operations, and I have their permission to provide these details. My typed waiver below is my agreement only, not a waiver signed for any companion.</span>
+                </label>
+              )}
+              <div className="form-group"><label className="form-label" htmlFor="how_heard">How did you hear about us?</label><input id="how_heard" className="form-input" name="how_heard" type="text" placeholder="Instagram, ChatGPT, friend, Google, retreat group, etc." maxLength={200} /></div>
+              <div className="form-group"><label className="form-label" htmlFor="notes">Special Notes or Questions</label><textarea id="notes" className="form-textarea" name="notes" placeholder="Anything else we should know?" maxLength={2000}></textarea></div>
             </div>
 
             {/* Collapsible Waiver */}
@@ -1906,7 +1987,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               </button>
               {waiverExpanded && (
                 <div style={{padding:'1.2rem 1.4rem', fontSize:'0.8rem', color:'var(--mist)', lineHeight:1.8, borderTop:'1px solid rgba(200,169,110,0.15)', maxHeight:'320px', overflowY:'auto'}}>
-                  <p style={{marginBottom:'0.8rem'}}>Please read this waiver carefully. By signing below, you acknowledge and agree to the following terms:</p>
+                  <p style={{marginBottom:'0.8rem'}}>Please read this waiver carefully. The typed signature records the lead booker&apos;s agreement only and is not a waiver on behalf of any companion. By signing below, you acknowledge and agree to the following terms for yourself:</p>
                   {[
                     ['1. Nature of Activity', '8 Lakes Tours operates multi-day horseback trekking expeditions in remote wilderness areas of Mongolia. These activities take place in the Orkhon Valley and surrounding steppe, far from medical facilities, emergency services, and modern infrastructure. Participants acknowledge that this is an inherently adventurous and physically demanding experience.'],
                     ['2. Horseback Riding Risks', 'Horseback riding carries inherent risks including, but not limited to: falling from or being thrown by a horse, being kicked or bitten, collision with obstacles, and unpredictable animal behaviour. Horses are living animals and may react in unexpected ways regardless of rider experience. Participants ride at their own risk and must follow all instructions from their guide at all times.'],
@@ -1933,12 +2014,14 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                 className="form-input signature-input"
                 type="text"
                 name="signature"
+                maxLength={150}
+                required
                 value={signature}
                 onChange={e => setSignature(e.target.value)}
                 placeholder="Your full name"
                 style={{width:'100%', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(200,169,110,0.3)', borderRadius:'var(--radius-soft)', padding:'0.7rem 1rem', color:'var(--cream)', fontSize:'0.95rem', fontFamily:"var(--font-cormorant), 'Cormorant Garamond', serif", fontStyle:'italic', outline:'none', boxSizing:'border-box'}}
               />
-              <p style={{fontSize:'0.7rem', color:'var(--mist)', opacity:0.5, marginTop:'0.4rem', lineHeight:1.5}}>By typing your name you confirm you have read and agree to the liability waiver.</p>
+              <p style={{fontSize:'0.7rem', color:'var(--mist)', opacity:0.5, marginTop:'0.4rem', lineHeight:1.5}}>By typing your name you confirm that you, as the lead booker, have read and agree to the liability waiver for yourself only. This does not create a companion waiver.</p>
             </div>
             <label style={{display:'flex', gap:'0.7rem', alignItems:'flex-start', marginTop:'1rem', color:'var(--mist)', fontSize:'0.76rem', lineHeight:1.55, cursor:'pointer'}}>
               <input type="checkbox" name="newsletter_opt_in" value="on" style={{marginTop:'0.2rem', accentColor:'var(--gold)'}} />
@@ -1947,22 +2030,24 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             </fieldset>
 
             {/* Submit booking to ops */}
-            {!formSubmitted ? (
+            {!formSubmitted || formSubmitting ? (
               <button
                 type="submit"
                 disabled={!hasRequiredContact || formSubmitting}
                 className="submit-btn"
                 style={{marginTop:'0.5rem', opacity: hasRequiredContact ? 1 : 0.4, transition:'opacity 0.3s', cursor: hasRequiredContact ? 'pointer' : 'not-allowed'}}
               >
-                {formSubmitting ? 'Saving your booking…' : awaitsGroupInvoice ? 'Request Your Group Invoice' : requiresHumanConfirmation ? 'Submit Availability Request' : 'Continue to Secure Payment'}
+                {formSubmitting && <span className="booking-save-spinner" aria-hidden="true" />}
+                {formSubmitting ? (requiresHumanConfirmation ? 'Sending your request…' : 'Preparing your secure checkout…') : awaitsGroupInvoice ? 'Request Your Group Invoice' : requiresHumanConfirmation ? 'Submit Availability Request' : 'Continue to Secure Payment'}
               </button>
             ) : (
               <div style={{marginTop:'0.5rem', padding:'0.9rem 1rem', background:'rgba(200,169,110,0.08)', border:'1px solid rgba(200,169,110,0.3)', borderRadius:'var(--radius-soft)', textAlign:'center'}}>
-                <p style={{fontSize:'0.7rem', letterSpacing:'0.2em', textTransform:'uppercase', color:'var(--gold)'}}>{awaitsGroupInvoice ? '✓ Group booking saved — Rob will email your invoice' : requiresHumanConfirmation ? '✓ Request saved — Rob will confirm availability before payment' : '✓ Booking saved — complete your online booking payment below'}</p>
+                <p style={{fontSize:'0.7rem', letterSpacing:'0.2em', textTransform:'uppercase', color:'var(--gold)'}}>{awaitsGroupInvoice ? 'Request received — Rob will email your invoice' : requiresHumanConfirmation ? 'Request received — Rob will confirm availability before payment' : 'Payment pending — your place is not yet confirmed'}</p>
                 {bookingReference && <p style={{fontSize:'0.68rem', color:'rgba(245,240,232,0.62)', marginTop:'0.4rem'}}>Reference: {bookingReference}</p>}
               </div>
             )}
-            {formError && <p className="form-error">{formError}</p>}
+            <p role="status" aria-live="polite">{formSubmitting ? (requiresHumanConfirmation ? 'Sending your request…' : 'Preparing your secure checkout…') : formSubmitted && requiresHumanConfirmation ? 'Request received. Awaiting availability confirmation.' : ''}</p>
+            {formError && <p className="form-error" role="alert">{formError}</p>}
 
             <div className="payment-checkout-card">
               <p className="checkout-eyebrow">Online Reservation Payment</p>
@@ -1989,13 +2074,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                   onMouseDown={trackStripePaymentClick}
                   onTouchStart={trackStripePaymentClick}
                 >
-                  <Script async src="https://js.stripe.com/v3/buy-button.js" strategy="afterInteractive" />
-                  <div
-                    className={`stripe-buy-button-frame${canPay ? '' : ' locked'}`}
-                    dangerouslySetInnerHTML={{
-                      __html: `<stripe-buy-button buy-button-id="${STRIPE_BUY_BUTTON_ID}" publishable-key="${STRIPE_PUBLISHABLE_KEY}" client-reference-id="${bookingReference || 'pending-booking'}"></stripe-buy-button>`,
-                    }}
-                  />
+                  <p className="stripe-preview-amount">${groupPricing.onlinePaymentUsd.toLocaleString('en-US')} USD <span>{groupPricing.guestCount} guest{groupPricing.guestCount === 1 ? '' : 's'}</span></p>
                   <a
                     className="stripe-link-fallback"
                     href={checkoutFallbackHref}
@@ -2102,10 +2181,10 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           {[
             {q:'Is this trip legit?', a:"Yes. 8 Lakes Tours is organised by Robert Zaher through a direct relationship with Ganbold's family in the Orkhon Valley. Online bookings and preparation are handled by 8 Lakes Tours; the local family portion is paid directly to your hosts in Mongolia."},
             {q:'Can I speak to someone before booking?', a:"Yes. Email info@8lakestours.com with any questions before paying. You can also check Rob's Instagram at @robzaher108 while we keep tour email communication centralised through the info@ address."},
-            {q:'What happens after I submit the form?', a:'For standard 1–2 guest bookings, you can continue to the online payment and receive confirmation once payment is complete. For groups of 3–8, Rob reviews the request, confirms availability, and sends the correct payment link or custom order before payment. Before arrival, Rob or the tour operator coordinates timing with you and the host-family pickup from Bat-Ulzii.'},
+            {q:'What happens after I submit the form?', a:'For standard 1–2 guest bookings, you can continue to the online payment and receive confirmation once payment is complete. Scheduled groups of 1–8 pay the exact group online amount in one Stripe checkout. Private, custom, and unconfirmed dates require Rob to confirm availability before payment. Before arrival, Rob or the tour operator coordinates timing with you and the host-family pickup from Bat-Ulzii.'},
             {q:'Do I need riding experience?', a:'No experience necessary. Beginners are welcome — our local guides will teach you everything you need to know before the trek begins.'},
             {q:'What departure dates are available?', a:'Remaining 2026 fixed departures stay listed while bookable. 2027 small-group dates are being planned, and private 2027 departures can be requested for June through September. All 2027 options require Rob to confirm the host family, horses, guide and logistics before payment.'},
-            {q:'How does payment work?', a:'All official prices are in USD. The 2026 rate depends on group size: $1,999 per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8. Bookings of 1–2 guests on a fixed date pay the $999 per-guest online booking payment straight after the form. Groups of 3–8 book together and Rob emails one personal invoice covering every guest. Group discounts are shared evenly between 8 Lakes Tours and the host family, so the online payment runs $899–$999 per guest and the local family cash runs $900–$1,000 per guest. The family portion is paid directly in clean USD cash to the nomadic host families in Mongolia.'},
+            {q:'How does payment work?', a:'All official prices are in USD. The 2026 rate depends on group size: $1,999 per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8. Bookings of 1–2 guests on a fixed date pay the $999 per-guest online booking payment straight after the form. Groups of 1–8 book together and pay the exact group online amount in one secure Stripe checkout. Group discounts are shared evenly between 8 Lakes Tours and the host family, so the online payment runs $899–$999 per guest and the local family cash runs $900–$1,000 per guest. The family portion is paid directly in clean USD cash to the nomadic host families in Mongolia.'},
             {q:'What airport do I fly into?', a:"Fly into Chinggis Khaan International Airport in Ulaanbaatar (UB). From there you'll take a public bus to Bat-Ulzii — about an 8-hour ride through stunning countryside."},
             {q:'Do I need a visa?', a:'Many travellers can enter Mongolia visa-free for tourism, but the allowance depends on your passport. US and South Korean passport holders commonly receive up to 90 days; UK/EU, Australian, Canadian, Japanese, New Zealand, and many other passport holders commonly receive up to 30 days. Rules and temporary exemptions can change, so check the current Mongolian consular or e-visa guidance for your nationality before booking flights.'},
             {q:'Is there WiFi or cell service?', a:'Remote trek days are mostly offline, with little to no cell service. The host family camp has Starlink and solar-powered charging for phones, cameras, and essentials, so you can reconnect between riding days. For simple Mongolian communication, Grok has worked best for us so far; ChatGPT also works well for translation when you have signal.'},

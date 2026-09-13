@@ -1,4 +1,11 @@
 \set ON_ERROR_STOP on
+begin;
+-- Supabase's service_role bypass is emulated only inside this rolled-back local test.
+do $$ declare t text; begin
+ foreach t in array array['tour_projects','customers','bookings','inquiries','inquiry_messages','inquiry_drafts','inquiry_import_runs','inquiry_sync_state'] loop
+  execute format('create policy runtime_local_service on public.%I for all to service_role using(true) with check(true)',t);
+ end loop;
+end $$;
 insert into public.tour_projects (id, slug, name)
 values ('00000000-0000-4000-8000-000000000002', 'rpc-other', 'RPC Other');
 insert into public.inquiry_sync_state(provider, project_id, gmail_account_email, lease_token, lease_expires_at)
@@ -73,9 +80,9 @@ begin
   select id into v_draft from public.create_inquiry_draft(v_project, 'OPS@example.com', v_inquiry, 'new', 'Re: Hello', 'Draft one', 'rpc@example.com', 'ops', '<incoming@example.com>', array['<incoming@example.com>'], 'draft-key-1');
   if v_draft is null then raise exception 'draft was not created'; end if;
   if exists (select 1 from public.create_inquiry_draft(v_other_project, 'ops@example.com', v_inquiry, 'drafted', 'x', 'x', 'x@example.com', 'x', '<x@example.com>', array['<x@example.com>'], 'x')) then raise exception 'wrong project draft create was accepted'; end if;
-  if not exists (select 1 from public.save_inquiry_draft(v_project, 'ops@example.com', v_inquiry, v_draft, 1, 'Re: Hello', 'Draft two', 'rpc@example.com')) then raise exception 'draft save failed'; end if;
-  if not exists (select 1 from public.submit_inquiry_draft_for_review(v_project, 'ops@example.com', v_inquiry, v_draft, 1)) then raise exception 'submit failed'; end if;
-  if not exists (select 1 from public.approve_inquiry_draft(v_project, 'ops@example.com', v_inquiry, v_draft, 1, 'reviewer')) then raise exception 'approve failed'; end if;
+  if not exists (select 1 from public.save_inquiry_draft(v_project, 'ops@example.com', v_inquiry, v_draft, 1, 'Re: Hello', 'Draft two', 'rpc@example.com', 1)) then raise exception 'draft save failed'; end if;
+  if not exists (select 1 from public.submit_inquiry_draft_for_review(v_project, 'ops@example.com', v_inquiry, v_draft, 1, 2)) then raise exception 'submit failed'; end if;
+  if not exists (select 1 from public.approve_inquiry_draft(v_project, 'ops@example.com', v_inquiry, v_draft, 1, 'reviewer', 2)) then raise exception 'approve failed'; end if;
   begin
     update public.inquiry_drafts set state='rejected' where id=v_draft;
     raise exception 'approved draft was recycled to rejected';
@@ -104,8 +111,8 @@ begin
   if not exists (select 1 from public.update_inquiry_pipeline(v_project, 'ops@example.com', v_inquiry, 'replied', 'qualified', null, null)) then raise exception 'pipeline CAS failed'; end if;
   if exists (select 1 from public.update_inquiry_pipeline(v_project, 'ops@example.com', v_inquiry, 'contacted', 'lost', 'stale', null)) then raise exception 'stale pipeline CAS accepted'; end if;
 
-  insert into public.bookings(public_reference, project_id, customer_id, tour_date)
-  values ('RPC-CONVERT-1', v_project, v_customer, 'September 14–22, 2026') returning id into v_booking;
+  insert into public.bookings(public_reference, project_id, customer_id, tour_date,status,online_due_usd,online_paid_usd)
+  values ('RPC-CONVERT-1', v_project, v_customer, 'September 14–22, 2026','confirmed',999,999) returning id into v_booking;
   if exists (select 1 from public.convert_inquiry(v_other_project, 'ops@example.com', v_inquiry, v_booking, 'qualified')) then raise exception 'wrong project conversion accepted'; end if;
   if not exists (select 1 from public.convert_inquiry(v_project, 'ops@example.com', v_inquiry, v_booking, 'qualified')) then raise exception 'conversion failed'; end if;
 
@@ -117,11 +124,11 @@ begin
 
   select inquiry_id into v_inquiry2 from public.reconcile_inbound_inquiry_message(
     v_project, 'ops@example.com', v_lease, 'thread-2', 'message-2', 'RPC Test', 'rpc@example.com',
-    array['ops@example.com'], array[]::text[], 'Second', 'Body', '{}', clock_timestamp(),
+    array['ops@example.com'], array[]::text[], 'Second', 'Body', '{"message_id":"<second@example.com>"}', clock_timestamp(),
     'import', 'dates', 'inquiry-key-2', 'message-key-2');
   select id into v_draft2 from public.create_inquiry_draft(v_project, 'ops@example.com', v_inquiry2, 'new', 'Re: Second', 'Direct send', 'rpc@example.com', 'ops', '<second@example.com>', array['<second@example.com>'], 'draft-key-2');
-  perform public.submit_inquiry_draft_for_review(v_project, 'ops@example.com', v_inquiry2, v_draft2, 1);
-  perform public.approve_inquiry_draft(v_project, 'ops@example.com', v_inquiry2, v_draft2, 1, 'reviewer');
+  perform public.submit_inquiry_draft_for_review(v_project, 'ops@example.com', v_inquiry2, v_draft2, 1, 1);
+  perform public.approve_inquiry_draft(v_project, 'ops@example.com', v_inquiry2, v_draft2, 1, 'reviewer', 1);
   select * into v_claim from public.claim_inquiry_draft_send(v_project, 'ops@example.com', v_draft2);
   if not exists (select 1 from public.record_inquiry_draft_send_failure(v_project, 'ops@example.com', v_draft2, v_claim.claim_token, 'pre-provider-test', 'Re: Second', 'Direct send')) then raise exception 'pre-provider failure was not recorded'; end if;
   if exists (select 1 from public.authorize_inquiry_draft_retry(v_project, 'ops@example.com', v_inquiry, v_draft2, 1, 'reviewer', 'wrong inquiry')) then raise exception 'retry accepted wrong inquiry'; end if;
@@ -145,3 +152,5 @@ $$;
 
 reset role;
 select 'runtime inquiry RPC behavior: ok' as evidence;
+
+rollback;

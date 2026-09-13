@@ -30,12 +30,13 @@ test('landing page foregrounds trust, suitability and one clear enquiry path', a
   assert.match(source, /href="\/#application"/);
 });
 
-test('landing page has canonical metadata and is present in the sitemap', async () => {
+test('paid-search landing retains canonical metadata but is excluded from organic index', async () => {
   const [page, sitemap] = await Promise.all([
     readFile(pageUrl, 'utf8'),
     readFile(sitemapUrl, 'utf8'),
   ]);
 
   assert.match(page, /https:\/\/www\.8lakestours\.com\/horse-trekking-mongolia/);
-  assert.match(sitemap, /\$\{siteUrl\}\/horse-trekking-mongolia/);
+  assert.doesNotMatch(sitemap, /\$\{siteUrl\}\/horse-trekking-mongolia/);
+  assert.match(page, /robots: \{ index: false, follow: true \}/);
 });

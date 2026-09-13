@@ -18,7 +18,7 @@ export default function PrivacyPolicy() {
       <div style={{ maxWidth: '720px', margin: '0 auto', padding: '5rem 2rem' }}>
         <p style={{ fontSize: '0.65rem', letterSpacing: '0.3em', textTransform: 'uppercase', color: '#c8a96e', marginBottom: '1rem' }}>Legal</p>
         <h1 style={{ fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif", fontSize: '2.8rem', fontWeight: 300, color: '#f5f0e8', marginBottom: '0.5rem', lineHeight: 1.1 }}>Privacy Policy</h1>
-        <p style={{ fontSize: '0.8rem', color: '#d4cfc4', opacity: 0.5, marginBottom: '3rem' }}>Last updated: August 2026</p>
+        <p style={{ fontSize: '0.8rem', color: '#d4cfc4', opacity: 0.5, marginBottom: '3rem' }}>Last updated: September 2026</p>
 
         {[
           {
@@ -27,7 +27,7 @@ export default function PrivacyPolicy() {
           },
           {
             title: '2. What Data We Collect',
-            body: 'When you submit the booking form on our website, we collect the following personal data: your first and last name, email address, phone number, nationality, emergency contact details, riding experience level, preferred tour date, dietary restrictions, and any additional notes you provide. We also collect your typed digital signature as confirmation of your agreement to our liability waiver.',
+            body: 'When you submit the booking form on our website, we collect passport-matching names, date of birth, nationality, riding experience, and dietary information for each traveller, plus optional companion email and phone details. The lead booker supplies companion details for trip operations and confirms they have each companion’s permission to provide their details. We also collect the lead traveller’s contact and emergency contact details, preferred tour date, additional notes, and typed digital signature. The typed signature records the lead booker’s own waiver agreement only; it is not treated as a waiver signed by every companion.',
           },
           {
             title: '3. Why We Collect It (Legal Basis)',

@@ -73,11 +73,11 @@ test('campaign pack is paused, homepage-led, narrow and bounded to the approved 
   ]);
   const all = `${brief}\n${keywords}\n${negatives}\n${ads}`;
 
-  assert.match(brief, /€3(?:\.00)? per day/i);
-  assert.match(brief, /14 calendar days/i);
-  assert.match(brief, /August 31, 2026/i);
-  assert.match(brief, /campaign end date.*September 13, 2026/i);
-  assert.match(brief, /€50.*manual.*stop|manual.*stop.*€50/i);
+  assert.match(brief, /\$7(?:\.00)? per day/i);
+  assert.match(brief, /7 calendar days/i);
+  assert.match(brief, /August 30, 2026/i);
+  assert.match(brief, /campaign end date.*September 5, 2026/i);
+  assert.match(brief, /\$55.*manual.*stop|manual.*stop.*\$55/i);
   assert.match(brief, /Google Search only/i);
   assert.match(brief, /Search Partners.*off/i);
   assert.match(brief, /Display.*off/i);
@@ -86,7 +86,7 @@ test('campaign pack is paused, homepage-led, narrow and bounded to the approved 
   assert.doesNotMatch(keywords, /,Broad,/i);
   assert.match(keywords, /https:\/\/www\.8lakestours\.com\/\?utm_source=google&utm_medium=cpc&utm_campaign=september_2026_last_minute/);
   assert.match(negatives, /adventure therapy/i);
-  assert.match(ads, /Ask About September Dates/i);
+  assert.match(ads, /September Dates Now Open/i);
   assert.doesNotMatch(ads, /last places|only \d+ places|guaranteed availability/i);
 });
 

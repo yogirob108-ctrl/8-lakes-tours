@@ -13,12 +13,12 @@ test('schema defines the shared booking confirmation lease', () => {
 
 test('webhook holds the booking lease across both confirmation sends', () => {
   const source = read('app/api/stripe/webhook/route.ts');
-  const claim = source.indexOf('bookingConfirmationToken = await claimBookingConfirmationLease');
+  const claim = source.indexOf('bookingConfirmationToken = confirmationToken');
   const customerSend = source.indexOf('idempotencyKey: `stripe-${session.id}-customer-payment`');
   const internalSend = source.indexOf('idempotencyKey: `stripe-${session.id}-internal-payment`');
   const release = source.indexOf('await releaseBookingConfirmationLease', internalSend);
   assert.match(source, /export const maxDuration = 60/);
-  assert.match(source, /BOOKING_CONFIRMATION_LEASE_MS = 5 \* 60 \* 1000/);
+  assert.match(read('supabase/migrations/20260913000000_checkout_review_fences.sql'), /interval '5 minutes'/);
   assert.ok(claim >= 0 && claim < customerSend);
   assert.ok(customerSend < internalSend);
   assert.ok(internalSend < release);

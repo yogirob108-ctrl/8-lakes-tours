@@ -1,0 +1,53 @@
+\set ON_ERROR_STOP on
+begin;
+set request.jwt.claim.role='service_role';
+do $$
+declare c uuid;b uuid;p uuid;a jsonb;r jsonb;allowed text[]:=array['Scheduled fixture'];
+begin
+ select id into strict p from tour_projects where slug='8-lakes-tours';
+ insert into customers(first_name,last_name,email) values('Recovery','Test','recovery@example.invalid') returning id into c;
+ insert into bookings(customer_id,project_id,public_reference,tour_date,status,submission_key,guest_count,online_due_usd,online_paid_usd) values(c,p,'RECOVERY-TEST','Scheduled fixture','awaiting_payment',gen_random_uuid(),1,999,0) returning id into b;
+ if not exists(select 1 from abandoned_checkout_recovery where booking_id=b) then raise exception 'new intake not enrolled'; end if;
+ a:=claim_abandoned_checkout(b,allowed,'{"to":"recovery@example.invalid","subject":"Original","text":"private","html":"private"}');
+ if (a->>'should_send')::boolean then raise exception 'sent before delay'; end if;
+ update abandoned_checkout_recovery set eligible_at=now()-interval '1 minute' where booking_id=b;
+ a:=claim_abandoned_checkout(b,array['Other'],'{}');
+ if (a->>'should_send')::boolean then raise exception 'unconfirmed/private date permitted'; end if;
+ update bookings set status='cancelled' where id=b;
+ a:=claim_abandoned_checkout(b,allowed,'{}');
+ if (a->>'should_send')::boolean then raise exception 'cancelled permitted'; end if;
+ update bookings set status='awaiting_payment',online_paid_usd=1 where id=b;
+ a:=claim_abandoned_checkout(b,allowed,'{}');
+ if (a->>'should_send')::boolean then raise exception 'paid permitted'; end if;
+ update bookings set online_paid_usd=0 where id=b;
+ insert into payments(booking_id,provider,amount_usd,status) values(b,'stripe',999,'paid');
+ a:=claim_abandoned_checkout(b,allowed,'{}');
+ if (a->>'should_send')::boolean then raise exception 'unreconciled paid ledger permitted'; end if;
+ delete from payments where booking_id=b;
+ insert into booking_checkout_ownership(booking_id,spec,expected,session_id) values(b,'{"line_items":[{"price_data":{"unit_amount":99900}}]}','{}','cs_recovery');
+ insert into payments(booking_id,provider,amount_usd,status,stripe_checkout_session_id) values(b,'stripe',999,'pending','cs_recovery');
+ update abandoned_checkout_recovery set expires_at=now()-interval '1 minute' where booking_id=b;
+ a:=claim_abandoned_checkout(b,allowed,'{}');
+ if (a->>'should_send')::boolean then raise exception 'expired intake permitted'; end if;
+ update abandoned_checkout_recovery set expires_at=now()+interval '1 day' where booking_id=b;
+ perform * from list_abandoned_checkouts(allowed);
+ a:=claim_abandoned_checkout(b,allowed,'{"to":"recovery@example.invalid","subject":"Original","text":"private","html":"private"}');
+ if not (a->>'should_send')::boolean then raise exception 'eligible not claimed'; end if;
+ r:=claim_abandoned_checkout(b,allowed,'{}');
+ if (r->>'should_send')::boolean then raise exception 'double claim'; end if;
+ perform finalize_public_booking_email_v2((a->>'email_event_id')::uuid,(a->>'claim_token')::uuid,false,null,'{}');
+ r:=claim_abandoned_checkout(b,allowed,'{"subject":"Replacement"}');
+ if not (r->>'should_send')::boolean or r#>>'{payload,subject}'<>'Original' then raise exception 'retry request changed'; end if;
+ if not authorize_abandoned_checkout_v2(b,(r->>'claim_token')::uuid,allowed,(select generation from booking_checkout_ownership where booking_id=b),array['cs_recovery']) then raise exception 'owner denied'; end if;
+ update bookings set status='cancelled' where id=b;
+ if authorize_abandoned_checkout_v2(b,(r->>'claim_token')::uuid,allowed,(select generation from booking_checkout_ownership where booking_id=b),array['cs_recovery']) then raise exception 'cancelled after claim authorized'; end if;
+ update bookings set status='awaiting_payment' where id=b;
+ perform finalize_public_booking_email_v2((r->>'email_event_id')::uuid,(r->>'claim_token')::uuid,true,'local-only','{}');
+ a:=claim_abandoned_checkout(b,allowed,'{}');
+ if (a->>'should_send')::boolean then raise exception 'sent twice'; end if;
+ -- No enrollment via historical update, even if submission key later appears.
+ insert into bookings(customer_id,project_id,public_reference,tour_date) values(c,p,'HISTORIC-TEST','Scheduled fixture') returning id into b;
+ update bookings set submission_key=gen_random_uuid() where id=b;
+ if exists(select 1 from abandoned_checkout_recovery where booking_id=b) then raise exception 'historical blast'; end if;
+end $$;
+rollback;

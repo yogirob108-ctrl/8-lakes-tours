@@ -150,6 +150,7 @@ export function bookingInternalEmail(input: {
   requiresManualPaymentLink?: boolean;
   manualPaymentReason?: string | null;
   ridingExperience: string;
+  travellerNames?: string;
   notes: string;
 }) {
   const name = `${input.firstName} ${input.lastName}`.trim();
@@ -169,7 +170,7 @@ export function bookingInternalEmail(input: {
     : input.requiresManualPaymentLink
       ? 'Confirm date/horse/guide/host-family capacity, then create or send the correct Stripe payment link/custom order for the online reservation amount.'
       : 'Stripe payment should auto-match via webhook and mark the booking confirmed/paid. Only check Stripe manually if the dashboard has not updated after a few minutes.';
-  const text = `New 8 Lakes ${needsGroupInvoice ? 'group booking (invoice needed)' : input.requiresManualPaymentLink ? 'availability request' : 'booking'}\n\nReference: ${input.reference}\nGuest: ${name}\nEmail: ${input.email}\nPhone: ${input.phone || 'Not provided'}\nTour date: ${input.tourDate || 'TBC'}\nGuests: ${guestCount}\nPrice: ${pricePerPerson} per person / ${totalTripValue} total\nOnline reservation due: ${onlinePayment}\nLocal family cash: ${familyCash}\nRiding experience: ${input.ridingExperience || 'Not provided'}\n\nOperator checklist:\n1. Open the 8 Lakes ops dashboard and confirm ${input.reference} is visible.\n2. ${operatorPaymentStep}\n3. Reply personally if anything looks odd or needs referral/review.\n4. Make sure the guest knows to bring ${familyCash} clean USD cash for the host family.\n\nNotes:\n${input.notes || 'None'}`;
+  const text = `New 8 Lakes ${needsGroupInvoice ? 'group booking (invoice needed)' : input.requiresManualPaymentLink ? 'availability request' : 'booking'}\n\nReference: ${input.reference}\nGuest: ${name}\nEmail: ${input.email}\nPhone: ${input.phone || 'Not provided'}\nTour date: ${input.tourDate || 'TBC'}\nGuests: ${guestCount}\nTraveller names:\n${input.travellerNames || name}\nPrice: ${pricePerPerson} per person / ${totalTripValue} total\nOnline reservation due: ${onlinePayment}\nLocal family cash: ${familyCash}\nRiding experience: ${input.ridingExperience || 'Not provided'}\n\nOperator checklist:\n1. Open the 8 Lakes ops dashboard and confirm ${input.reference} is visible.\n2. ${operatorPaymentStep}\n3. Reply personally if anything looks odd or needs referral/review.\n4. Make sure the guest knows to bring ${familyCash} clean USD cash for the host family.\n\nNotes:\n${input.notes || 'None'}`;
 
   return {
     subject,
@@ -199,6 +200,7 @@ export function bookingInternalEmail(input: {
           ${detailRow('Phone', escapeHtml(input.phone || 'Not provided'))}
           ${detailRow('Tour date', escapeHtml(input.tourDate || 'TBC'))}
           ${detailRow('Guests', `${guestCount}`)}
+          ${detailRow('Traveller names', nl2br(input.travellerNames || name))}
           ${detailRow('Price', `${pricePerPerson} pp / ${totalTripValue} total`)}
           ${detailRow('Riding level', escapeHtml(input.ridingExperience || 'Not provided'))}
         </table>
@@ -212,8 +214,9 @@ export function bookingInternalEmail(input: {
   };
 }
 
-export function bookingCustomerEmail(input: { reference: string; firstName: string; tourDate: string; guestCount?: number; pricePerPersonUsd?: number; onlinePaymentUsd?: number; localFamilyPaymentUsd?: number; totalTripValueUsd?: number; requiresManualPaymentLink?: boolean; manualPaymentReason?: string | null }) {
+export function bookingCustomerEmail(input: { reference: string; firstName: string; tourDate: string; guestCount?: number; pricePerPersonUsd?: number; onlinePaymentUsd?: number; localFamilyPaymentUsd?: number; totalTripValueUsd?: number; requiresManualPaymentLink?: boolean; manualPaymentReason?: string | null; travellerNames?: string; paymentUrl?: string }) {
   const subject = `8 Lakes Tours booking received — ${input.reference}`;
+  const paymentRecovery = input.paymentUrl ? `Resume your secure payment (no new booking needed): ${input.paymentUrl}` : '';
   const name = firstName(input.firstName);
   const guestCount = input.guestCount ?? 1;
   const needsGroupInvoice = input.manualPaymentReason === GROUP_INVOICE;
@@ -231,7 +234,7 @@ export function bookingCustomerEmail(input: { reference: string; firstName: stri
     : input.requiresManualPaymentLink
       ? `1. Rob will check the date, group size, horses, guide, and host-family capacity.\n2. If everything is available, Rob will send the correct Stripe payment link or custom order for the online reservation amount.\n3. We send preparation notes before departure once the booking is confirmed.`
       : `1. Complete the online booking payment on the website if you have not already done so.\n2. You will receive an automatic payment confirmation email once Stripe checkout completes.\n3. We send preparation notes before departure.`;
-  const text = `Hi ${name},\n\nThanks — your 8 Lakes Tours ${needsGroupInvoice ? 'group booking' : input.requiresManualPaymentLink ? 'availability request' : 'booking'} has been received.\n\nBooking reference: ${input.reference}\nSelected tour date: ${input.tourDate || 'TBC'}\nGuests: ${guestCount}\n\nPayment structure:\nTotal 2026 trip price: ${pricePerPerson} per person / ${totalTripValue} total\nOnline booking payment: ${onlinePayment}\nCash paid directly to the host family in Mongolia: ${familyCash}\n\n${paymentIntro} The ${familyCash} family portion is not collected online; please plan to bring clean USD notes to Mongolia for the host family.\n\nFood note:\nTraditional host-family food is meat- and dairy-heavy. For guests who can enjoy it, the dairy is one of the highest-quality parts of the trip: families always produce their own milk from yaks or cows and serve it fresh as milk tea, yoghurt, cheese, and other traditional foods.\n\nPacking note:\nMongolia's steppe weather can change fast. Pack for all seasons, even in summer, and bring more warm layers than you think you need.\n\nFacilities note:\nOnce you leave the city, countryside toilets are simple outhouses with squat toilets rather than Western flush toilets, and there are no regular showers. Bring wet wipes for cleaning hands and body between river washes; washing in the river can be part of the simple, therapeutic steppe rhythm when conditions allow.\n\nTranslation note:\nEnglish is not always strong in the host-family setting. So far we have found ChatGPT voice mode to be one of the easiest ways to communicate: say something like, “Please translate the following sentence into Mongolian for me,” then speak naturally and play/show the translation. Other translation apps can help too, but ChatGPT voice mode has worked especially well for simple back-and-forth conversation.\n\nNext steps:\n${nextSteps}\n\nQuestions? Reply to this email — Rob will pick it up.\n\nRob Zaher\n8 Lakes Tours`;
+  const text = `Hi ${name},\n\nThanks — your 8 Lakes Tours ${needsGroupInvoice ? 'group booking' : input.requiresManualPaymentLink ? 'availability request' : 'booking'} has been received.\n\nBooking reference: ${input.reference}\nSelected tour date: ${input.tourDate || 'TBC'}\nGuests: ${guestCount}\n\nSubmitted traveller names:\n${input.travellerNames || input.firstName}\n\nPayment structure:\nTotal 2026 trip price: ${pricePerPerson} per person / ${totalTripValue} total\nOnline booking payment: ${onlinePayment}\nCash paid directly to the host family in Mongolia: ${familyCash}\n\n${paymentIntro} The ${familyCash} family portion is not collected online; please plan to bring clean USD notes to Mongolia for the host family.\n\nFood note:\nTraditional host-family food is meat- and dairy-heavy. For guests who can enjoy it, the dairy is one of the highest-quality parts of the trip: families always produce their own milk from yaks or cows and serve it fresh as milk tea, yoghurt, cheese, and other traditional foods.\n\nPacking note:\nMongolia's steppe weather can change fast. Pack for all seasons, even in summer, and bring more warm layers than you think you need.\n\nFacilities note:\nOnce you leave the city, countryside toilets are simple outhouses with squat toilets rather than Western flush toilets, and there are no regular showers. Bring wet wipes for cleaning hands and body between river washes; washing in the river can be part of the simple, therapeutic steppe rhythm when conditions allow.\n\nTranslation note:\nEnglish is not always strong in the host-family setting. So far we have found ChatGPT voice mode to be one of the easiest ways to communicate: say something like, “Please translate the following sentence into Mongolian for me,” then speak naturally and play/show the translation. Other translation apps can help too, but ChatGPT voice mode has worked especially well for simple back-and-forth conversation.\n\nNext steps:\n${nextSteps}\n\n${paymentRecovery}\n\nQuestions? Reply to this email — Rob will pick it up.\n\nRob Zaher\n8 Lakes Tours`;
 
   return {
     subject,
@@ -244,6 +247,12 @@ export function bookingCustomerEmail(input: { reference: string; firstName: stri
         <div style="border-left:4px solid #c8a96e;background:#fff3dd;padding:12px 14px;margin-bottom:16px">
           <p style="margin:0 0 10px;text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:#8a6a2c;font-weight:700">Important</p>
           <p style="margin:0;color:#3a3024;font-size:16px;line-height:1.55">${needsGroupInvoice ? `Rob will email one personal invoice for <strong>${onlinePayment}</strong> covering all ${guestCount} guests. Your places are confirmed once that invoice is paid.` : input.requiresManualPaymentLink ? `Rob will confirm availability for ${guestCount} guest${guestCount === 1 ? '' : 's'} before sending the correct payment link or custom order.` : `Your place is confirmed once your <strong>${onlinePayment} online booking payment</strong> has been completed.`}</p>
+        </div>
+
+        <div style="border-left:4px solid #eadcc6;padding:12px 14px;background:#fffdf8;margin-bottom:16px">
+          ${input.paymentUrl ? `<p><a href="${escapeHtml(input.paymentUrl)}">Resume secure payment for this booking</a> — no new booking needed. Keep this link private.</p>` : ''}
+          <p style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:#8a6a2c;font-weight:700">Submitted traveller names</p>
+          <p style="margin:0;color:#3a3024;line-height:1.6;font-size:15px">${nl2br(input.travellerNames || input.firstName)}</p>
         </div>
 
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 -4px 16px">

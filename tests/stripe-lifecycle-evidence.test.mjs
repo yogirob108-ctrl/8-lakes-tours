@@ -29,5 +29,6 @@ test('collector preserves prior evidence but marks the scan incomplete when a pr
   const result = await collectStripeLifecycleEvidence({ stripe: { checkout: { sessions: { list: sessions } }, paymentIntents: { list: denied }, invoices: { list: denied } }, pageBudget: 6 });
   assert.equal(result.scanComplete, false);
   assert.equal(result.scanIncompleteReason, 'provider_collection_unavailable');
+  assert.equal(result.scanIncompleteCollection, 'payment_intent');
   assert.equal(result.evidence.length, 1);
 });

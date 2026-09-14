@@ -70,6 +70,6 @@ export async function GET(request: Request) {
       if (result.sent) await db.from('booking_events').insert({ booking_id:booking.id,event_type:'email',direction:'outbound',title:`Lifecycle email sent: ${template}`,body:`Resend email id: ${result.id || 'unknown'}`,created_by:'drip-cron' });
       results.push({ reference:booking.public_reference, status:result.sent?'sent':'failed', template });
     }
-    return NextResponse.json({ ok:true, dry_run:dryRun, stripe:'reachable', checked:rows.length, scan_complete:provider.scanComplete, results }, { headers });
+    return NextResponse.json({ ok:true, dry_run:dryRun, stripe:'reachable', checked:rows.length, scan_complete:provider.scanComplete, ...(provider.scanIncompleteReason ? { scan_incomplete_reason:provider.scanIncompleteReason } : {}), ...(provider.scanIncompleteCollection ? { scan_incomplete_collection:provider.scanIncompleteCollection } : {}), results }, { headers });
   } catch { return NextResponse.json({ ok:false, error:'lifecycle_run_incomplete' }, { status:503, headers }); }
 }

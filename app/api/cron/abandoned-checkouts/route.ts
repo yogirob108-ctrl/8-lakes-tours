@@ -16,15 +16,23 @@ export async function GET(request: Request) {
  if(!secret || supplied.length!==expected.length || !timingSafeEqual(supplied,expected)) return new Response('Unauthorized',{status:401});
  const headers={'Cache-Control':'no-store'};
  const dryRun=String(request.url || '').includes('?dry_run=1') || String(request.url || '').includes('&dry_run=1');
- // The rollout switch blocks sending, but a credentialed dry run remains safe and verifies the real queue.
- if(process.env.ABANDONED_CHECKOUT_RECOVERY_ENABLED!=='true' && !dryRun) return Response.json({enabled:false},{headers});
+ const postSubmitEnabled=process.env.ABANDONED_CHECKOUT_RECOVERY_ENABLED==='true';
+ // Pre-submit drafts have their own customer-send control. Never let post-submit approval imply draft email approval.
+ const preSubmitEnabled=process.env.PRE_SUBMIT_DRAFT_RECOVERY_ENABLED==='true';
+ // A credentialed dry run remains safe and verifies both queues without claiming or sending.
+ if(!postSubmitEnabled && !preSubmitEnabled && !dryRun) return Response.json({post_submit_enabled:false,pre_submit_draft_enabled:false},{headers});
  try {
   const allowedDates=getVisibleTourDates(TOUR_DATES).filter((date: {date:string})=>canAutomaticallyConfirmBooking(date.date,1)).map((date: {date:string})=>date.date);
   const db=createSupabaseAdminClient();
-  const draftResult=await runPreSubmitDraftRecovery({db,recoveryUrl:(token:string)=>`https://www.8lakestours.com/resume-draft?token=${encodeURIComponent(token)}`,sendEmail,dryRun});
-  if(!process.env.STRIPE_SECRET_KEY) throw new Error('Provider evidence unavailable');
-  const stripe=new Stripe(process.env.STRIPE_SECRET_KEY,{maxNetworkRetries:0,timeout:5000});
-  const result=await runAbandonedCheckoutRecovery({db,allowedDates,recoveryUrl,sendEmail,retrieveSession:(id:string)=>stripe.checkout.sessions.retrieve(id),dryRun});
-  return Response.json({dry_run:dryRun,...result,draft_recovery:draftResult},{headers});
+  const draftResult=(preSubmitEnabled || dryRun)
+   ? await runPreSubmitDraftRecovery({db,recoveryUrl:(token:string)=>`https://www.8lakestours.com/resume-draft?token=${encodeURIComponent(token)}`,sendEmail,dryRun})
+   : {eligible:0,sent:0,failed:0,suppressed:0,enabled:false};
+  let result: {sent:number;failed:number;suppressed:number;eligible?:number}={sent:0,failed:0,suppressed:0,eligible:0};
+  if(postSubmitEnabled || dryRun) {
+   if(!process.env.STRIPE_SECRET_KEY) throw new Error('Provider evidence unavailable');
+   const stripe=new Stripe(process.env.STRIPE_SECRET_KEY,{maxNetworkRetries:0,timeout:5000});
+   result=await runAbandonedCheckoutRecovery({db,allowedDates,recoveryUrl,sendEmail,retrieveSession:(id:string)=>stripe.checkout.sessions.retrieve(id),dryRun});
+  }
+  return Response.json({dry_run:dryRun,post_submit_enabled:postSubmitEnabled,pre_submit_draft_enabled:preSubmitEnabled,...result,draft_recovery:draftResult},{headers});
  } catch { return Response.json({error:'Recovery run incomplete; retry safely.'},{status:503,headers}); }
 }

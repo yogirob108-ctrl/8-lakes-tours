@@ -42,8 +42,8 @@ const expectationCards = [
     body: 'The steppe moves to her own natural rhythms. Weather, animals, and distance shape each day, and group dynamics matter out in wild country. Come mentally prepared for simple living, some physical discomfort, and plans that can change. You may be invited outside your comfort zone, but nothing is ever forced. You can always say no, rest, or spend the day closer to nomadic life.',
   },
   {
-    title: 'Remote, but not abandoned',
-    body: 'The steppe feels vast and far from city life, but it is not empty. A simple story explains the culture well: when travellers lost their way between distant gers, they could stop at another family home for tea, food, shelter, directions, or supplies. Hospitality was not decoration — it was how people crossed uncertain land together.',
+    title: 'Far from city life',
+    body: 'Once you leave the city, life gets simple fast. There are no regular showers, toilets are squat outhouses, and phone signal comes and goes. For some people that is the whole point. If being offline and far from comforts would weigh on you, it\'s worth sitting with before you book.',
   },
   {
     title: 'Food is part of the culture',

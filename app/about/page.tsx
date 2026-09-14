@@ -106,7 +106,7 @@ export default function Page() {
         <div className="intro-copy">
           <p>The trip exists because Rob travelled through Mongolia, met Ganbold&apos;s family, rode with them, stayed with them, and saw that this valley could host something deeper than a standard sightseeing product.</p>
           <p>Guests do not come here to consume something polished and disconnected from the natural rhythms of the steppe. They come to live closer to generational nomadic ways of being for a short time: ride, eat, rest, laugh, drink tea, look at the sky, and remember what simplicity feels like.</p>
-          <p>That includes embracing variance. In steppe life, the plan is shaped by weather, distance, animals, and the people you meet along the way. The old hospitality logic of the ger — offer tea, food, shelter, and help to the traveller who appears at your door — is part of why uncertainty here can feel human rather than hostile.</p>
+          <p>That includes embracing variance. In steppe life, the plan is shaped by weather, distance, animals, and the people you meet along the way. Yet the ancestral customs of hospitality are still very much alive: any traveller who appears at the door of a ger is offered tea, food, shelter, and help. Whatever the weather or the animals decide, there is always a gracious, helping hand on the steppe — which is why uncertainty here feels human rather than hostile.</p>
         </div>
       </section>
 

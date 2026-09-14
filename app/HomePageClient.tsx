@@ -1760,10 +1760,10 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           <button
             type="button"
             className="image-button partnership-inline-photo"
-            aria-label="View larger image: Robert with the host family outside a traditional ger in Mongolia"
-            onClick={() => openLightbox('/images/rob-family.jpg', 'Robert with the host family outside a traditional ger in Mongolia')}
+            aria-label="View larger image: Robert with the host family and their horses, all in traditional deels on the Mongolian steppe"
+            onClick={() => openLightbox('/images/host-family-horses-deels.jpg', 'Robert with the host family and their horses, all in traditional deels on the Mongolian steppe')}
           >
-            <Image src="/images/rob-family.jpg" alt="Robert with the host family outside a traditional ger in Mongolia" fill quality={72} sizes="100vw" />
+            <Image src="/images/host-family-horses-deels.jpg" alt="Robert with the host family and their horses, all in traditional deels on the Mongolian steppe" fill quality={72} sizes="100vw" />
           </button>
           <p className="section-body">I met Ganbold while trekking solo through Mongolia. I hadn&apos;t planned to stay — but his family pulled me in with the kind of warmth that&apos;s hard to explain and impossible to forget. We rode together, shared meals, and spent evenings around the fire talking about the land, the horses, and the life they&apos;ve built here across three generations.</p>
           <p className="section-body" style={{marginTop:'1.2rem'}}>Ganbold&apos;s son Suma grew up in this valley and has been guiding riders through it for years — he knows every trail, every animal, every shift in the weather. When I floated the idea of bringing small groups out here, both of them lit up. This trip exists because they wanted it to.</p>
@@ -1774,10 +1774,10 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           <button
             type="button"
             className="image-button"
-            aria-label="View larger image: Robert with the host family outside a traditional ger in Mongolia"
-            onClick={() => openLightbox('/images/rob-family.jpg', 'Robert with the host family outside a traditional ger in Mongolia')}
+            aria-label="View larger image: Robert with the host family and their horses, all in traditional deels on the Mongolian steppe"
+            onClick={() => openLightbox('/images/host-family-horses-deels.jpg', 'Robert with the host family and their horses, all in traditional deels on the Mongolian steppe')}
           >
-            <Image src="/images/rob-family.jpg" alt="Robert with the host family outside a traditional ger in Mongolia" fill quality={72} sizes="(max-width: 900px) 100vw, 50vw" />
+            <Image src="/images/host-family-horses-deels.jpg" alt="Robert with the host family and their horses, all in traditional deels on the Mongolian steppe" fill quality={72} sizes="(max-width: 900px) 100vw, 50vw" />
           </button>
         </div>
       </section>

@@ -46,6 +46,11 @@ export async function GET(request: Request) {
   if (!isSupabaseAdminConfigured) return NextResponse.json({ ok:false, error:'Supabase admin is not configured' }, { status:503 });
   const dryRun = getDryRun(new URL(request.url));
   const headers = { 'Cache-Control':'no-store' };
+  // Default-deny is deliberately before *all* non-dry-run reads/writes/provider calls.
+  // A dry-run remains available to authenticated operators for reconciliation evidence.
+  if (!dryRun && process.env.PUBLIC_LIFECYCLE_SEND_ENABLED !== 'true') {
+    return NextResponse.json({ ok:true, dry_run:false, disabled:true, reason:'public_lifecycle_send_disabled' }, { headers });
+  }
   try {
     const db = createSupabaseAdminClient();
     const { data: bookings, error } = await db.from('bookings').select('id, public_reference, customer_id, tour_date, status, online_paid_usd, customer:customers(first_name, email)').in('status',['awaiting_payment','confirmed','prep_sent','ready_for_departure']).limit(200);

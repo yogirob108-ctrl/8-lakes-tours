@@ -20,7 +20,8 @@ export async function GET(request: Request) {
   const allowedDates=getVisibleTourDates(TOUR_DATES).filter((date: {date:string})=>canAutomaticallyConfirmBooking(date.date,1)).map((date: {date:string})=>date.date);
   if(!process.env.STRIPE_SECRET_KEY) throw new Error('Provider evidence unavailable');
   const stripe=new Stripe(process.env.STRIPE_SECRET_KEY,{maxNetworkRetries:0,timeout:5000});
-  const result=await runAbandonedCheckoutRecovery({db:createSupabaseAdminClient(),allowedDates,recoveryUrl,sendEmail,retrieveSession:(id:string)=>stripe.checkout.sessions.retrieve(id)});
-  return Response.json(result,{headers});
+  const dryRun=String(request.url || '').includes('?dry_run=1') || String(request.url || '').includes('&dry_run=1');
+  const result=await runAbandonedCheckoutRecovery({db:createSupabaseAdminClient(),allowedDates,recoveryUrl,sendEmail,retrieveSession:(id:string)=>stripe.checkout.sessions.retrieve(id),dryRun});
+  return Response.json({dry_run:dryRun,...result},{headers});
  } catch { return Response.json({error:'Recovery run incomplete; retry safely.'},{status:503,headers}); }
 }

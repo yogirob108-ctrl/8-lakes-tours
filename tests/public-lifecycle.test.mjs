@@ -53,6 +53,7 @@ test('reconciliation accepts exactly bound PaymentIntent and Invoice evidence bu
 
 test('reconciliation returns unknown rather than no payment when a bounded provider scan is incomplete', () => {
   assert.deepEqual(one([], false), { reference: '8L-ABC123', status: 'scan_incomplete_unknown' });
+  assert.deepEqual(one([paidSession], false), { reference: '8L-ABC123', status: 'scan_incomplete_unknown' });
 });
 
 test('reconciliation preserves historical provider payment evidence but does not call changed terms funded', () => {

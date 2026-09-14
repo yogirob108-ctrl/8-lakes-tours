@@ -22,3 +22,12 @@ test('collector reports scan incomplete rather than silently returning no paymen
   assert.equal(result.scanComplete, false);
   assert.equal(result.scanIncompleteReason, 'page_budget_exhausted');
 });
+
+test('collector preserves prior evidence but marks the scan incomplete when a provider collection is unavailable', async () => {
+  const sessions = async () => ({ data: [{ id: 'cs_1', amount_total: 99900, currency: 'usd', status: 'complete', payment_status: 'paid' }], has_more: false });
+  const denied = async () => { throw new Error('permission denied'); };
+  const result = await collectStripeLifecycleEvidence({ stripe: { checkout: { sessions: { list: sessions } }, paymentIntents: { list: denied }, invoices: { list: denied } }, pageBudget: 6 });
+  assert.equal(result.scanComplete, false);
+  assert.equal(result.scanIncompleteReason, 'provider_collection_unavailable');
+  assert.equal(result.evidence.length, 1);
+});

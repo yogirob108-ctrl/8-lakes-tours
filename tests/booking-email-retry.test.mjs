@@ -46,13 +46,13 @@ function harness({created=false, fail=false, conflict=false, manual=true}={}) {
 test('changed retry returns a conflict instead of a saved tick',async()=>{
  const h=harness({conflict:true});const response=await h.run();assert.equal(response.status,409);assert.equal(response.body.ok,false);assert.equal(h.sent.length,0);
 });
-test('retry after booking commit resumes both initial notifications once',async()=>{
- const h=harness();assert.equal((await h.run()).body.ok,true);assert.equal(h.sent.length,2);
- await h.run();assert.equal(h.sent.length,2);
+test('retry after booking commit resumes only the internal operational alert once',async()=>{
+ const h=harness();assert.equal((await h.run()).body.ok,true);assert.equal(h.sent.length,1);
+ await h.run();assert.equal(h.sent.length,1);
 });
-test('failed initial notifications are recoverable on an identical retry',async()=>{
- const h=harness({created:true,fail:true});await h.run();assert.equal(h.sent.length,2);
- h.recover();await h.run();assert.equal(h.sent.length,4);await h.run();assert.equal(h.sent.length,4);
+test('failed internal alert is recoverable on an identical retry without a customer booking email',async()=>{
+ const h=harness({created:true,fail:true});await h.run();assert.equal(h.sent.length,1);
+ h.recover();await h.run();assert.equal(h.sent.length,2);await h.run();assert.equal(h.sent.length,2);
 });
 
 test('scheduled intake is silent to customer until delayed recovery or verified payment',async()=>{const h=harness({created:true,manual:false});await h.run();assert.equal(h.sent.length,1);assert.equal(h.sent[0].to[0],'ops@example.invalid');});

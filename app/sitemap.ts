@@ -27,7 +27,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       images: [
         `${siteUrl}/images/og-8-lakes-about-2026.jpg`,
         `${siteUrl}/images/gallery-extra/host-family-horse-training-valley.jpg`,
-        `${siteUrl}/images/rob-zaher.jpg`,
+        `${siteUrl}/images/rob-zaher-host-deel.jpg`,
       ],
     },
     {

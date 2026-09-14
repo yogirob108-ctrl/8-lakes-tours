@@ -111,7 +111,7 @@ export default function Page() {
       </section>
 
       <section className="story-section">
-        <div className="story-image portrait" role="img" aria-label="Robert Zaher, organiser of 8 Lakes Tours" />
+        <div className="story-image portrait" role="img" aria-label="Rob Zaher, organiser of 8 Lakes Tours, with his host in the Orkhon Valley, both wearing traditional deels" />
         <div className="story-copy">
           <p className="eyebrow">Who you&apos;re booking with</p>
           <h2>Rob Zaher</h2>
@@ -207,8 +207,8 @@ export default function Page() {
         .intro-grid,.story-section,.cards-section,.payment-strip,.next-links { padding:6rem; }
         .intro-grid { display:grid; grid-template-columns:.9fr 1.1fr; gap:4rem; border-bottom:1px solid rgba(200,169,110,.14); }
         .intro-copy { display:grid; gap:1rem; font-size:1.02rem; }
-        .story-section { display:grid; grid-template-columns:minmax(260px,.7fr) 1fr; gap:4rem; align-items:center; background:#18130e; }
-        .story-image { position:relative; min-height:560px; background:#080806 url('/images/rob-zaher.jpg') center / cover no-repeat; overflow:hidden; border:1px solid rgba(200,169,110,.18); border-radius:var(--radius-photo); }
+        .story-section { display:grid; grid-template-columns:minmax(260px,1fr) 1fr; gap:4rem; align-items:center; background:#18130e; }
+        .story-image { position:relative; min-height:560px; background:#080806 url('/images/rob-zaher-host-deel.jpg') 53% center / cover no-repeat; overflow:hidden; border:1px solid rgba(200,169,110,.18); border-radius:var(--radius-photo); }
         .story-copy { max-width:720px; }
         .story-copy p { font-size:1rem; }
         .card-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:1rem; margin-top:2rem; }

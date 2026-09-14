@@ -105,7 +105,7 @@ export default function Page() {
         </div>
         <div className="intro-copy">
           <p>The trip exists because Rob travelled through Mongolia, met Ganbold&apos;s family, rode with them, stayed with them, and saw that this valley could host something deeper than a standard sightseeing product.</p>
-          <p>Guests do not come here to consume a polished show. They come to live closer to the family rhythm for a short time: ride, eat, adapt, rest, laugh, get cold, drink tea, look at the sky, and remember what simplicity feels like.</p>
+          <p>Guests do not come here to consume something polished and disconnected from the natural rhythms of the steppe. They come to live closer to generational nomadic ways of being for a short time: ride, eat, rest, laugh, drink tea, look at the sky, and remember what simplicity feels like.</p>
           <p>That includes embracing variance. In steppe life, the plan is shaped by weather, distance, animals, and the people you meet along the way. The old hospitality logic of the ger — offer tea, food, shelter, and help to the traveller who appears at your door — is part of why uncertainty here can feel human rather than hostile.</p>
         </div>
       </section>

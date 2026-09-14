@@ -38,7 +38,7 @@ export async function GET(request: Request) {
     const candidates = reconcileStripeSessions({
       bookings: (bookings || []).map((row: { id: string; public_reference: string }) => ({ id: row.id, reference: row.public_reference })),
       sessions,
-    });
+    }).map((row: { reference: string; status: string }) => ({ reference: row.reference, status: row.status }));
     return Response.json({ ok: true, dry_run: true, stripe: 'reachable', checked: candidates.length, candidates }, { headers: { 'Cache-Control': 'no-store' } });
   } catch {
     return Response.json({ ok: false, error: 'stripe_reconciliation_unavailable' }, { status: 503, headers: { 'Cache-Control': 'no-store' } });

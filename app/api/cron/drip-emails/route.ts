@@ -11,6 +11,7 @@ import { createSupabaseAdminClient } from '@/lib/supabase-admin';
 const LIFECYCLE_KEYS = ['payment_confirmed', 'preparation_packing', 'insurance_final_check', 'arrival_coordination', 'final_checklist'];
 type TemplateKey = typeof LIFECYCLE_KEYS[number];
 type BookingRow = { id:string; public_reference:string; customer_id:string|null; tour_date:string|null; status:string; online_due_usd:number|null; online_paid_usd:number|null; customer?: {first_name?:string|null;email?:string|null}|{first_name?:string|null;email?:string|null}[]|null };
+type DispatchClaim = { should_send:boolean; event_id?:string; idempotency_key?:string; reason?:string };
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -30,13 +31,13 @@ function message(template: TemplateKey, booking: BookingRow) {
   if (template === 'arrival_coordination') return arrivalCoordinationCustomerEmail(input);
   return finalChecklistCustomerEmail(input);
 }
+
 export async function GET(request: Request) {
   if (!isAuthorized(request)) return NextResponse.json({ ok:false, error:'Unauthorized' }, { status:401 });
   if (!isSupabaseAdminConfigured) return NextResponse.json({ ok:false, error:'Supabase admin is not configured' }, { status:503 });
   const dryRun = getDryRun(new URL(request.url));
   const headers = { 'Cache-Control':'no-store' };
-  // Default-deny is deliberately before *all* non-dry-run reads/writes/provider calls.
-  // A dry-run remains available to authenticated operators for reconciliation evidence.
+  // Sender is default-deny: a dry-run is reconciliation-only and makes no claim.
   if (!dryRun && process.env.PUBLIC_LIFECYCLE_SEND_ENABLED !== 'true') {
     return NextResponse.json({ ok:true, dry_run:false, disabled:true, reason:'public_lifecycle_send_disabled' }, { headers });
   }
@@ -53,7 +54,9 @@ export async function GET(request: Request) {
     const { data: events, error: eventsError } = await db.from('email_events').select('booking_id, template_key, status').in('booking_id',rows.map(row=>row.id)).in('template_key',LIFECYCLE_KEYS);
     if (eventsError) throw eventsError;
     const existing = new Map<string, Set<string>>();
-    for (const event of events || []) if (event.booking_id && ['queued','sent','delivered'].includes(event.status)) { const set=existing.get(event.booking_id)||new Set<string>(); set.add(event.template_key); existing.set(event.booking_id,set); }
+    // Queued rows are deliberately not treated as sent: the durable dispatcher
+    // will return their unresolved state and block every subsequent template.
+    for (const event of events || []) if (event.booking_id && ['sent','delivered'].includes(event.status)) { const set=existing.get(event.booking_id)||new Set<string>(); set.add(event.template_key); existing.set(event.booking_id,set); }
     const results: Array<Record<string,unknown>> = [];
     for (const booking of rows) {
       const schedule = getLifecycleEmailSchedule({ now:new Date(), tourDate:booking.tour_date });
@@ -61,13 +64,38 @@ export async function GET(request: Request) {
       if (!template) { results.push({ reference:booking.public_reference, status:(reconciliation as Array<{reference:string;status:string}>).find(row=>row.reference===booking.public_reference)?.status || 'scan_incomplete_unknown' }); continue; }
       if (dryRun) { results.push({ reference:booking.public_reference, status:'candidate', template, days_until_departure:schedule.daysUntilDeparture }); continue; }
       const recipient = customer(booking).email;
-      if (!recipient) { results.push({ reference:booking.public_reference, status:'missing_customer_email', template }); continue; }
+      if (!recipient || !booking.customer_id) { results.push({ reference:booking.public_reference, status:'missing_customer_email', template }); continue; }
       const email = message(template, booking);
-      const claim = await db.from('email_events').insert({ booking_id:booking.id, customer_id:booking.customer_id, template_key:template, to_email:recipient, subject:email.subject, body_snapshot:email.text, sent_by:'drip-cron', status:'queued', is_canonical:true, claim_token:crypto.randomUUID(), claimed_at:new Date().toISOString() }).select('id').single();
-      if (claim.error || !claim.data) { results.push({ reference:booking.public_reference, status:'already_claimed', template }); continue; }
-      const result = await sendEmail({ to:recipient, replyTo:getInternalEmailRecipients()[0], ...email, idempotencyKey:`8l-lifecycle-${booking.id}-${template}` });
-      await db.from('email_events').update({ status:result.sent?'sent':'failed', provider_message_id:result.id||null, provider_completed_at:new Date().toISOString(), raw_response:result }).eq('id',claim.data.id).eq('status','queued');
-      if (result.sent) await db.from('booking_events').insert({ booking_id:booking.id,event_type:'email',direction:'outbound',title:`Lifecycle email sent: ${template}`,body:`Resend email id: ${result.id || 'unknown'}`,created_by:'drip-cron' });
+      const token = crypto.randomUUID();
+      const { data, error: claimError } = await db.rpc('claim_lifecycle_email_dispatch', {
+        p_booking_id:booking.id, p_customer_id:booking.customer_id, p_template_key:template,
+        p_to_email:recipient, p_subject:email.subject, p_body_snapshot:email.text,
+        p_sent_by:'drip-cron', p_claim_token:token,
+      });
+      if (claimError) throw new Error(`lifecycle claim failed: ${claimError.message}`);
+      const claim = data as DispatchClaim | null;
+      if (!claim?.should_send || !claim.event_id || !claim.idempotency_key) { results.push({ reference:booking.public_reference, status:claim?.reason || 'already_claimed', template }); continue; }
+      const { data: attempted, error: attemptError } = await db.rpc('mark_lifecycle_email_provider_attempted', { p_booking_id:booking.id, p_event_id:claim.event_id, p_claim_token:token });
+      if (attemptError || attempted !== true) throw new Error(`lifecycle provider-attempt persistence failed: ${attemptError?.message || 'claim lost'}`);
+      let result: Awaited<ReturnType<typeof sendEmail>>;
+      try {
+        result = await sendEmail({ to:recipient, replyTo:getInternalEmailRecipients()[0], ...email, idempotencyKey:`8l-lifecycle-${claim.event_id}` });
+      } catch (sendError) {
+        // Transport exception is ambiguous: retain queued/reconciliation state;
+        // it must never become an automatic resend.
+        const { data: completed, error: completeError } = await db.rpc('complete_lifecycle_email_dispatch', { p_booking_id:booking.id, p_event_id:claim.event_id, p_claim_token:token, p_sent:false, p_definite_failure:false, p_provider_message_id:null, p_raw_response:{ error:sendError instanceof Error ? sendError.message : 'provider_transport_exception' } });
+        if (completeError || completed !== true) throw new Error(`lifecycle ambiguous completion persistence failed: ${completeError?.message || 'claim lost'}`);
+        results.push({ reference:booking.public_reference, status:'reconciliation_required', template });
+        continue;
+      }
+      const { data: completed, error: completeError } = await db.rpc('complete_lifecycle_email_dispatch', { p_booking_id:booking.id, p_event_id:claim.event_id, p_claim_token:token, p_sent:result.sent, p_definite_failure:!result.sent, p_provider_message_id:result.id || null, p_raw_response:result });
+      if (completeError || completed !== true) throw new Error(`lifecycle post-send persistence failed: ${completeError?.message || 'claim lost'}`);
+      if (result.sent) {
+        const { error: timelineError } = await db.from('booking_events').insert({ booking_id:booking.id,event_type:'email',direction:'outbound',title:`Lifecycle email sent: ${template}`,body:`Resend email id: ${result.id || 'unknown'}`,created_by:'drip-cron' });
+        // The canonical sent row remains durable; surface this failure rather
+        // than making an accepted provider send eligible for a duplicate.
+        if (timelineError) throw new Error(`lifecycle sent but timeline persistence failed: ${timelineError.message}`);
+      }
       results.push({ reference:booking.public_reference, status:result.sent?'sent':'failed', template });
     }
     return NextResponse.json({ ok:true, dry_run:dryRun, stripe:'reachable', checked:rows.length, scan_complete:provider.scanComplete, ...(provider.scanIncompleteReason ? { scan_incomplete_reason:provider.scanIncompleteReason } : {}), ...(provider.scanIncompleteCollection ? { scan_incomplete_collection:provider.scanIncompleteCollection } : {}), results }, { headers });

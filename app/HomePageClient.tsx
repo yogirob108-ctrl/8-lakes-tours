@@ -1792,7 +1792,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         <div className="reveal">
           <span className="section-eyebrow">Reserve Your Spot</span>
           <h2 className="section-title">Choose 2026<br /><em>or Plan 2027</em></h2>
-          <p className="section-body">Remaining 2026 departures stay visible while bookable, and you can select one and pay online straight away. 2027 small-group dates are being planned, and private June–September 2027 departures are open by request. The trip is $1,999 per person, and group rates apply for 3–8 guests. 2027 requests are confirmed personally by Rob before payment.</p>
+          <p className="section-body">Remaining 2026 departures stay visible while bookable, and you can select one and pay online straight away. 2027 small-group dates are being planned, and private June–September 2027 departures are open by request. The trip is $1,999 per person, and group rates apply for 3–8 guests. Our team confirms 2027 requests before payment.</p>
           <div className="scarcity-pill">
             <span style={{width:'7px', height:'7px', borderRadius:'50%', background:'var(--rust)', display:'inline-block', flexShrink:0}}></span>
             <span>Small groups only — each departure capped at 8 guests</span>
@@ -1835,7 +1835,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             <details className="payment-details">
               <summary className="payment-summary">How payment works</summary>
               <div className="payment-detail-body">
-                <p><strong>Online:</strong> reserves your place with 8 Lakes Tours. 2026 departures are paid in one Stripe checkout for your whole group (1–8 guests); 2027 requests are confirmed by Rob before payment.</p>
+                <p><strong>Online:</strong> reserves your place with 8 Lakes Tours. 2026 departures are paid in one Stripe checkout for your whole group (1–8 guests); our team confirms 2027 requests before payment.</p>
                 <p><strong>Locally:</strong> clean USD cash paid directly to your host family, who can&apos;t reliably receive online transfers. Group discounts are split evenly between both payments.</p>
               </div>
             </details>
@@ -2065,7 +2065,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               </button>
             ) : (
               <div style={{marginTop:'0.5rem', padding:'0.9rem 1rem', background:'rgba(200,169,110,0.08)', border:'1px solid rgba(200,169,110,0.3)', borderRadius:'var(--radius-soft)', textAlign:'center'}}>
-                <p style={{fontSize:'0.7rem', letterSpacing:'0.2em', textTransform:'uppercase', color:'var(--gold)'}}>{awaitsGroupInvoice ? 'Request received — Rob will email your invoice' : requiresHumanConfirmation ? 'Request received — Rob will confirm availability before payment' : 'Payment pending — your place is not yet confirmed'}</p>
+                <p style={{fontSize:'0.7rem', letterSpacing:'0.2em', textTransform:'uppercase', color:'var(--gold)'}}>{awaitsGroupInvoice ? 'Request received — our team will email your invoice' : requiresHumanConfirmation ? 'Request received — our team will confirm availability before payment' : 'Payment pending — your place is not yet confirmed'}</p>
                 {bookingReference && <p style={{fontSize:'0.68rem', color:'rgba(245,240,232,0.62)', marginTop:'0.4rem'}}>Reference: {bookingReference}</p>}
               </div>
             )}
@@ -2076,11 +2076,11 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               <p className="checkout-eyebrow">Online Reservation Payment</p>
               {awaitsGroupInvoice ? (
                 <p className="checkout-copy">
-                  Groups of 3–8 pay together on one invoice. Submit the form and Rob will email a personal invoice for <strong>{formatApproxUsd(groupPricing.onlinePaymentUsd, pricing.currency)}</strong> covering all {groupPricing.guestCount} guests, so nobody has to pay separately.
+                  Groups of 3–8 pay together on one invoice. Submit the form and our team will email one invoice for <strong>{formatApproxUsd(groupPricing.onlinePaymentUsd, pricing.currency)}</strong> covering all {groupPricing.guestCount} guests, so nobody has to pay separately.
                 </p>
               ) : requiresHumanConfirmation ? (
                 <p className="checkout-copy">
-                  This selection requires personal confirmation. Rob will check the date, horses, guide, host-family capacity, and any custom details before sending the correct Stripe payment link or custom order.
+                  Our team will confirm your date, horses, guide and host family, then email your secure payment link.
                 </p>
               ) : (
                 <p className="checkout-copy">
@@ -2088,7 +2088,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                 </p>
               )}
               <p className="checkout-note">
-                All official prices are in USD. Card issuers may show a converted amount or charge their own FX fees.
+                Prices are in USD. Your card may show a converted amount.
               </p>
               {!requiresHumanConfirmation ? (
                 <div
@@ -2125,12 +2125,12 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                 </div>
               ) : (
                 <div className="group-request-next-step">
-                  <strong>No automatic checkout for this request.</strong>
-                  <span>Rob confirms availability in the ops dashboard, then creates or sends the right Stripe payment link.</span>
+                  <strong>No charge yet.</strong>
+                  <span>You only pay once your date is confirmed.</span>
                 </div>
               )}
             </div>
-            <p style={{fontSize:'0.72rem', color:'var(--mist)', opacity:0.58, textAlign:'center', lineHeight:1.6}}>{requiresHumanConfirmation ? 'You are not charged automatically. Rob will reply with availability and the next payment step.' : 'Your booking is confirmed once the online payment is completed. If anything needs checking, we\'ll contact you directly.'}</p>
+            <p style={{fontSize:'0.72rem', color:'var(--mist)', opacity:0.58, textAlign:'center', lineHeight:1.6}}>{requiresHumanConfirmation ? 'We\'ll reply by email with availability.' : 'Your booking is confirmed once the online payment is completed. If anything needs checking, we\'ll contact you directly.'}</p>
             <p style={{fontSize:'0.7rem', color:'var(--mist)', opacity:0.4, textAlign:'center', lineHeight:1.6, marginTop:'0.5rem'}}>
               By submitting this form you agree to our{' '}
               <a href="/terms" style={{color:'var(--gold)', opacity:0.7, textDecoration:'underline', textUnderlineOffset:'3px'}}>Terms &amp; Conditions</a>

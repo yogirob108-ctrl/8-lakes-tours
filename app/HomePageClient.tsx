@@ -962,6 +962,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .offer-fact { border-left: 1px solid rgba(200,169,110,0.28); padding-left: 0.85rem; min-width: 0; }
         .offer-fact strong { display: block; color: var(--cream); font-size: 0.92rem; line-height: 1.25; overflow-wrap: anywhere; }
         .offer-fact span { display: block; margin-top: 0.2rem; color: rgba(212,207,196,0.68); font-size: 0.58rem; line-height: 1.45; letter-spacing: 0.16em; text-transform: uppercase; }
+        .offer-fact-note { display: block; margin-top: 0.15rem; color: var(--gold); font-size: 0.62rem; font-style: italic; letter-spacing: 0.04em; opacity: 0.85; }
         .offer-strip-cta { display: inline-flex; justify-content: center; align-items: center; white-space: nowrap; background: var(--gold); border: 1px solid var(--gold); border-radius: var(--radius-soft); color: var(--dark); text-decoration: none; font-size: 0.7rem; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; padding: 0.9rem 1.2rem; transition: background 0.3s ease, border-color 0.3s ease, transform 0.3s ease; }
         .offer-strip-cta:hover { background: var(--cream); border-color: var(--cream); transform: translateY(-1px); }
 
@@ -1477,7 +1478,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           <p className="offer-strip-note">Late-season places are open now — choose your date and reserve online.</p>
         </div>
         <div className="offer-strip-facts">
-          <div className="offer-fact"><strong>{pricing.tourPrice}</strong><span>Total per person</span></div>
+          <div className="offer-fact"><strong>{pricing.tourPrice}</strong><span>Total per person</span><small className="offer-fact-note">Group rates apply</small></div>
           <div className="offer-fact"><strong>9 days</strong><span>Orkhon & Eight Lakes</span></div>
           <div className="offer-fact"><strong>Beginner friendly</strong><span>Local horsemen guide</span></div>
           <div className="offer-fact"><strong>Max 8</strong><span>Guests per departure</span></div>

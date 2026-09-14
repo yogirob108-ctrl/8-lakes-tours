@@ -1101,10 +1101,12 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .price-amount { max-width:100%; font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: clamp(2.45rem, 8vw, 4rem); font-weight: 300; color: var(--gold); line-height: 0.98; margin-bottom: 0.4rem; overflow-wrap:anywhere; word-break: normal; }
         .price-per { max-width:100%; font-size: 0.75rem; letter-spacing: 0.15em; line-height:1.5; text-transform: uppercase; color: var(--mist); opacity: 0.6; margin-bottom: 2rem; overflow-wrap:anywhere; }
         .price-note { max-width:100%; box-sizing:border-box; font-size: 0.8rem; color: var(--mist); opacity: 0.7; line-height: 1.6; margin-bottom: 1rem; padding: 1rem; background: rgba(245,240,232,0.04); border-left: 2px solid var(--gold); border-radius: 0 var(--radius-soft) var(--radius-soft) 0; overflow-wrap:anywhere; }
-        .group-rate-table { margin:1rem 0 0; display:grid; gap:0.45rem; }
+        .group-rate-table { display:grid; gap:0.45rem; padding:0.85rem 1rem 1rem; border-top:1px solid rgba(200,169,110,0.14); }
         .group-rate-row { display:flex; align-items:center; justify-content:space-between; gap:1rem; border:1px solid rgba(200,169,110,0.18); background:rgba(14,12,9,0.28); border-radius:var(--radius-soft); padding:0.62rem 0.75rem; }
         .group-rate-row span { color:var(--mist); font-size:0.78rem; }
-        .group-rate-row strong { color:var(--cream); font-size:0.86rem; letter-spacing:0.02em; }
+        .group-rate-price { display:flex; flex-direction:column; align-items:flex-end; gap:0.15rem; text-align:right; }
+        .group-rate-price strong { color:var(--cream); font-size:0.86rem; letter-spacing:0.02em; }
+        .group-rate-price small { color:rgba(212,207,196,0.6); font-size:0.66rem; }
         .payment-split { display:grid; grid-template-columns:1fr auto 1fr; gap:0.85rem; align-items:stretch; margin:1.1rem 0; }
         .payment-split-card { border:1px solid rgba(200,169,110,0.2); background:rgba(14,12,9,0.32); border-radius:var(--radius-card); padding:0.9rem; text-align:left; }
         .payment-split-label { display: block; color: rgba(212,207,196,0.62); font-size: 0.58rem; letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 0.35rem; }
@@ -1118,6 +1120,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .payment-details[open] .payment-summary::after { transform: rotate(180deg); }
         .payment-detail-body { padding: 0 1rem 1rem; border-top: 1px solid rgba(200,169,110,0.14); font-size: 0.8rem; line-height: 1.65; color: rgba(212,207,196,0.82); overflow-wrap:anywhere; }
         .payment-detail-body p { margin-top: 0.8rem; }
+        .payment-details + .payment-details { margin-top: 0.6rem; }
         .ask-card { margin-top: 1.1rem; border: 1px solid rgba(200,169,110,0.24); border-radius: var(--radius-card); background: rgba(200,169,110,0.055); padding: 1rem; }
         .ask-card h3 { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; color: var(--cream); font-size: 1.25rem; font-weight: 300; margin-bottom: 0.4rem; }
         .ask-card p { color: rgba(212,207,196,0.78); font-size: 0.82rem; line-height: 1.6; margin-bottom: 0.75rem; }
@@ -1326,6 +1329,12 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           .payment-split-arrow { transform:none; height:auto; font-size:0.9rem; padding-top:1.3rem; }
           .payment-summary { padding:0.72rem 0.8rem; font-size:0.54rem; letter-spacing:0.12em; line-height:1.45; }
           .payment-detail-body { padding:0 0.8rem 0.85rem; }
+          .payment-details + .payment-details { margin-top:0.45rem; }
+          .group-rate-table { gap:0.35rem; padding:0.65rem 0.8rem 0.8rem; }
+          .group-rate-row { padding:0.5rem 0.62rem; gap:0.6rem; }
+          .group-rate-row span { font-size:0.7rem; }
+          .group-rate-price strong { font-size:0.78rem; }
+          .group-rate-price small { font-size:0.58rem; }
           .price-spec-list { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1px; margin-top:0.9rem; background:rgba(245,240,232,0.08); border:1px solid rgba(245,240,232,0.08); border-radius:var(--radius-card); overflow:hidden; }
           .price-spec-row { display:flex; flex-direction:column; gap:0.18rem; background:var(--ink); border-bottom:0; padding:0.62rem 0.68rem; font-size:0.68rem; line-height:1.28; }
           .price-spec-row span:last-child { text-align:left; font-size:0.74rem; }
@@ -1783,37 +1792,46 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         <div className="reveal">
           <span className="section-eyebrow">Reserve Your Spot</span>
           <h2 className="section-title">Choose 2026<br /><em>or Plan 2027</em></h2>
-          <p className="section-body">Remaining 2026 departures stay visible while bookable, and you can select one and pay online straight away. 2027 small-group dates are being planned, and private June–September 2027 departures are open by request. Total pricing is $1,799–$1,999 per person depending on group size. 2027 requests are confirmed personally by Rob before payment.</p>
+          <p className="section-body">Remaining 2026 departures stay visible while bookable, and you can select one and pay online straight away. 2027 small-group dates are being planned, and private June–September 2027 departures are open by request. The trip is $1,999 per person, and group rates apply for 3–8 guests. 2027 requests are confirmed personally by Rob before payment.</p>
           <div className="scarcity-pill">
             <span style={{width:'7px', height:'7px', borderRadius:'50%', background:'var(--rust)', display:'inline-block', flexShrink:0}}></span>
             <span>Small groups only — each departure capped at 8 guests</span>
           </div>
           <div className="price-card" style={{marginTop:'2.5rem'}}>
             <span className="price-badge">2026 Trips &amp; 2027 Requests — Limited Availability</span>
-            <div className="price-amount">$1,799–$1,999</div>
-            <div className="price-per">Per Person · 9 Days / 8 Nights · Group rates for 1–8 guests</div>
+            <div className="price-amount">${BASE_PRICE_USD.toLocaleString('en-US')}</div>
+            <div className="price-per">Per Person · 9 Days / 8 Nights · Group rates apply for 3–8 guests</div>
             <div className="price-note">All official prices are in USD. Every currently available fixed 2026 departure can be booked and paid online for 1–8 guests. Groups of 1–8 book together and pay the exact group amount in one secure Stripe checkout. 2027 request options are personally confirmed before payment.</div>
-            <div className="group-rate-table" aria-label="8 Lakes Tours private group rates">
-              {GROUP_PRICING_TIERS.map(tier => (
-                <div className="group-rate-row" key={tier.label}>
-                  <span>{tier.label}</span>
-                  <strong>${tier.perPersonUsd.toLocaleString('en-US')} pp</strong>
-                </div>
-              ))}
-            </div>
             <div className="payment-split" aria-label="How the 8 Lakes Tours payment is split">
               <div className="payment-split-card">
                 <span className="payment-split-label">Pay online</span>
-                <span className="payment-split-amount">$899–$999 pp</span>
+                <span className="payment-split-amount">${BASE_ONLINE_PAYMENT_USD.toLocaleString('en-US')} pp</span>
                 <p className="payment-split-copy">Reserves your place with 8 Lakes Tours.</p>
               </div>
               <div className="payment-split-arrow" aria-hidden="true">+</div>
               <div className="payment-split-card">
                 <span className="payment-split-label">Pay locally</span>
-                <span className="payment-split-amount">$900–$1,000 pp</span>
+                <span className="payment-split-amount">${BASE_LOCAL_FAMILY_PAYMENT_USD.toLocaleString('en-US')} pp</span>
                 <p className="payment-split-copy">Clean USD cash paid directly to the nomadic host family in Mongolia.</p>
               </div>
             </div>
+            <details className="payment-details">
+              <summary className="payment-summary">See group rates (3–8 guests)</summary>
+              <div className="group-rate-table" aria-label="8 Lakes Tours group rates">
+                {GROUP_PRICING_TIERS.map(tier => {
+                  const pricing = getGroupPricing(tier.min);
+                  return (
+                    <div className="group-rate-row" key={tier.label}>
+                      <span>{tier.label}</span>
+                      <div className="group-rate-price">
+                        <strong>${tier.perPersonUsd.toLocaleString('en-US')} pp</strong>
+                        <small>${pricing.onlinePerPersonUsd.toLocaleString('en-US')} online + ${pricing.localFamilyPerPersonUsd.toLocaleString('en-US')} locally</small>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </details>
             <details className="payment-details">
               <summary className="payment-summary">How payment works</summary>
               <div className="payment-detail-body">

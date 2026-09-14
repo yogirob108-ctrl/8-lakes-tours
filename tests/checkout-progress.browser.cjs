@@ -35,7 +35,8 @@
    assert.equal(await page.locator('input[name^="travellers."][name$=".first_name"]').count(),n-1);
    for(let i=0;i<n;i++){
     const prefix=i?`travellers.${i}.`:'';
-    for(const [key,value] of Object.entries({first_name:'Local',last_name:'Fixture',nationality:'Testland',date_of_birth:'1990-01-01'}))await page.locator(`[name="${prefix}${key}"]`).fill(value);
+    for(const [key,value] of Object.entries({first_name:'Local',last_name:'Fixture',nationality:'Testland',gender:'Female'}))await page.locator(`[name="${prefix}${key}"]`).fill(value);
+    for(const [part,value] of Object.entries({day:'1',month:'1',year:'1990'}))await page.locator(`[name="${prefix}date_of_birth_${part}"]`).selectOption(value);
     await page.locator(`[name="${prefix}riding_experience"]`).selectOption({index:1});
    }
    await page.locator('#email').fill('local@example.invalid');

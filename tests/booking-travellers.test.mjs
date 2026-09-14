@@ -17,6 +17,7 @@ const validTraveller = (overrides = {}) => ({
   email: ' ADA@EXAMPLE.COM ',
   phone: ' +44 20 1234 ',
   nationality: ' British ',
+  gender: ' Female ',
   date_of_birth: '1990-12-10',
   riding_experience: RIDING_LEVELS[0],
   dietary_notes: ' Vegetarian ',
@@ -49,14 +50,17 @@ test('normalizes an exact manifest and derives the lead at position one', () => 
   ]);
 });
 
-test('keeps optional gender trimmed and stores blanks as null', () => {
-  const result = normalizeBookingTravellers(2, [
-    validTraveller({ gender: '  Female ' }),
+test('requires gender for every traveller and trims it', () => {
+  const result = normalizeBookingTravellers(1, [validTraveller()], { today: '2026-09-10' });
+  assert.equal(result.ok, true);
+  assert.equal(result.travellers[0].gender, 'Female');
+
+  const missing = normalizeBookingTravellers(2, [
+    validTraveller(),
     validTraveller({ first_name: 'Grace', email: '', gender: '   ' }),
   ], { today: '2026-09-10' });
-
-  assert.equal(result.ok, true);
-  assert.deepEqual(result.travellers.map(({ gender }) => gender), ['Female', null]);
+  assert.equal(missing.ok, false);
+  assert.match(missing.error, /Traveller 2 requires[^.]*gender/);
 });
 
 test('rejects invalid group sizes and unknown manifest cardinality', () => {

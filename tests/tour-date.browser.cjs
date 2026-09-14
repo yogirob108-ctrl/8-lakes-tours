@@ -19,9 +19,10 @@
     await page.locator('#last_name').fill('Fixture');
     await page.locator('#email').fill('local@example.invalid');
     await page.locator('#nationality').fill('Testland');
-    await page.locator('[name="date_of_birth_day"]').fill('1');
-    await page.locator('[name="date_of_birth_month"]').fill('1');
-    await page.locator('[name="date_of_birth_year"]').fill('1990');
+    await page.locator('#gender').fill('Female');
+    await page.locator('[name="date_of_birth_day"]').selectOption('1');
+    await page.locator('[name="date_of_birth_month"]').selectOption('1');
+    await page.locator('[name="date_of_birth_year"]').selectOption('1990');
     await page.locator('#riding_experience').selectOption({ index: 1 });
     await page.locator('#tour_date').selectOption(date);
     await page.locator('[name="signature"]').fill('Local Fixture');

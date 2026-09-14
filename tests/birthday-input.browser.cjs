@@ -11,16 +11,15 @@
   await page.locator('#application .submit-btn').click();
   await page.getByRole('alert').filter({hasText:'Check the highlighted fields'}).waitFor();
   assert.equal(bookings,0); assert.ok(await page.locator('[aria-invalid="true"]').count());
-  assert.equal(await page.locator('input[name="date_of_birth_day"]').getAttribute('inputmode'),'numeric');
-  assert.equal(await page.locator('input[name="date_of_birth_day"]').getAttribute('maxlength'),'2');
-  assert.equal(await page.locator('input[name="date_of_birth_year"]').getAttribute('maxlength'),'4');
-  assert.equal(await page.locator('input[name="date_of_birth_day"]').getAttribute('autocomplete'),'bday-day');
+  assert.equal(await page.locator('select[name="date_of_birth_day"] option').count(),32);
+  assert.equal(await page.locator('select[name="date_of_birth_month"] option').count(),13);
+  assert.equal(await page.locator('select[name="date_of_birth_day"]').getAttribute('autocomplete'),'bday-day');
   await page.locator('[name="guest_count"]').selectOption('2');
-  assert.equal(await page.locator('input[name="travellers.1.date_of_birth_day"]').getAttribute('autocomplete'),'off');
-  await page.locator('input[name="date_of_birth_day"]').fill('29'); await page.locator('input[name="date_of_birth_month"]').fill('2'); await page.locator('input[name="date_of_birth_year"]').fill('2024');
+  assert.equal(await page.locator('select[name="travellers.1.date_of_birth_day"]').getAttribute('autocomplete'),'off');
+  await page.locator('select[name="date_of_birth_day"]').selectOption('29'); await page.locator('select[name="date_of_birth_month"]').selectOption('2'); await page.locator('select[name="date_of_birth_year"]').selectOption('2024');
   assert.equal(await page.locator('input[name="date_of_birth"]').inputValue(),'2024-02-29');
-  await page.locator('input[name="date_of_birth_year"]').fill('2028'); await page.locator('input[name="date_of_birth_year"]').blur();
-  await page.getByText('Date of birth cannot be in the future.').waitFor();
+  await page.locator('select[name="date_of_birth_year"]').selectOption('2025');
+  await page.getByText('Enter a real calendar date.').waitFor();
   console.log('PASS',viewport.width,'validation, day-first DOB, companion autocomplete, leap/future error'); await page.close();
  }} finally {await browser.close()}
 })().catch(error=>{console.error(error);process.exitCode=1});

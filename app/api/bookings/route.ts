@@ -123,7 +123,7 @@ export async function POST(request: Request) {
       attribution: Record<string, string>;
       travellers: Array<{
         position: number; is_lead: boolean; first_name: string; last_name: string;
-        email: string | null; phone: string | null; nationality: string; gender: string | null;
+        email: string | null; phone: string | null; nationality: string; gender: string;
         date_of_birth: string; riding_experience: string; dietary_notes: string | null;
       }>;
     } };

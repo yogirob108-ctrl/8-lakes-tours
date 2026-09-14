@@ -370,26 +370,36 @@ function WaiverModal({ onClose, onAgree }: { onClose: () => void; onAgree: () =>
   );
 }
 
+const DOB_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const DOB_YEARS = Array.from({ length: new Date().getFullYear() - 1900 + 1 }, (_, index) => String(new Date().getFullYear() - index));
+
 function DateOfBirthFields({ name, label, isLead = false }: { name: string; label: string; isLead?: boolean }) {
   const [parts, setParts] = useState({ day: '', month: '', year: '' });
   const [touched, setTouched] = useState(false);
   const result = composeDateOfBirth(parts.day, parts.month, parts.year);
-  const error = touched && (result.error || (!result.value && (parts.day || parts.month || parts.year) ? 'Enter a day, month and four-digit year.' : ''));
+  const error = touched && (result.error || (!result.value && parts.day && parts.month && parts.year ? 'Choose a real day, month and year.' : ''));
   const errorId = `${name.replaceAll('.', '-')}-date-error`;
+  // Draft restore can hand back zero-padded parts ("03"); options use plain numbers.
   const update = (part: 'day' | 'month' | 'year', value: string) => {
-    const limit = part === 'year' ? 4 : 2;
-    setParts(current => ({ ...current, [part]: value.replace(/\D/g, '').slice(0, limit) }));
+    setParts(current => ({ ...current, [part]: value && part !== 'year' ? String(Number(value)) : value }));
+  };
+  const options = {
+    day: Array.from({ length: 31 }, (_, index) => ({ value: String(index + 1), label: String(index + 1) })),
+    month: DOB_MONTHS.map((month, index) => ({ value: String(index + 1), label: month })),
+    year: DOB_YEARS.map(year => ({ value: year, label: year })),
   };
   const autocomplete = (part: 'day' | 'month' | 'year') => isLead ? `bday-${part}` : 'off';
   return (
-    <fieldset className="date-of-birth-group" aria-describedby={`${name}-date-hint${error ? ` ${errorId}` : ''}`}>
+    <fieldset className="date-of-birth-group" aria-describedby={error ? errorId : undefined}>
       <legend className="form-label">{label}</legend>
-      <p id={`${name}-date-hint`} className="date-of-birth-hint">For example, 3 2 2004</p>
       <div className="date-of-birth-inputs">
         {(['day', 'month', 'year'] as const).map(part => (
           <div className={`date-of-birth-part ${part}`} key={part}>
-            <label htmlFor={`${name}-${part}`}>{part[0].toUpperCase() + part.slice(1)}</label>
-            <input id={`${name}-${part}`} name={`${name}_${part}`} className="form-input" type="text" inputMode="numeric" maxLength={part === 'year' ? 4 : 2} autoComplete={autocomplete(part)} value={parts[part]} onChange={event => update(part, event.target.value)} onBlur={() => setTouched(true)} aria-invalid={Boolean(error)} aria-describedby={error ? errorId : `${name}-date-hint`} />
+            <label className="sr-only" htmlFor={`${name}-${part}`}>{`${label} ${part}`}</label>
+            <select id={`${name}-${part}`} name={`${name}_${part}`} className="form-select" autoComplete={autocomplete(part)} value={parts[part]} onChange={event => { update(part, event.target.value); setTouched(true); }} onBlur={() => setTouched(true)} aria-invalid={Boolean(error)} aria-describedby={error ? errorId : undefined}>
+              <option value="">{part[0].toUpperCase() + part.slice(1)}</option>
+              {options[part].map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+            </select>
           </div>
         ))}
       </div>
@@ -458,7 +468,9 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
     const assign = (name: string, value: unknown) => {
       const field = form.elements.namedItem(name) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
       if (!field || field.value) return;
-      field.value = String(value || '');
+      const text = String(value || '');
+      // Day/month dropdown options are unpadded ("3", not "03").
+      field.value = /_(day|month)$/.test(name) && /^\d+$/.test(text) ? String(Number(text)) : text;
       field.dispatchEvent(new Event('input', { bubbles: true }));
       field.dispatchEvent(new Event('change', { bubbles: true }));
     };
@@ -1353,17 +1365,15 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--gold); }
         .date-of-birth-group { min-width: 0; margin: 0; padding: 0; border: 0; }
         .date-of-birth-group .form-label { margin-bottom: 0.35rem; }
-        .date-of-birth-hint { margin: 0 0 0.55rem; color: var(--mist); font-size: 0.72rem; }
-        .date-of-birth-inputs { display: grid; grid-template-columns: 0.78fr 0.78fr 1.2fr; gap: 0.5rem; }
-        .date-of-birth-part label { display: block; margin: 0 0 0.32rem; color: var(--mist); font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase; }
-        .date-of-birth-part .form-input { padding-inline: 0.65rem; }
+                .date-of-birth-inputs { display: grid; grid-template-columns: 0.9fr 1fr 1.2fr; gap: 0.5rem; }
+                .date-of-birth-part .form-select { width: 100%; padding-inline: 0.65rem; }
         .field-error { margin: 0.45rem 0 0; color: #fff; font-size: 0.78rem; font-weight: 500; }
         .booking-error-summary { margin: 0 0 1rem; padding: 0.9rem 1rem; border: 2px solid #ff8f70; border-radius: var(--radius-soft); background: #35170f; color: #fff; }
         .booking-error-summary strong { display: block; margin-bottom: 0.35rem; }
         .booking-error-summary ul { margin: 0; padding-left: 1.1rem; }
         .booking-error-summary button { padding: 0.18rem 0; border: 0; background: transparent; color: #fff; text-decoration: underline; cursor: pointer; text-align: left; font: inherit; }
         .form-input[aria-invalid="true"], .form-select[aria-invalid="true"], .form-textarea[aria-invalid="true"] { border: 2px solid #ff8f70; box-shadow: inset 0 0 0 1px #35170f; background-image: linear-gradient(135deg, transparent calc(100% - 1.2rem), rgba(255,143,112,0.35)); }
-        @media (max-width: 520px) { .date-of-birth-inputs { gap: 0.4rem; } .date-of-birth-part .form-input { padding-inline: 0.5rem; } }
+        @media (max-width: 520px) { .date-of-birth-inputs { gap: 0.4rem; } .date-of-birth-part .form-select { padding-inline: 0.5rem; } }
         .form-input:-webkit-autofill, .form-input:-webkit-autofill:hover, .form-input:-webkit-autofill:focus, input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, textarea:-webkit-autofill, textarea:-webkit-autofill:hover, textarea:-webkit-autofill:focus { -webkit-box-shadow: 0 0 0 1000px #15120e inset !important; box-shadow: 0 0 0 1000px #15120e inset !important; -webkit-text-fill-color: var(--cream) !important; caret-color: var(--cream); border-color: rgba(200,169,110,0.35) !important; transition: background-color 9999s ease-in-out 0s; }
         .form-select option { background: var(--ink); }
         .form-textarea { resize: vertical; min-height: 80px; }
@@ -2130,7 +2140,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               </div>
               <div className="form-grid compact-grid">
                 <DateOfBirthFields name="date_of_birth" label="Date of Birth" isLead />
-                <div className="form-group"><label className="form-label" htmlFor="gender">Gender (Optional)</label><input id="gender" className="form-input" name="gender" type="text" placeholder="e.g. Female" maxLength={40} /></div>
+                <div className="form-group"><label className="form-label" htmlFor="gender">Gender</label><input id="gender" className="form-input" name="gender" type="text" placeholder="e.g. Female" maxLength={40} required /></div>
               </div>
               <div className="form-group"><label className="form-label" htmlFor="dietary_restrictions">Dietary Restrictions</label><input id="dietary_restrictions" className="form-input" name="dietary_restrictions" type="text" placeholder="None, vegetarian, allergies, serious dairy/lactose issues, etc." maxLength={1000} /></div>
               <div className="form-group"><label className="form-label" htmlFor="emergency_contact">Emergency Contact (Name & Phone)</label><input id="emergency_contact" className="form-input" name="emergency_contact" type="text" placeholder="Name · Phone number" maxLength={200} /></div>
@@ -2208,7 +2218,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                           <option>Advanced — experienced rider</option>
                         </select>
                       </div>
-                      <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.gender`}>Gender (Optional)</label><input id={`${fieldPrefix}.gender`} className="form-input" name={`travellers.${index + 1}.gender`} type="text" placeholder="e.g. Male" maxLength={40} /></div>
+                      <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.gender`}>Gender</label><input id={`${fieldPrefix}.gender`} className="form-input" name={`travellers.${index + 1}.gender`} type="text" placeholder="e.g. Male" maxLength={40} required /></div>
                     </div>
                     <div className="form-grid compact-grid">
                       <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.email`}>Email (Optional)</label><input id={`${fieldPrefix}.email`} className="form-input" name={`travellers.${index + 1}.email`} type="email" maxLength={254} /></div>

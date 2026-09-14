@@ -144,7 +144,7 @@ export default function Page() {
       </section>
 
       <section className="cards-section expectations">
-        <p className="eyebrow">Fit before fantasy</p>
+        <p className="eyebrow">An honest fit</p>
         <h2>Who this trip is — and is not — for.</h2>
         <div className="card-grid">
           {expectationCards.map((card) => (

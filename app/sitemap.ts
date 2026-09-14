@@ -25,7 +25,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.8,
       images: [
-        `${siteUrl}/images/og-8-lakes-about-2026.jpg`,
+        `${siteUrl}/images/og-8-lakes-about-family-2026.jpg`,
         `${siteUrl}/videos/eagle-soaring-poster.jpg`,
         `${siteUrl}/images/rob-zaher-host-deel.jpg`,
       ],

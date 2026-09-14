@@ -4,6 +4,7 @@ import { createSupabaseAdminClient } from '@/lib/supabase-admin';
 import { recoveryUrl } from '@/lib/booking-checkout';
 import { sendEmail } from '@/lib/email';
 import { runAbandonedCheckoutRecovery } from '@/lib/abandoned-checkout.mjs';
+import { runPreSubmitDraftRecovery } from '@/lib/pre-submit-draft-recovery.mjs';
 import { getVisibleTourDates, TOUR_DATES } from '@/lib/tour-dates.mjs';
 import { canAutomaticallyConfirmBooking } from '@/lib/tour-booking.mjs';
 export const runtime = 'nodejs';
@@ -19,9 +20,11 @@ export async function GET(request: Request) {
  if(process.env.ABANDONED_CHECKOUT_RECOVERY_ENABLED!=='true' && !dryRun) return Response.json({enabled:false},{headers});
  try {
   const allowedDates=getVisibleTourDates(TOUR_DATES).filter((date: {date:string})=>canAutomaticallyConfirmBooking(date.date,1)).map((date: {date:string})=>date.date);
+  const db=createSupabaseAdminClient();
+  const draftResult=await runPreSubmitDraftRecovery({db,recoveryUrl:(token:string)=>`https://www.8lakestours.com/resume-draft?token=${encodeURIComponent(token)}`,sendEmail,dryRun});
   if(!process.env.STRIPE_SECRET_KEY) throw new Error('Provider evidence unavailable');
   const stripe=new Stripe(process.env.STRIPE_SECRET_KEY,{maxNetworkRetries:0,timeout:5000});
-  const result=await runAbandonedCheckoutRecovery({db:createSupabaseAdminClient(),allowedDates,recoveryUrl,sendEmail,retrieveSession:(id:string)=>stripe.checkout.sessions.retrieve(id),dryRun});
-  return Response.json({dry_run:dryRun,...result},{headers});
+  const result=await runAbandonedCheckoutRecovery({db,allowedDates,recoveryUrl,sendEmail,retrieveSession:(id:string)=>stripe.checkout.sessions.retrieve(id),dryRun});
+  return Response.json({dry_run:dryRun,...result,draft_recovery:draftResult},{headers});
  } catch { return Response.json({error:'Recovery run incomplete; retry safely.'},{status:503,headers}); }
 }

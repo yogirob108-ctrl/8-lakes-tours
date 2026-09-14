@@ -17,12 +17,13 @@ function harness(enabled='true') {
  if(name==='@/lib/supabase-admin')return {createSupabaseAdminClient:()=>({})};
  if(name==='@/lib/booking-checkout')return {recoveryUrl:()=>''};
  if(name==='@/lib/email')return {sendEmail:()=>{throw Error('must not send');}};
- if(name==='@/lib/abandoned-checkout.mjs')return {runAbandonedCheckoutRecovery:async({allowedDates})=>{calls.push(allowedDates);return {sent:0};}};
+ if(name==='@/lib/abandoned-checkout.mjs')return {runAbandonedCheckoutRecovery:async({allowedDates})=>{calls.push(['booking',allowedDates]);return {sent:0};}};
+ if(name==='@/lib/pre-submit-draft-recovery.mjs')return {runPreSubmitDraftRecovery:async({dryRun})=>{calls.push(['draft',dryRun]);return {eligible:0,sent:0,failed:0,suppressed:0};}};
  throw Error(name);
  }});
  return {calls,run:(auth='Bearer local-only',url='https://example.invalid')=>exports.GET(new Request(url,{headers:{authorization:auth}}))};
 }
 test('cron rejects missing credentials',async()=>{const h=harness();assert.equal((await h.run('')).status,401);assert.equal(h.calls.length,0);});
 test('cron requires explicit rollout enablement',async()=>{const h=harness('false');assert.equal((await h.run()).status,200);assert.equal(h.calls.length,0);});
-test('enabled cron uses only current approved scheduled inventory',async()=>{const h=harness();assert.equal((await h.run()).status,200);assert.ok(h.calls[0].length);for(const date of h.calls[0])assert.equal(booking.canAutomaticallyConfirmBooking(date,1),true);});
-test('disabled rollout permits only an authenticated no-send dry run',async()=>{const h=harness('false');assert.equal((await h.run('Bearer local-only','https://example.invalid?dry_run=1')).status,200);assert.equal(h.calls.length,1);});
+test('enabled cron uses only current approved scheduled inventory',async()=>{const h=harness();assert.equal((await h.run()).status,200);const bookingCall=h.calls.find(([kind])=>kind==='booking');assert.ok(bookingCall[1].length);for(const date of bookingCall[1])assert.equal(booking.canAutomaticallyConfirmBooking(date,1),true);});
+test('disabled rollout permits only an authenticated no-send dry run',async()=>{const h=harness('false');assert.equal((await h.run('Bearer local-only','https://example.invalid?dry_run=1')).status,200);assert.deepEqual(h.calls.map(([kind])=>kind),['draft','booking']);});

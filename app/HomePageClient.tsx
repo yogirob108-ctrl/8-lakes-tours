@@ -396,6 +396,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
   const submissionKeyRef = useRef<string | null>(null);
   const draftTimerRef = useRef<number | null>(null);
   const draftOwnershipRef = useRef<{ draft_id: string; credential: string } | null>(null);
+  const bookingFormRef = useRef<HTMLFormElement | null>(null);
   const [pricing, setPricing] = useState<LocalizedPricing>({
     currency: 'USD',
     countryLabel: COUNTRY_LABEL_BY_CURRENCY.USD,
@@ -413,10 +414,41 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
   const checkoutFallbackHref = canPay ? paymentUrl : '#book';
   const lightboxImage = lightboxIndex === null ? null : GALLERY_IMAGES[lightboxIndex];
   const isLightboxOpen = lightboxIndex !== null;
+  const restoreCheckoutDraft = async (ownership: { draft_id: string; credential: string }) => {
+    const response = await fetch('/api/checkout-draft', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'load', ...ownership }),
+    });
+    const restored = await response.json().catch(() => null);
+    const draft = restored?.ok ? restored.draft : null;
+    const form = bookingFormRef.current;
+    if (!draft || !form) return;
+    const assign = (name: string, value: unknown) => {
+      const field = form.elements.namedItem(name) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement | null;
+      if (!field || field.value) return;
+      field.value = String(value || '');
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+      field.dispatchEvent(new Event('change', { bubbles: true }));
+    };
+    assign('first_name', draft.first_name); assign('last_name', draft.last_name); assign('email', draft.email);
+    assign('phone', draft.phone); assign('tour_date', draft.tour_date); assign('guest_count', draft.guest_count); assign('notes', draft.notes);
+    (draft.travellers || []).forEach((traveller: { first_name?: string; last_name?: string; date_of_birth?: string }, index: number) => {
+      assign(`travellers.${index + 1}.first_name`, traveller.first_name);
+      assign(`travellers.${index + 1}.last_name`, traveller.last_name);
+      assign(`travellers.${index + 1}.date_of_birth`, traveller.date_of_birth);
+    });
+    setEmail(String(draft.email || ''));
+    setSelectedTourDate(String(draft.tour_date || ''));
+    setGuestCount(Number(draft.guest_count) || 1);
+  };
+
   useEffect(() => {
     try {
       const saved = JSON.parse(sessionStorage.getItem('8l_checkout_draft') || 'null');
-      if (saved?.draft_id && saved?.credential) draftOwnershipRef.current = saved;
+      if (saved?.draft_id && saved?.credential) {
+        draftOwnershipRef.current = saved;
+        void restoreCheckoutDraft(saved);
+      }
     } catch { /* Private browsing can disable session storage. */ }
   }, []);
   const openLightbox = (src: string, alt: string) => {
@@ -1920,7 +1952,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           <span className="section-eyebrow">Booking Details</span>
           <h2 className="section-title" style={{fontSize:'2rem', marginBottom:'1rem'}}>Secure<br /><em>Your Place</em></h2>
           <p className="section-body" style={{fontSize:'0.9rem', marginBottom:'2rem'}}>Choose a fixed date or a 2027 request option and tell us who&apos;s coming. Bookings of 1–2 guests on a fixed date continue straight to payment after submitting. Scheduled groups of 1–8 pay the exact group amount in one checkout; private, custom, and 2027 requests are confirmed before payment.</p>
-          <form className="booking-form" onFocusCapture={markBookingFormStarted} onInput={e => scheduleDraftSave(e.currentTarget)} onSubmit={async e => { e.preventDefault(); await submitBooking(e.currentTarget); }}>
+          <form ref={bookingFormRef} className="booking-form" onFocusCapture={markBookingFormStarted} onInput={event => scheduleDraftSave(event.currentTarget)} onSubmit={async e => { e.preventDefault(); await submitBooking(e.currentTarget); }}>
             <input type="hidden" name="display_currency" value={pricing.currency} />
             <input type="hidden" name="display_tour_price" value={pricing.tourPrice} />
             <input type="hidden" name="display_online_payment" value={pricing.onlinePayment} />

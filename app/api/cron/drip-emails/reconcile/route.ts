@@ -48,7 +48,7 @@ export async function GET(request: Request) {
       evidence: provider.evidence,
       scanComplete: provider.scanComplete,
     });
-    return Response.json({ ok: true, dry_run: true, stripe: 'reachable', checked: candidates.length, scan_complete: provider.scanComplete, ...(provider.scanIncompleteReason ? { scan_incomplete_reason: provider.scanIncompleteReason } : {}), ...(provider.scanIncompleteCollection ? { scan_incomplete_collection: provider.scanIncompleteCollection } : {}), candidates }, { headers });
+    return Response.json({ ok: true, dry_run: true, stripe: 'reachable', checked: candidates.length, scan_complete: provider.scanComplete, ...(provider.scanIncompleteReason ? { scan_incomplete_reason: provider.scanIncompleteReason } : {}), ...(provider.scanIncompleteCollection ? { scan_incomplete_collection: provider.scanIncompleteCollection } : {}), ...(provider.scanIncompleteProviderError ? { scan_incomplete_provider_error: provider.scanIncompleteProviderError } : {}), candidates }, { headers });
   } catch {
     return Response.json({ ok: false, error: 'stripe_reconciliation_unavailable' }, { status: 503, headers });
   }

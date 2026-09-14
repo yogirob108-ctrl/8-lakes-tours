@@ -23,12 +23,21 @@ test('collector reports scan incomplete rather than silently returning no paymen
   assert.equal(result.scanIncompleteReason, 'page_budget_exhausted');
 });
 
-test('collector preserves prior evidence but marks the scan incomplete when a provider collection is unavailable', async () => {
+test('collector preserves prior evidence and returns only sanitized provider error metadata when a provider collection is unavailable', async () => {
   const sessions = async () => ({ data: [{ id: 'cs_1', amount_total: 99900, currency: 'usd', status: 'complete', payment_status: 'paid' }], has_more: false });
-  const denied = async () => { throw new Error('permission denied'); };
+  const denied = async () => {
+    const error = new Error('Request req_secret for customer@example.com was denied');
+    error.type = 'StripeInvalidRequestError';
+    error.code = 'parameter_unknown';
+    error.statusCode = 400;
+    throw error;
+  };
   const result = await collectStripeLifecycleEvidence({ stripe: { checkout: { sessions: { list: sessions } }, paymentIntents: { list: denied }, invoices: { list: denied } }, pageBudget: 6 });
   assert.equal(result.scanComplete, false);
   assert.equal(result.scanIncompleteReason, 'provider_collection_unavailable');
   assert.equal(result.scanIncompleteCollection, 'payment_intent');
+  assert.deepEqual(result.scanIncompleteProviderError, { type: 'StripeInvalidRequestError', code: 'parameter_unknown', status: 400 });
+  assert.equal(JSON.stringify(result).includes('customer@example.com'), false);
+  assert.equal(JSON.stringify(result).includes('req_secret'), false);
   assert.equal(result.evidence.length, 1);
 });

@@ -425,6 +425,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
   const stripeClickTrackedRef = useRef(false);
   const formSubmittingRef = useRef(false);
   const submissionKeyRef = useRef<string | null>(null);
+  const heroVideoRef = useRef<HTMLVideoElement | null>(null);
   const draftTimerRef = useRef<number | null>(null);
   const draftOwnershipRef = useRef<{ draft_id: string; credential: string } | null>(null);
   const bookingFormRef = useRef<HTMLFormElement | null>(null);
@@ -477,6 +478,22 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
     setSelectedTourDate(String(draft.tour_date || ''));
     setGuestCount(Number(draft.guest_count) || 1);
   };
+
+  // The poster image is the LCP element; the drone loop only loads once the page is
+  // up, and never for reduced-motion or data-saver visitors.
+  useEffect(() => {
+    const video = heroVideoRef.current;
+    if (!video) return;
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || connection?.saveData) return;
+    const start = () => {
+      video.preload = 'auto';
+      video.play().catch(() => {});
+    };
+    if (document.readyState === 'complete') start();
+    else window.addEventListener('load', start, { once: true });
+    return () => window.removeEventListener('load', start);
+  }, []);
 
   useEffect(() => {
     const hashParams = new URLSearchParams(window.location.hash.slice(1));
@@ -1017,7 +1034,9 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           animation: droneDrift 18s ease-in-out infinite alternate;
           will-change: transform;
         }
-        .hero-bg img { object-fit: cover; object-position: center 43%; }
+        .hero-bg img, .hero-video { object-fit: cover; object-position: center 45%; }
+        .hero-video { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 1.8s ease; }
+        .hero-video.is-playing { opacity: 1; }
         @keyframes droneDrift {
           from { transform: scale(1.08) translate3d(-1.2%, 1.4%, 0); }
           to { transform: scale(1.14) translate3d(1.4%, -1.1%, 0); }
@@ -1455,6 +1474,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           html { scroll-behavior: auto; }
           .js-reveal .reveal, .js-reveal .reveal.visible { opacity: 1 !important; transform: none !important; }
           .hero-bg { animation: none !important; }
+          .hero-video { display: none; }
           *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
         }
 
@@ -1624,13 +1644,26 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
       <div className="hero" id="top">
         <div className="hero-bg">
           <Image
-            src="/images/hero-sunset-valley.jpg"
-            alt="Dramatic sunset over the Orkhon Valley and winding river in Mongolia"
+            src="/images/hero-orkhon-valley-drone.jpg"
+            alt="Drone view of a golden sunset over the Orkhon Valley and its winding river in Mongolia"
             fill
             preload
             quality={82}
             sizes="100vw"
           />
+          <video
+            ref={heroVideoRef}
+            className="hero-video"
+            muted
+            loop
+            playsInline
+            preload="none"
+            aria-hidden="true"
+            onPlaying={event => event.currentTarget.classList.add('is-playing')}
+          >
+            <source src="/videos/orkhon-valley-drone-loop-mobile.mp4" type="video/mp4" media="(max-width: 900px)" />
+            <source src="/videos/orkhon-valley-drone-loop.mp4" type="video/mp4" />
+          </video>
         </div>
         <div className="hero-overlay"></div>
         <div className="hero-content">

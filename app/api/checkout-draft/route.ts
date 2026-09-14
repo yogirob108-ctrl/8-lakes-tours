@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { createSupabaseAdminClient } from '@/lib/supabase-admin';
 import { createDraftCredential, draftCredentialHash, sanitizeDraftPayload, verifyDraftCredential } from '@/lib/checkout-draft.mjs';
+import { draftRecoveryTokenHash } from '@/lib/pre-submit-draft-recovery.mjs';
 
 export const runtime = 'nodejs';
 const headers = { 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' };
@@ -14,6 +15,18 @@ export async function POST(request: Request) {
   try { input = await request.json(); } catch { return error('Invalid draft.'); }
   const secret = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!secret) return error('Draft saving is temporarily unavailable.', 503);
+
+  if (input.action === 'recover') {
+    const token = input.token;
+    if (typeof token !== 'string' || token.length < 40 || token.length > 100) return error('Draft recovery link is invalid.', 403);
+    const db = createSupabaseAdminClient();
+    const { data, error: dbError } = await db.rpc('read_public_checkout_draft_by_recovery_token', { p_recovery_token_hash: draftRecoveryTokenHash(token) }).maybeSingle();
+    if (dbError) return error('Draft could not be recovered. Please use the private link again.', 503);
+    const recovered = data as { draft_id?: string; payload?: unknown } | null;
+    if (!recovered?.draft_id || !recovered?.payload) return error('This private recovery link is no longer available.', 404);
+    const credential = createDraftCredential(recovered.draft_id, secret);
+    return NextResponse.json({ ok: true, draft_id: recovered.draft_id, credential, draft: sanitizeDraftPayload(recovered.payload) }, { headers });
+  }
 
   if (input.action === 'load') {
     const draftId = input.draft_id;

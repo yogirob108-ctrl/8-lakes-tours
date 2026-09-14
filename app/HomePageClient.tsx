@@ -443,6 +443,23 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
   };
 
   useEffect(() => {
+    const hashParams = new URLSearchParams(window.location.hash.slice(1));
+    const resumeToken = hashParams.get('resume');
+    if (resumeToken) {
+      // The server redirects the email URL to a fragment; remove it before any later navigation.
+      history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+      void fetch('/api/checkout-draft', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'recover', token: resumeToken }),
+      }).then(response => response.json()).then(recovered => {
+        if (!recovered?.ok || !recovered.draft_id || !recovered.credential) return;
+        const ownership = { draft_id: recovered.draft_id, credential: recovered.credential };
+        draftOwnershipRef.current = ownership;
+        try { sessionStorage.setItem('8l_checkout_draft', JSON.stringify(ownership)); } catch { /* Storage is optional. */ }
+        void restoreCheckoutDraft(ownership);
+      }).catch(() => undefined);
+      return;
+    }
     try {
       const saved = JSON.parse(sessionStorage.getItem('8l_checkout_draft') || 'null');
       if (saved?.draft_id && saved?.credential) {

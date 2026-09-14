@@ -1896,7 +1896,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             <input type="hidden" name="display_local_family_payment" value={pricing.localFamilyPayment} />
             <fieldset className="form-fields" disabled={formSubmitted || formSubmitting}>
             <div className="form-section">
-              <p className="form-section-title">Contact details</p>
+              <p className="form-section-title">Personal information</p>
               <div className="form-grid compact-grid">
                 <div className="form-group"><label className="form-label" htmlFor="first_name">Passport/Legal First Name</label><input id="first_name" className="form-input" name="first_name" type="text" placeholder="First name" maxLength={100} required /></div>
                 <div className="form-group"><label className="form-label" htmlFor="last_name">Passport/Legal Last Name</label><input id="last_name" className="form-input" name="last_name" type="text" placeholder="Last name" maxLength={100} required /></div>
@@ -1910,6 +1910,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                 <div className="form-group"><label className="form-label" htmlFor="date_of_birth">Date of Birth</label><input id="date_of_birth" className="form-input" name="date_of_birth" type="date" required /></div>
                 <div className="form-group"><label className="form-label" htmlFor="gender">Gender (Optional)</label><input id="gender" className="form-input" name="gender" type="text" placeholder="e.g. Female" maxLength={40} /></div>
               </div>
+              <div className="form-group"><label className="form-label" htmlFor="dietary_restrictions">Dietary Restrictions</label><input id="dietary_restrictions" className="form-input" name="dietary_restrictions" type="text" placeholder="None, vegetarian, allergies, serious dairy/lactose issues, etc." maxLength={1000} /></div>
               <div className="form-group"><label className="form-label" htmlFor="emergency_contact">Emergency Contact (Name & Phone)</label><input id="emergency_contact" className="form-input" name="emergency_contact" type="text" placeholder="Name · Phone number" maxLength={200} /></div>
             </div>
 
@@ -1960,7 +1961,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               <input type="hidden" name="online_payment_usd" value={groupPricing.onlinePaymentUsd} />
               <input type="hidden" name="local_family_payment_usd" value={groupPricing.localFamilyPaymentUsd} />
               <input type="hidden" name="total_trip_value_usd" value={groupPricing.totalTripValueUsd} />
-              <div className="form-group"><label className="form-label" htmlFor="dietary_restrictions">Dietary Restrictions</label><input id="dietary_restrictions" className="form-input" name="dietary_restrictions" type="text" placeholder="None, vegetarian, allergies, serious dairy/lactose issues, etc." maxLength={1000} /></div>
               {Array.from({ length: guestCount - 1 }, (_, index) => {
                 const travellerNumber = index + 2;
                 const fieldPrefix = `travellers.${index + 1}`;

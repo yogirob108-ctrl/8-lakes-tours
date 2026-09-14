@@ -75,9 +75,6 @@ test('guest-facing copy quotes the current split ranges', async () => {
   assert.match(client, /getGroupPricing\(tier\.min\)/);
   assert.match(client, /pricing\.onlinePerPersonUsd/);
   assert.match(client, /pricing\.localFamilyPerPersonUsd/);
-  // The written payment explanation still spells out the lowest tier's split.
-  const lowest = getGroupPricing(8);
-  assert.match(client, new RegExp(`\\$${lowest.onlinePerPersonUsd}/\\$${lowest.localFamilyPerPersonUsd} for 7–8`));
   // The old flat-$999 promise must not survive anywhere a guest reads a range.
   assert.doesNotMatch(client, /\$800–\$1,000/);
   assert.doesNotMatch(terms, /\$800–\$1,000/);

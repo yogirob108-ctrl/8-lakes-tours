@@ -1835,11 +1835,16 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             <details className="payment-details">
               <summary className="payment-summary">How payment works</summary>
               <div className="payment-detail-body">
-                <p>Total trip price depends on group size: $1,999 per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8.</p>
-                <p>Group discounts are shared evenly between 8 Lakes Tours and your host family, so the online payment and the family&apos;s cash both come down together: $999 online and $1,000 cash for 1–2 guests, $974/$975 for 3–4, $949/$950 for 5–6, and $899/$900 for 7–8. The family is never asked to absorb the whole reduction.</p>
-                <p>The online payment goes through 8 Lakes Tours. Every currently available fixed 2026 departure can be booked and paid online for 1–8 guests. Groups of 1–8 booking together pay the exact group amount in a single Stripe checkout instead of individually. 2027 request options are confirmed personally before Rob sends the correct payment link or custom order. The remaining local portion is paid directly in clean USD cash to the nomadic host families because they cannot reliably receive online transfers.</p>
-                <p>If your plans change more than 3 weeks / 21 days before departure, the online amount is refundable minus unrecoverable Stripe/payment processing fees. If you cancel within 3 weeks / 21 days, you&apos;re entitled to 50% of the online booking payment back, minus unrecoverable Stripe/payment processing fees. We&apos;ll still try to help with a date transfer or a replacement traveller too, which can recover more than the 50%.</p>
-                <p>We&apos;ll include exact cash instructions and timing in your confirmation notes.</p>
+                <p><strong>Online:</strong> reserves your place with 8 Lakes Tours. 2026 departures are paid in one Stripe checkout for your whole group (1–8 guests); 2027 requests are confirmed by Rob before payment.</p>
+                <p><strong>Locally:</strong> clean USD cash paid directly to your host family, who can&apos;t reliably receive online transfers. Group discounts are split evenly between both payments.</p>
+              </div>
+            </details>
+            <details className="payment-details">
+              <summary className="payment-summary">Cancellation policy</summary>
+              <div className="payment-detail-body">
+                <p><strong>More than 21 days before departure:</strong> the online payment is refunded, minus unrecoverable Stripe/payment processing fees.</p>
+                <p><strong>Within 21 days:</strong> you get 50% of the online booking payment back, minus unrecoverable Stripe/payment processing fees.</p>
+                <p>Either way, we&apos;ll help with a date transfer or replacement traveller where we can.</p>
               </div>
             </details>
             <div className="price-spec-list">

@@ -159,8 +159,9 @@ export default function Page() {
       <section className="payment-strip">
         <div>
           <p className="eyebrow">Transparent payment</p>
-          <h2>Group rates from $1,799–$1,999 pp. Around half online, rest cash to hosts.</h2>
-          <p>Many nomadic families live outside reliable online banking. The online payment confirms your place with 8 Lakes Tours. The local family portion is paid directly in clean USD cash in Mongolia so the host payment reaches the family clearly.</p>
+          <h2>$1,999 per person. Half online, half cash to your hosts.</h2>
+          <p className="payment-strip-note">Group rates apply for 3–8 guests.</p>
+          <p>Many nomadic families live outside reliable online banking. The online half confirms your place with 8 Lakes Tours, and the other half is paid directly to your host family in clean USD cash in Mongolia.</p>
         </div>
         <Link href="/faq">Read payment FAQ</Link>
       </section>
@@ -222,6 +223,7 @@ export default function Page() {
         .expectations { background:#120f0b; }
         .payment-strip { display:grid; grid-template-columns:1fr auto; gap:2rem; align-items:center; border-top:1px solid rgba(200,169,110,.14); border-bottom:1px solid rgba(200,169,110,.14); }
         .payment-strip p { max-width:820px; }
+        .payment-strip .payment-strip-note { margin:-.35rem 0 1rem; color:#c8a96e; font-style:italic; font-size:.95rem; letter-spacing:.02em; }
         .next-links { text-align:center; }
         .next-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.85rem; margin-top:2rem; text-align:left; }
         .next-grid a { border:1px solid rgba(200,169,110,.18); border-radius:var(--radius-card); background:rgba(245,240,232,.035); text-decoration:none; padding:1.1rem; min-height:130px; }

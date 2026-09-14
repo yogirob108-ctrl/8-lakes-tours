@@ -239,9 +239,9 @@ export async function POST(request: Request) {
   });
   const internalRecipients = getInternalEmailRecipients();
 
-  await Promise.allSettled([
+  await Promise.all([
+    // Internal alert is operational only. Customer confirmation is dispatched only by the server-verified payment webhook.
     claimAndSendEmail(supabase, booking, 'internal_booking_notification', internalRecipients, email, internalEmail),
-    ...(manualPaymentRequired ? [claimAndSendEmail(supabase, booking, 'booking_received', email, internalRecipients[0], customerEmail)] : []),
   ]);
 
   return NextResponse.json({ ok: true, reference, created: booking.created, paymentUrl: manualPaymentRequired ? null : paymentUrl }, { headers: { 'Cache-Control': 'no-store' } });

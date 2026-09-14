@@ -394,6 +394,8 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
   const stripeClickTrackedRef = useRef(false);
   const formSubmittingRef = useRef(false);
   const submissionKeyRef = useRef<string | null>(null);
+  const draftTimerRef = useRef<number | null>(null);
+  const draftOwnershipRef = useRef<{ draft_id: string; credential: string } | null>(null);
   const [pricing, setPricing] = useState<LocalizedPricing>({
     currency: 'USD',
     countryLabel: COUNTRY_LABEL_BY_CURRENCY.USD,
@@ -411,6 +413,12 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
   const checkoutFallbackHref = canPay ? paymentUrl : '#book';
   const lightboxImage = lightboxIndex === null ? null : GALLERY_IMAGES[lightboxIndex];
   const isLightboxOpen = lightboxIndex !== null;
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(sessionStorage.getItem('8l_checkout_draft') || 'null');
+      if (saved?.draft_id && saved?.credential) draftOwnershipRef.current = saved;
+    } catch { /* Private browsing can disable session storage. */ }
+  }, []);
   const openLightbox = (src: string, alt: string) => {
     const imageIndex = GALLERY_IMAGES.findIndex(image => image.src === src && image.alt === alt);
     setLightboxIndex(imageIndex >= 0 ? imageIndex : 0);
@@ -614,6 +622,28 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
     const destination = new URL(checkout.url);
     if (destination.origin !== 'https://checkout.stripe.com' || destination.username || destination.password) throw new Error('Secure checkout is unavailable. Please use the private payment link below.');
     window.location.assign(destination.href);
+  };
+
+  const scheduleDraftSave = (form: HTMLFormElement) => {
+    if (draftTimerRef.current) window.clearTimeout(draftTimerRef.current);
+    draftTimerRef.current = window.setTimeout(async () => {
+      const data = new FormData(form);
+      const payload = {
+        first_name: data.get('first_name'), last_name: data.get('last_name'), email: data.get('email'), phone: data.get('phone'),
+        tour_date: data.get('tour_date'), guest_count: data.get('guest_count'), notes: data.get('notes'),
+        travellers: Array.from({ length: Math.max(0, guestCount - 1) }, (_, index) => ({
+          first_name: data.get(`travellers.${index + 1}.first_name`), last_name: data.get(`travellers.${index + 1}.last_name`), date_of_birth: data.get(`travellers.${index + 1}.date_of_birth`),
+        })), ...draftOwnershipRef.current,
+      };
+      try {
+        const response = await fetch('/api/checkout-draft', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), keepalive: true });
+        const saved = await response.json();
+        if (response.ok && saved?.draft_id && saved?.credential) {
+          draftOwnershipRef.current = { draft_id: saved.draft_id, credential: saved.credential };
+          sessionStorage.setItem('8l_checkout_draft', JSON.stringify(draftOwnershipRef.current));
+        }
+      } catch { /* A later edit or submit retries; a draft failure never pretends a booking exists. */ }
+    }, 700);
   };
 
   const submitBooking = async (form: HTMLFormElement) => {
@@ -1890,7 +1920,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           <span className="section-eyebrow">Booking Details</span>
           <h2 className="section-title" style={{fontSize:'2rem', marginBottom:'1rem'}}>Secure<br /><em>Your Place</em></h2>
           <p className="section-body" style={{fontSize:'0.9rem', marginBottom:'2rem'}}>Choose a fixed date or a 2027 request option and tell us who&apos;s coming. Bookings of 1–2 guests on a fixed date continue straight to payment after submitting. Scheduled groups of 1–8 pay the exact group amount in one checkout; private, custom, and 2027 requests are confirmed before payment.</p>
-          <form className="booking-form" onFocusCapture={markBookingFormStarted} onSubmit={async e => { e.preventDefault(); await submitBooking(e.currentTarget); }}>
+          <form className="booking-form" onFocusCapture={markBookingFormStarted} onInput={e => scheduleDraftSave(e.currentTarget)} onSubmit={async e => { e.preventDefault(); await submitBooking(e.currentTarget); }}>
             <input type="hidden" name="display_currency" value={pricing.currency} />
             <input type="hidden" name="display_tour_price" value={pricing.tourPrice} />
             <input type="hidden" name="display_online_payment" value={pricing.onlinePayment} />
@@ -2070,7 +2100,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                 style={{marginTop:'0.5rem', opacity: hasRequiredContact ? 1 : 0.4, transition:'opacity 0.3s', cursor: hasRequiredContact ? 'pointer' : 'not-allowed'}}
               >
                 {formSubmitting && <span className="booking-save-spinner" aria-hidden="true" />}
-                {formSubmitting ? (requiresHumanConfirmation ? 'Sending your request…' : 'Preparing your secure checkout…') : awaitsGroupInvoice ? 'Request Your Group Invoice' : requiresHumanConfirmation ? 'Submit Availability Request' : 'Continue to Secure Payment'}
+                {formSubmitting ? (requiresHumanConfirmation ? 'Sending your request…' : 'Preparing your secure checkout…') : awaitsGroupInvoice ? 'Request Your Group Invoice' : requiresHumanConfirmation ? 'Submit Availability Request' : `Book & pay $${groupPricing.onlinePaymentUsd.toLocaleString('en-US')} USD`}
               </button>
             ) : (
               <div style={{marginTop:'0.5rem', padding:'0.9rem 1rem', background:'rgba(200,169,110,0.08)', border:'1px solid rgba(200,169,110,0.3)', borderRadius:'var(--radius-soft)', textAlign:'center'}}>

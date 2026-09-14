@@ -49,6 +49,16 @@ test('normalizes an exact manifest and derives the lead at position one', () => 
   ]);
 });
 
+test('keeps optional gender/pronouns trimmed and stores blanks as null', () => {
+  const result = normalizeBookingTravellers(2, [
+    validTraveller({ gender_pronouns: '  Woman · she/her ' }),
+    validTraveller({ first_name: 'Grace', email: '', gender_pronouns: '   ' }),
+  ], { today: '2026-09-10' });
+
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.travellers.map(({ gender_pronouns }) => gender_pronouns), ['Woman · she/her', null]);
+});
+
 test('rejects invalid group sizes and unknown manifest cardinality', () => {
   for (const count of [0, 9, 1.5, '2 people', null]) {
     assert.equal(normalizeBookingTravellers(count, [validTraveller()], { today: '2026-09-10' }).ok, false);
@@ -79,6 +89,7 @@ test('bounds every traveller field', () => {
     email: 254,
     phone: 40,
     nationality: 80,
+    gender_pronouns: 60,
     dietary_notes: 1000,
   };
   for (const [field, limit] of Object.entries(limits)) {

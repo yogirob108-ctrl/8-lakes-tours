@@ -27,7 +27,7 @@ export default function PrivacyPolicy() {
           },
           {
             title: '2. What Data We Collect',
-            body: 'When you submit the booking form on our website, we collect passport-matching names, date of birth, nationality, riding experience, and dietary information for each traveller, plus optional companion email and phone details. The lead booker supplies companion details for trip operations and confirms they have each companion’s permission to provide their details. We also collect the lead traveller’s contact and emergency contact details, preferred tour date, additional notes, and typed digital signature. The typed signature records the lead booker’s own waiver agreement only; it is not treated as a waiver signed by every companion.',
+            body: 'When you submit the booking form on our website, we collect passport-matching names, date of birth, nationality, riding experience, and dietary information for each traveller, plus optional gender/pronouns and optional companion email and phone details. The lead booker supplies companion details for trip operations and confirms they have each companion’s permission to provide their details. We also collect the lead traveller’s contact and emergency contact details, preferred tour date, additional notes, and typed digital signature. The typed signature records the lead booker’s own waiver agreement only; it is not treated as a waiver signed by every companion.',
           },
           {
             title: '3. Why We Collect It (Legal Basis)',

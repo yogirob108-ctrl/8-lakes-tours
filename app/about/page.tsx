@@ -32,7 +32,7 @@ const storyCards = [
   },
   {
     title: 'Built around the real thing',
-    body: '8 Lakes Tours is not a polished resort product. It is built around real environments over artificial comfort, movement over passive consumption, and a host-family experience that asks guests to arrive open, flexible, and ready for the land as it is.',
+    body: '8 Lakes Tours is not a polished resort product. It is built around real environments over artificial comfort and a host-family experience that asks guests to arrive open, flexible, and ready for the land as it is.',
   },
 ];
 

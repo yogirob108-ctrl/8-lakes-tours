@@ -5,6 +5,7 @@ import { type FormEvent, type MouseEvent, useEffect, useMemo, useRef, useState }
 import { GROUP_INVOICE, manualPaymentReason } from '@/lib/tour-booking.mjs';
 import { BASE_LOCAL_FAMILY_PAYMENT_USD, BASE_ONLINE_PAYMENT_USD, BASE_PRICE_USD, GROUP_PRICING_TIERS, MAX_GROUP_SIZE, clampGuestCount, getGroupPricing } from '@/lib/group-pricing.mjs';
 import { normalizeBookingTravellers } from '@/lib/booking-travellers.mjs';
+import { composeDateOfBirth, splitDateOfBirth } from '@/lib/date-of-birth-fields.mjs';
 
 type FunnelEventProperties = Record<string, string | number | boolean>;
 
@@ -369,6 +370,35 @@ function WaiverModal({ onClose, onAgree }: { onClose: () => void; onAgree: () =>
   );
 }
 
+function DateOfBirthFields({ name, label, isLead = false }: { name: string; label: string; isLead?: boolean }) {
+  const [parts, setParts] = useState({ day: '', month: '', year: '' });
+  const [touched, setTouched] = useState(false);
+  const result = composeDateOfBirth(parts.day, parts.month, parts.year);
+  const error = touched && (result.error || (!result.value && (parts.day || parts.month || parts.year) ? 'Enter a day, month and four-digit year.' : ''));
+  const errorId = `${name.replaceAll('.', '-')}-date-error`;
+  const update = (part: 'day' | 'month' | 'year', value: string) => {
+    const limit = part === 'year' ? 4 : 2;
+    setParts(current => ({ ...current, [part]: value.replace(/\D/g, '').slice(0, limit) }));
+  };
+  const autocomplete = (part: 'day' | 'month' | 'year') => isLead ? `bday-${part}` : 'off';
+  return (
+    <fieldset className="date-of-birth-group" aria-describedby={`${name}-date-hint${error ? ` ${errorId}` : ''}`}>
+      <legend className="form-label">{label}</legend>
+      <p id={`${name}-date-hint`} className="date-of-birth-hint">For example, 3 2 2004</p>
+      <div className="date-of-birth-inputs">
+        {(['day', 'month', 'year'] as const).map(part => (
+          <div className={`date-of-birth-part ${part}`} key={part}>
+            <label htmlFor={`${name}-${part}`}>{part[0].toUpperCase() + part.slice(1)}</label>
+            <input id={`${name}-${part}`} name={`${name}_${part}`} className="form-input" type="text" inputMode="numeric" maxLength={part === 'year' ? 4 : 2} autoComplete={autocomplete(part)} value={parts[part]} onChange={event => update(part, event.target.value)} onBlur={() => setTouched(true)} aria-invalid={Boolean(error)} aria-describedby={error ? errorId : `${name}-date-hint`} />
+          </div>
+        ))}
+      </div>
+      <input data-date-of-birth-canonical="true" name={name} type="hidden" value={result.value} autoComplete={isLead ? 'bday' : 'off'} />
+      {error && <p id={errorId} className="field-error" role="alert">{error}</p>}
+    </fieldset>
+  );
+}
+
 export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
   const lateSeasonDepartures = tourDates.filter(option => option.startDate && option.startDate >= '2026-09-01');
   const [showWaiver, setShowWaiver] = useState(false);
@@ -379,6 +409,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
+  const [validationErrors, setValidationErrors] = useState<Array<{ id: string; message: string }>>([]);
   const [bookingReference, setBookingReference] = useState('');
   const [paymentUrl, setPaymentUrl] = useState('');
   const [guestCount, setGuestCount] = useState(1);
@@ -432,10 +463,15 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
     };
     assign('first_name', draft.first_name); assign('last_name', draft.last_name); assign('email', draft.email);
     assign('phone', draft.phone); assign('tour_date', draft.tour_date); assign('guest_count', draft.guest_count); assign('notes', draft.notes);
-    (draft.travellers || []).forEach((traveller: { first_name?: string; last_name?: string; date_of_birth?: string }, index: number) => {
+    const restoreDate = (name: string, value: unknown, raw?: { date_of_birth_day?: string; date_of_birth_month?: string; date_of_birth_year?: string }) => {
+      const parts = splitDateOfBirth(String(value || ''));
+      assign(`${name}_day`, parts.day || raw?.date_of_birth_day); assign(`${name}_month`, parts.month || raw?.date_of_birth_month); assign(`${name}_year`, parts.year || raw?.date_of_birth_year);
+    };
+    restoreDate('date_of_birth', draft.date_of_birth, draft);
+    (draft.travellers || []).forEach((traveller: { first_name?: string; last_name?: string; date_of_birth?: string; date_of_birth_day?: string; date_of_birth_month?: string; date_of_birth_year?: string }, index: number) => {
       assign(`travellers.${index + 1}.first_name`, traveller.first_name);
       assign(`travellers.${index + 1}.last_name`, traveller.last_name);
-      assign(`travellers.${index + 1}.date_of_birth`, traveller.date_of_birth);
+      restoreDate(`travellers.${index + 1}.date_of_birth`, traveller.date_of_birth, traveller);
     });
     setEmail(String(draft.email || ''));
     setSelectedTourDate(String(draft.tour_date || ''));
@@ -679,9 +715,11 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
       const data = new FormData(form);
       const payload = {
         first_name: data.get('first_name'), last_name: data.get('last_name'), email: data.get('email'), phone: data.get('phone'),
+        date_of_birth: data.get('date_of_birth'), date_of_birth_day: data.get('date_of_birth_day'), date_of_birth_month: data.get('date_of_birth_month'), date_of_birth_year: data.get('date_of_birth_year'),
         tour_date: data.get('tour_date'), guest_count: data.get('guest_count'), notes: data.get('notes'),
         travellers: Array.from({ length: Math.max(0, guestCount - 1) }, (_, index) => ({
           first_name: data.get(`travellers.${index + 1}.first_name`), last_name: data.get(`travellers.${index + 1}.last_name`), date_of_birth: data.get(`travellers.${index + 1}.date_of_birth`),
+          date_of_birth_day: data.get(`travellers.${index + 1}.date_of_birth_day`), date_of_birth_month: data.get(`travellers.${index + 1}.date_of_birth_month`), date_of_birth_year: data.get(`travellers.${index + 1}.date_of_birth_year`),
         })), ...draftOwnershipRef.current,
       };
       try {
@@ -695,8 +733,54 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
     }, 700);
   };
 
+  const clearFieldValidation = (target: EventTarget | null) => {
+    if (!(target instanceof HTMLElement)) return;
+    target.removeAttribute('aria-invalid');
+    const id = target.id;
+    if (id) {
+      document.getElementById(`${id}-inline-error`)?.remove();
+      setValidationErrors(current => current.filter(error => error.id !== id));
+    }
+  };
+
+  const validateBookingForm = (form: HTMLFormElement) => {
+    const invalid: Array<{ element: HTMLElement; message: string }> = [];
+    const labelFor = (element: HTMLElement) => element.id ? form.querySelector(`label[for="${CSS.escape(element.id)}"]`)?.textContent?.trim() : '';
+    form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input[required], select[required], textarea[required]').forEach(element => {
+      if (!element.disabled && !element.validity.valid) {
+        const label = labelFor(element) || (element.type === 'checkbox' ? 'the required confirmation' : 'this field');
+        invalid.push({ element, message: element.type === 'checkbox' ? `Confirm ${label.replace(/^I /, '').replace(/\.$/, '')}.` : `Enter ${label.replace(/\s*\(Optional\)/i, '')}.` });
+      }
+    });
+    form.querySelectorAll<HTMLInputElement>('input[data-date-of-birth-canonical="true"]').forEach(element => {
+      if (!element.value) {
+        const firstPart = form.querySelector<HTMLInputElement>(`#${CSS.escape(element.name)}-day`);
+        if (firstPart) invalid.push({ element: firstPart, message: `${element.name.startsWith('travellers.') ? `Traveller ${element.name.split('.')[1]} ` : ''}date of birth needs a real day, month and year.` });
+      }
+    });
+    form.querySelectorAll<HTMLElement>('.form-inline-validation-error').forEach(error => error.remove());
+    form.querySelectorAll<HTMLElement>('[aria-invalid="true"]').forEach(element => element.removeAttribute('aria-invalid'));
+    const summary = invalid.map(({ element, message }, index) => {
+      const id = element.id || `booking-invalid-${index}`;
+      element.id ||= id;
+      element.setAttribute('aria-invalid', 'true');
+      const inline = document.createElement('p'); inline.className = 'field-error form-inline-validation-error'; inline.id = `${id}-inline-error`; inline.textContent = message; inline.setAttribute('role', 'alert');
+      element.setAttribute('aria-describedby', `${element.getAttribute('aria-describedby') || ''} ${inline.id}`.trim());
+      (element.closest('.form-group, .date-of-birth-group') || element.parentElement)?.append(inline);
+      return { id, message };
+    });
+    setValidationErrors(summary);
+    if (invalid.length) {
+      const first = invalid[0].element;
+      window.setTimeout(() => first.focus({ preventScroll: true }), 0);
+      first.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+      return false;
+    }
+    return true;
+  };
+
   const submitBooking = async (form: HTMLFormElement) => {
-    if (formSubmitted || formSubmittingRef.current) return;
+    if (formSubmitted || formSubmittingRef.current || !validateBookingForm(form)) return;
     formSubmittingRef.current = true;
     submissionKeyRef.current ||= crypto.randomUUID();
     setFormError('');
@@ -1238,6 +1322,19 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .form-label { font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); }
         .form-input, .form-select, .form-textarea { background: rgba(245,240,232,0.05); border: 1px solid rgba(245,240,232,0.12); border-radius: var(--radius-soft); color: var(--cream); padding: 0.8rem 1rem; font-family: var(--font-jost), 'Jost', sans-serif; font-size: 0.875rem; line-height: 1.3; font-weight: 300; width: 100%; min-height: 48px; box-sizing: border-box; transition: border-color 0.3s ease; outline: none; -webkit-appearance: none; }
         .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--gold); }
+        .date-of-birth-group { min-width: 0; margin: 0; padding: 0; border: 0; }
+        .date-of-birth-group .form-label { margin-bottom: 0.35rem; }
+        .date-of-birth-hint { margin: 0 0 0.55rem; color: var(--mist); font-size: 0.72rem; }
+        .date-of-birth-inputs { display: grid; grid-template-columns: 0.78fr 0.78fr 1.2fr; gap: 0.5rem; }
+        .date-of-birth-part label { display: block; margin: 0 0 0.32rem; color: var(--mist); font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase; }
+        .date-of-birth-part .form-input { padding-inline: 0.65rem; }
+        .field-error { margin: 0.45rem 0 0; color: #fff; font-size: 0.78rem; font-weight: 500; }
+        .booking-error-summary { margin: 0 0 1rem; padding: 0.9rem 1rem; border: 2px solid #ff8f70; border-radius: var(--radius-soft); background: #35170f; color: #fff; }
+        .booking-error-summary strong { display: block; margin-bottom: 0.35rem; }
+        .booking-error-summary ul { margin: 0; padding-left: 1.1rem; }
+        .booking-error-summary button { padding: 0.18rem 0; border: 0; background: transparent; color: #fff; text-decoration: underline; cursor: pointer; text-align: left; font: inherit; }
+        .form-input[aria-invalid="true"], .form-select[aria-invalid="true"], .form-textarea[aria-invalid="true"] { border: 2px solid #ff8f70; box-shadow: inset 0 0 0 1px #35170f; background-image: linear-gradient(135deg, transparent calc(100% - 1.2rem), rgba(255,143,112,0.35)); }
+        @media (max-width: 520px) { .date-of-birth-inputs { gap: 0.4rem; } .date-of-birth-part .form-input { padding-inline: 0.5rem; } }
         .form-input:-webkit-autofill, .form-input:-webkit-autofill:hover, .form-input:-webkit-autofill:focus, input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, textarea:-webkit-autofill, textarea:-webkit-autofill:hover, textarea:-webkit-autofill:focus { -webkit-box-shadow: 0 0 0 1000px #15120e inset !important; box-shadow: 0 0 0 1000px #15120e inset !important; -webkit-text-fill-color: var(--cream) !important; caret-color: var(--cream); border-color: rgba(200,169,110,0.35) !important; transition: background-color 9999s ease-in-out 0s; }
         .form-select option { background: var(--ink); }
         .form-textarea { resize: vertical; min-height: 80px; }
@@ -1969,7 +2066,8 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           <span className="section-eyebrow">Booking Details</span>
           <h2 className="section-title" style={{fontSize:'2rem', marginBottom:'1rem'}}>Secure<br /><em>Your Place</em></h2>
           <p className="section-body" style={{fontSize:'0.9rem', marginBottom:'2rem'}}>Choose a fixed date or a 2027 request option and tell us who&apos;s coming. Bookings of 1–2 guests on a fixed date continue straight to payment after submitting. Scheduled groups of 1–8 pay the exact group amount in one checkout; private, custom, and 2027 requests are confirmed before payment.</p>
-          <form ref={bookingFormRef} className="booking-form" onFocusCapture={markBookingFormStarted} onInput={event => scheduleDraftSave(event.currentTarget)} onSubmit={async e => { e.preventDefault(); await submitBooking(e.currentTarget); }}>
+          <form ref={bookingFormRef} noValidate className="booking-form" onFocusCapture={markBookingFormStarted} onInput={event => { clearFieldValidation(event.target); scheduleDraftSave(event.currentTarget); }} onSubmit={async e => { e.preventDefault(); await submitBooking(e.currentTarget); }}>
+            {validationErrors.length > 0 && <div className="booking-error-summary" role="alert" aria-labelledby="booking-error-summary-title"><strong id="booking-error-summary-title">Check the highlighted fields</strong><ul>{validationErrors.map(error => <li key={`${error.id}-${error.message}`}><button type="button" onClick={() => { const field = document.getElementById(error.id); field?.focus({ preventScroll: true }); field?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' }); }}>{error.message}</button></li>)}</ul></div>}
             <input type="hidden" name="display_currency" value={pricing.currency} />
             <input type="hidden" name="display_tour_price" value={pricing.tourPrice} />
             <input type="hidden" name="display_online_payment" value={pricing.onlinePayment} />
@@ -1987,7 +2085,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                 <div className="form-group"><label className="form-label" htmlFor="nationality">Nationality</label><input id="nationality" className="form-input" name="nationality" type="text" placeholder="e.g. American" maxLength={80} required /></div>
               </div>
               <div className="form-grid compact-grid">
-                <div className="form-group"><label className="form-label" htmlFor="date_of_birth">Date of Birth</label><input id="date_of_birth" className="form-input" name="date_of_birth" type="date" required /></div>
+                <DateOfBirthFields name="date_of_birth" label="Date of Birth" isLead />
                 <div className="form-group"><label className="form-label" htmlFor="gender">Gender (Optional)</label><input id="gender" className="form-input" name="gender" type="text" placeholder="e.g. Female" maxLength={40} /></div>
               </div>
               <div className="form-group"><label className="form-label" htmlFor="dietary_restrictions">Dietary Restrictions</label><input id="dietary_restrictions" className="form-input" name="dietary_restrictions" type="text" placeholder="None, vegetarian, allergies, serious dairy/lactose issues, etc." maxLength={1000} /></div>
@@ -2053,7 +2151,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                       <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.last_name`}>Passport/Legal Last Name</label><input id={`${fieldPrefix}.last_name`} className="form-input" name={`travellers.${index + 1}.last_name`} type="text" maxLength={100} required /></div>
                     </div>
                     <div className="form-grid compact-grid">
-                      <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.date_of_birth`}>Date of Birth</label><input id={`${fieldPrefix}.date_of_birth`} className="form-input" name={`travellers.${index + 1}.date_of_birth`} type="date" required /></div>
+                      <DateOfBirthFields name={`travellers.${index + 1}.date_of_birth`} label="Date of Birth" />
                       <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.nationality`}>Nationality</label><input id={`${fieldPrefix}.nationality`} className="form-input" name={`travellers.${index + 1}.nationality`} type="text" maxLength={80} required /></div>
                     </div>
                     <div className="form-grid compact-grid">

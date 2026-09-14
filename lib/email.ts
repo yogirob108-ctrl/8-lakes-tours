@@ -445,6 +445,24 @@ export function insuranceReminderCustomerEmail(input: LifecycleEmailInput) {
   };
 }
 
+export function arrivalCoordinationCustomerEmail(input: LifecycleEmailInput) {
+  const name = firstName(input.firstName);
+  return {
+    subject: `Arrival coordination — 8 Lakes Tours ${input.reference}`,
+    text: `Hi ${name},\n\nYour 8 Lakes Tours departure is getting close. Please reply with your Ulaanbaatar arrival and Bat-Ulzii bus details once booked, so we can coordinate the host-family pickup.\n\nBooking reference: ${input.reference}\nTour date: ${input.tourDate || 'TBC'}\n\nPlease keep your travel insurance, passport, warm layers, and clean USD cash for the host family ready.\n\nRob Zaher\n8 Lakes Tours`,
+    html: emailShell({ preheader: `Arrival coordination for booking ${input.reference}.`, title: 'Arrival coordination.', intro: `Hi ${escapeHtml(name)}, your departure is getting close.`, children: `<p style="margin:0 0 18px;color:#3a3024;line-height:1.65;font-size:15px">Please reply with your Ulaanbaatar arrival and Bat-Ulzii bus details once booked, so we can coordinate the host-family pickup.</p><p style="margin:0;color:#3a3024;line-height:1.65;font-size:15px"><strong>Booking:</strong> ${escapeHtml(input.reference)}<br><strong>Tour date:</strong> ${escapeHtml(input.tourDate || 'TBC')}</p>` }),
+  };
+}
+
+export function finalChecklistCustomerEmail(input: LifecycleEmailInput) {
+  const name = firstName(input.firstName);
+  return {
+    subject: `Final check before Mongolia — 8 Lakes Tours ${input.reference}`,
+    text: `Hi ${name},\n\nA final check before your 8 Lakes Tours departure: passport, insurance covering riding and evacuation, flights/bus, warm layers, medication, and clean USD cash for the host family.\n\nBooking reference: ${input.reference}\nTour date: ${input.tourDate || 'TBC'}\n\nReply if anything has changed.\n\nRob Zaher\n8 Lakes Tours`,
+    html: emailShell({ preheader: `Final departure check for booking ${input.reference}.`, title: 'Final departure check.', intro: `Hi ${escapeHtml(name)}, a quick final check before departure.`, children: `<p style="margin:0;color:#3a3024;line-height:1.65;font-size:15px">Please check your passport, riding/evacuation insurance, flights or bus, warm layers, medication, and clean USD cash for the host family. Reply if anything has changed.</p>` }),
+  };
+}
+
 export function leadInternalEmail(input: { name: string; email: string; source: string; interest: string }) {
   const name = input.name || 'Subscriber';
   return {

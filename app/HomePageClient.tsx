@@ -474,9 +474,15 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
       assign(`travellers.${index + 1}.last_name`, traveller.last_name);
       restoreDate(`travellers.${index + 1}.date_of_birth`, traveller.date_of_birth, traveller);
     });
-    setEmail(String(draft.email || ''));
-    setSelectedTourDate(String(draft.tour_date || ''));
-    setGuestCount(Number(draft.guest_count) || 1);
+    // This form has controlled fields.  A restore response can arrive after the
+    // visitor has already picked a date, so never write stale draft state over a
+    // value currently in the form.
+    const currentEmail = (form.elements.namedItem('email') as HTMLInputElement | null)?.value;
+    const currentTourDate = (form.elements.namedItem('tour_date') as HTMLSelectElement | null)?.value;
+    const currentGuestCount = (form.elements.namedItem('guest_count') as HTMLSelectElement | null)?.value;
+    if (!currentEmail) setEmail(String(draft.email || ''));
+    if (!currentTourDate) setSelectedTourDate(String(draft.tour_date || ''));
+    if (!currentGuestCount) setGuestCount(Number(draft.guest_count) || 1);
   };
 
   // The poster image is the LCP element; the drone loop only loads once the page is
@@ -766,7 +772,12 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
     form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input[required], select[required], textarea[required]').forEach(element => {
       if (!element.disabled && !element.validity.valid) {
         const label = labelFor(element) || (element.type === 'checkbox' ? 'the required confirmation' : 'this field');
-        invalid.push({ element, message: element.type === 'checkbox' ? `Confirm ${label.replace(/^I /, '').replace(/\.$/, '')}.` : `Enter ${label.replace(/\s*\(Optional\)/i, '')}.` });
+        const message = element.id === 'tour_date'
+          ? 'Choose a tour date before continuing.'
+          : element.type === 'checkbox'
+            ? `Confirm ${label.replace(/^I /, '').replace(/\.$/, '')}.`
+            : `Enter ${label.replace(/\s*\(Optional\)/i, '')}.`;
+        invalid.push({ element, message });
       }
     });
     form.querySelectorAll<HTMLInputElement>('input[data-date-of-birth-canonical="true"]').forEach(element => {
@@ -1460,6 +1471,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .footer-cta:hover { background: var(--cream); border-color: var(--cream); color: var(--dark); transform: translateY(-2px); }
         .footer-links { margin: 3rem auto 0; display: flex; flex-wrap: wrap; gap: 0.9rem 1.5rem; justify-content: center; }
         .footer-link { color: rgba(200,169,110,0.86); text-decoration: none; font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; transition: color 0.3s ease; }
+        .privacy-choices-link { appearance: none; border: 0; background: transparent; padding: 0; font: inherit; cursor: pointer; }
         .footer-link:hover { color: var(--cream); }
         .footer-note { border-top: 1px solid rgba(200,169,110,0.14); max-width: 1120px; margin: 3.5rem auto 0; padding-top: 1.4rem; display: flex; justify-content: space-between; gap: 1rem; font-size: 0.75rem; color: rgba(212,207,196,0.68); }
 
@@ -2139,7 +2151,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                 </div>
                 <div className="form-group">
                   <label className="form-label" htmlFor="tour_date">Preferred Tour Date</label>
-                  <select id="tour_date" className="form-select" name="tour_date" value={selectedTourDate} onChange={e => setSelectedTourDate(e.target.value)}>
+                  <select id="tour_date" className="form-select" name="tour_date" required value={selectedTourDate} onChange={e => setSelectedTourDate(e.target.value)}>
                     <option value="">Select date</option>
                     {tourDates.map(dateOption => (
                       <option key={dateOption.date} value={dateOption.date}>{dateOption.date}</option>
@@ -2480,6 +2492,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             <a className="footer-link" href="/contact">Contact</a>
             <a className="footer-link" href="/terms">Terms</a>
             <a className="footer-link" href="/privacy">Privacy</a>
+            <button className="footer-link privacy-choices-link" type="button" onClick={() => window.dispatchEvent(new Event('eight-lakes:open-privacy-choices'))}>Privacy choices</button>
           </nav>
         </div>
         <div className="footer-note">

@@ -98,8 +98,6 @@ async function claimAndSendEmail(
 }
 
 export async function POST(request: Request) {
-  if (!isSupabaseAdminConfigured) return jsonError('Booking system is temporarily unavailable. Please email info@8lakestours.com.', 503);
-
   const declaredLength = Number(request.headers.get('content-length') || 0);
   if (Number.isFinite(declaredLength) && declaredLength > MAX_REQUEST_BYTES) return jsonError('Booking submission is too large.', 413);
 
@@ -142,6 +140,7 @@ export async function POST(request: Request) {
     return jsonError('The lead booker must confirm permission to provide companion details.');
   }
   if (!tourDate || !isBookableTourDate(tourDate)) return jsonError('Please choose a currently available departure or request option.');
+  if (!isSupabaseAdminConfigured) return jsonError('Booking system is temporarily unavailable. Please email info@8lakestours.com.', 503);
 
   const supabase = createSupabaseAdminClient();
   const ipKeyHash = hmacKey('ip', requestIp(request));

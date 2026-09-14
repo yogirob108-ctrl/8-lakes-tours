@@ -29,7 +29,6 @@ function clearGoogleAnalyticsCookies() {
 }
 
 export default function GoogleConsentBanner() {
-  const [choice, setChoice] = useState<ConsentChoice | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
@@ -40,19 +39,23 @@ export default function GoogleConsentBanner() {
     }
 
     const frame = window.requestAnimationFrame(() => {
-      if (stored) setChoice(stored);
-      else setIsOpen(true);
+      if (!stored) setIsOpen(true);
       setIsReady(true);
     });
 
     return () => window.cancelAnimationFrame(frame);
   }, []);
 
+  useEffect(() => {
+    const openChoices = () => setIsOpen(true);
+    window.addEventListener('eight-lakes:open-privacy-choices', openChoices);
+    return () => window.removeEventListener('eight-lakes:open-privacy-choices', openChoices);
+  }, []);
+
   function saveChoice(nextChoice: ConsentChoice) {
     window.localStorage.setItem(CONSENT_STORAGE_KEY, nextChoice);
     window.gtag?.('consent', 'update', consentUpdateForChoice(nextChoice));
     if (nextChoice === 'necessary') clearGoogleAnalyticsCookies();
-    setChoice(nextChoice);
     setIsOpen(false);
   }
 
@@ -75,11 +78,7 @@ export default function GoogleConsentBanner() {
             <button type="button" className="consent-primary" onClick={() => saveChoice('measurement')}>Allow measurement</button>
           </div>
         </section>
-      ) : (
-        <button type="button" className="privacy-choice-trigger" onClick={() => setIsOpen(true)}>
-          Privacy choices{choice === 'measurement' ? ' · measurement on' : ''}
-        </button>
-      )}
+      ) : null}
       <style jsx global>{`
         .consent-panel {
           position: fixed;
@@ -107,15 +106,15 @@ export default function GoogleConsentBanner() {
         .consent-panel p { margin: 0; max-width: 650px; font-size: 0.78rem; line-height: 1.65; }
         .consent-panel a { display: inline-block; margin-top: 0.55rem; color: #c8a96e; font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase; }
         .consent-actions { display: flex; gap: 0.65rem; flex-wrap: wrap; justify-content: flex-end; }
-        .consent-actions button, .privacy-choice-trigger { min-height: 44px; border-radius: 10px; cursor: pointer; font: 600 0.66rem/1 var(--font-jost), 'Jost', sans-serif; letter-spacing: 0.12em; text-transform: uppercase; }
+        .consent-actions button { min-height: 44px; border-radius: 10px; cursor: pointer; font: 600 0.66rem/1 var(--font-jost), 'Jost', sans-serif; letter-spacing: 0.12em; text-transform: uppercase; }
         .consent-primary { border: 1px solid #c8a96e; background: #c8a96e; color: #0e0c09; padding: 0.8rem 1rem; }
         .consent-secondary { border: 1px solid rgba(245, 240, 232, 0.32); background: transparent; color: #f5f0e8; padding: 0.8rem 1rem; }
-        .privacy-choice-trigger { position: fixed; z-index: 1100; left: max(0.75rem, env(safe-area-inset-left)); bottom: max(0.75rem, env(safe-area-inset-bottom)); border: 1px solid rgba(200, 169, 110, 0.28); background: rgba(14, 12, 9, 0.82); color: rgba(245, 240, 232, 0.72); padding: 0.65rem 0.8rem; backdrop-filter: blur(12px); }
+
         @media (max-width: 720px) {
           .consent-panel { grid-template-columns: 1fr; gap: 1rem; padding: 1rem; }
           .consent-actions { display: grid; grid-template-columns: 1fr 1fr; }
           .consent-actions button { width: 100%; }
-          .privacy-choice-trigger { font-size: 0.56rem; min-height: 40px; }
+
         }
       `}</style>
     </>

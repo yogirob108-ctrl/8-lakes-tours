@@ -20,8 +20,9 @@ function harness(enabled='true') {
  if(name==='@/lib/abandoned-checkout.mjs')return {runAbandonedCheckoutRecovery:async({allowedDates})=>{calls.push(allowedDates);return {sent:0};}};
  throw Error(name);
  }});
- return {calls,run:(auth='Bearer local-only')=>exports.GET(new Request('https://example.invalid',{headers:{authorization:auth}}))};
+ return {calls,run:(auth='Bearer local-only',url='https://example.invalid')=>exports.GET(new Request(url,{headers:{authorization:auth}}))};
 }
 test('cron rejects missing credentials',async()=>{const h=harness();assert.equal((await h.run('')).status,401);assert.equal(h.calls.length,0);});
 test('cron requires explicit rollout enablement',async()=>{const h=harness('false');assert.equal((await h.run()).status,200);assert.equal(h.calls.length,0);});
 test('enabled cron uses only current approved scheduled inventory',async()=>{const h=harness();assert.equal((await h.run()).status,200);assert.ok(h.calls[0].length);for(const date of h.calls[0])assert.equal(booking.canAutomaticallyConfirmBooking(date,1),true);});
+test('disabled rollout permits only an authenticated no-send dry run',async()=>{const h=harness('false');assert.equal((await h.run('Bearer local-only','https://example.invalid?dry_run=1')).status,200);assert.equal(h.calls.length,1);});

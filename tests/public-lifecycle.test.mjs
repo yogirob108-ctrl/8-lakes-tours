@@ -56,6 +56,22 @@ test('reconciliation returns unknown rather than no payment when a bounded provi
   assert.deepEqual(one([paidSession], false), { reference: '8L-ABC123', status: 'scan_incomplete_unknown' });
 });
 
+test('an unavailable unrelated Invoice collection does not suppress exact independent PaymentIntent charge evidence', () => {
+  const paymentIntent = { ...paidSession, source: 'payment_intent', id: 'pi_paid', payment_intent_id: 'pi_paid', checkout_status: undefined };
+  const result = reconcileStripeProviderEvidence({
+    bookings: [booking], evidence: [paymentIntent], scanComplete: false,
+    scanIncompleteReason: 'provider_collection_unavailable', scanIncompleteCollection: 'invoice',
+  });
+  assert.deepEqual(result, [{ reference: '8L-ABC123', status: 'verified_paid', stripe_reference: 'pi_paid', source: 'payment_intent' }]);
+});
+
+test('the Invoice-unavailable exception retains refund and identity checks', () => {
+  const base = { ...paidSession, source: 'payment_intent', id: 'pi_paid', payment_intent_id: 'pi_paid', checkout_status: undefined };
+  const options = { bookings: [booking], scanComplete: false, scanIncompleteReason: 'provider_collection_unavailable', scanIncompleteCollection: 'invoice' };
+  assert.equal(reconcileStripeProviderEvidence({ ...options, evidence: [{ ...base, charge_amount_refunded_cents: 1 }] })[0].status, 'review_refunded_or_partial');
+  assert.equal(reconcileStripeProviderEvidence({ ...options, evidence: [{ ...base, customer_email: 'other@example.test' }] })[0].status, 'review_customer_mismatch');
+});
+
 test('reconciliation preserves historical provider payment evidence but does not call changed terms funded', () => {
   const changed = { ...booking, amount_cents: 109900 };
   assert.deepEqual(reconcileStripeProviderEvidence({ bookings: [changed], evidence: [paidSession], scanComplete: true }), [{

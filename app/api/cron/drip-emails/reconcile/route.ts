@@ -47,6 +47,8 @@ export async function GET(request: Request) {
       })),
       evidence: provider.evidence,
       scanComplete: provider.scanComplete,
+      scanIncompleteReason: provider.scanIncompleteReason,
+      scanIncompleteCollection: provider.scanIncompleteCollection,
     });
     return Response.json({ ok: true, dry_run: true, stripe: 'reachable', checked: candidates.length, scan_complete: provider.scanComplete, ...(provider.scanIncompleteReason ? { scan_incomplete_reason: provider.scanIncompleteReason } : {}), ...(provider.scanIncompleteCollection ? { scan_incomplete_collection: provider.scanIncompleteCollection } : {}), ...(provider.scanIncompleteProviderError ? { scan_incomplete_provider_error: provider.scanIncompleteProviderError } : {}), candidates }, { headers });
   } catch {

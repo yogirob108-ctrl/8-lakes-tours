@@ -24,7 +24,7 @@ export const metadata: Metadata = {
 const storyCards = [
   {
     title: 'Built from a real relationship',
-    body: 'Rob met Ganbold and the Sandagdorj family while travelling through Mongolia, then returned to shape this trip with them directly. This is not a generic route bought from a distant operator — it is a small hosted journey built around people Rob knows.',
+    body: 'Rob met Ganbold and the Sandagdorj family while travelling through Mongolia on horseback, then returned to shape this trip with them directly. This is not a generic route bought from a distant operator — it is a small hosted journey built around a mutual love for the steppe and all she has to offer.',
   },
   {
     title: 'Hosted by nomadic families',

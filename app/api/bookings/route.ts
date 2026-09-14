@@ -125,7 +125,7 @@ export async function POST(request: Request) {
       attribution: Record<string, string>;
       travellers: Array<{
         position: number; is_lead: boolean; first_name: string; last_name: string;
-        email: string | null; phone: string | null; nationality: string; gender_pronouns: string | null;
+        email: string | null; phone: string | null; nationality: string; gender: string | null;
         date_of_birth: string; riding_experience: string; dietary_notes: string | null;
       }>;
     } };
@@ -164,7 +164,7 @@ export async function POST(request: Request) {
   const manualReason = manualPaymentReason(tourDate, groupPricing.guestCount);
   const attributionBlock = attributionNote(bookingInput.attribution);
   const travellerNames = travellers
-    .map(traveller => `${traveller.position}. ${traveller.first_name} ${traveller.last_name}${traveller.is_lead ? ' (lead)' : ''}${traveller.gender_pronouns ? ` — ${traveller.gender_pronouns}` : ''}`)
+    .map(traveller => `${traveller.position}. ${traveller.first_name} ${traveller.last_name}${traveller.is_lead ? ' (lead)' : ''}${traveller.gender ? ` — ${traveller.gender}` : ''}`)
     .join('\n');
   const bookingNotes = [
     `Guests booking together: ${groupPricing.guestCount}`,

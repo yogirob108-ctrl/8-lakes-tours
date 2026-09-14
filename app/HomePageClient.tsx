@@ -631,7 +631,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           email: formData.get('email'),
           phone: formData.get('phone'),
           nationality: formData.get('nationality'),
-          gender_pronouns: formData.get('gender_pronouns'),
+          gender: formData.get('gender'),
           date_of_birth: formData.get('date_of_birth'),
           riding_experience: formData.get('riding_experience'),
           dietary_notes: formData.get('dietary_restrictions'),
@@ -642,7 +642,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           email: formData.get(`travellers.${index + 1}.email`),
           phone: formData.get(`travellers.${index + 1}.phone`),
           nationality: formData.get(`travellers.${index + 1}.nationality`),
-          gender_pronouns: formData.get(`travellers.${index + 1}.gender_pronouns`),
+          gender: formData.get(`travellers.${index + 1}.gender`),
           date_of_birth: formData.get(`travellers.${index + 1}.date_of_birth`),
           riding_experience: formData.get(`travellers.${index + 1}.riding_experience`),
           dietary_notes: formData.get(`travellers.${index + 1}.dietary_notes`),
@@ -1908,7 +1908,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               </div>
               <div className="form-grid compact-grid">
                 <div className="form-group"><label className="form-label" htmlFor="date_of_birth">Date of Birth</label><input id="date_of_birth" className="form-input" name="date_of_birth" type="date" required /></div>
-                <div className="form-group"><label className="form-label" htmlFor="gender_pronouns">Gender / Pronouns (Optional)</label><input id="gender_pronouns" className="form-input" name="gender_pronouns" type="text" placeholder="e.g. Woman · she/her" maxLength={60} /></div>
+                <div className="form-group"><label className="form-label" htmlFor="gender">Gender (Optional)</label><input id="gender" className="form-input" name="gender" type="text" placeholder="e.g. Female" maxLength={40} /></div>
               </div>
               <div className="form-group"><label className="form-label" htmlFor="emergency_contact">Emergency Contact (Name & Phone)</label><input id="emergency_contact" className="form-input" name="emergency_contact" type="text" placeholder="Name · Phone number" maxLength={200} /></div>
             </div>
@@ -1986,7 +1986,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                           <option>Advanced — experienced rider</option>
                         </select>
                       </div>
-                      <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.gender_pronouns`}>Gender / Pronouns (Optional)</label><input id={`${fieldPrefix}.gender_pronouns`} className="form-input" name={`travellers.${index + 1}.gender_pronouns`} type="text" placeholder="e.g. Man · he/him" maxLength={60} /></div>
+                      <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.gender`}>Gender (Optional)</label><input id={`${fieldPrefix}.gender`} className="form-input" name={`travellers.${index + 1}.gender`} type="text" placeholder="e.g. Male" maxLength={40} /></div>
                     </div>
                     <div className="form-grid compact-grid">
                       <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.email`}>Email (Optional)</label><input id={`${fieldPrefix}.email`} className="form-input" name={`travellers.${index + 1}.email`} type="email" maxLength={254} /></div>

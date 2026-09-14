@@ -3,13 +3,14 @@ import { timingSafeEqual } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { arrivalCoordinationCustomerEmail, finalChecklistCustomerEmail, getInternalEmailRecipients, insuranceReminderCustomerEmail, paymentConfirmedCustomerEmail, preparationCustomerEmail, sendEmail } from '@/lib/email';
 import { getLifecycleEmailSchedule } from '@/lib/lifecycle-email-schedule.mjs';
-import { getDryRun, reconcileStripeSessions, selectPacedLifecycleCandidate } from '@/lib/public-lifecycle.mjs';
+import { getDryRun, reconcileStripeProviderEvidence, selectPacedLifecycleCandidate } from '@/lib/public-lifecycle.mjs';
+import { collectStripeLifecycleEvidence } from '@/lib/stripe-lifecycle-evidence.mjs';
 import { isSupabaseAdminConfigured } from '@/lib/ops-config';
 import { createSupabaseAdminClient } from '@/lib/supabase-admin';
 
 const LIFECYCLE_KEYS = ['payment_confirmed', 'preparation_packing', 'insurance_final_check', 'arrival_coordination', 'final_checklist'];
 type TemplateKey = typeof LIFECYCLE_KEYS[number];
-type BookingRow = { id:string; public_reference:string; customer_id:string|null; tour_date:string|null; status:string; online_paid_usd:number|null; customer?: {first_name?:string|null;email?:string|null}|{first_name?:string|null;email?:string|null}[]|null };
+type BookingRow = { id:string; public_reference:string; customer_id:string|null; tour_date:string|null; status:string; online_due_usd:number|null; online_paid_usd:number|null; customer?: {first_name?:string|null;email?:string|null}|{first_name?:string|null;email?:string|null}[]|null };
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -29,18 +30,6 @@ function message(template: TemplateKey, booking: BookingRow) {
   if (template === 'arrival_coordination') return arrivalCoordinationCustomerEmail(input);
   return finalChecklistCustomerEmail(input);
 }
-async function paidSessions() {
-  if (!process.env.STRIPE_SECRET_KEY) throw new Error('stripe_unavailable');
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { maxNetworkRetries: 0, timeout: 5000 });
-  const rows: Array<{id:string;client_reference_id:string|null;payment_status:string}> = [];
-  let count = 0;
-  for await (const session of stripe.checkout.sessions.list({ limit: 100 })) {
-    rows.push({ id: session.id, client_reference_id: session.client_reference_id, payment_status: session.payment_status });
-    if (++count >= 1000) break;
-  }
-  return rows;
-}
-
 export async function GET(request: Request) {
   if (!isAuthorized(request)) return NextResponse.json({ ok:false, error:'Unauthorized' }, { status:401 });
   if (!isSupabaseAdminConfigured) return NextResponse.json({ ok:false, error:'Supabase admin is not configured' }, { status:503 });
@@ -53,11 +42,13 @@ export async function GET(request: Request) {
   }
   try {
     const db = createSupabaseAdminClient();
-    const { data: bookings, error } = await db.from('bookings').select('id, public_reference, customer_id, tour_date, status, online_paid_usd, customer:customers(first_name, email)').in('status',['awaiting_payment','confirmed','prep_sent','ready_for_departure']).limit(200);
+    const { data: bookings, error } = await db.from('bookings').select('id, public_reference, customer_id, tour_date, status, online_due_usd, online_paid_usd, customer:customers(first_name, email)').in('status',['awaiting_payment','confirmed','prep_sent','ready_for_departure']).limit(200);
     if (error) throw error;
     const rows = (bookings || []) as BookingRow[];
-    const sessions = await paidSessions();
-    const reconciliation = reconcileStripeSessions({ bookings:rows.map(row=>({id:row.id,reference:row.public_reference})), sessions });
+    if (!process.env.STRIPE_SECRET_KEY) throw new Error('stripe_unavailable');
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { maxNetworkRetries: 0, timeout: 5000 });
+    const provider = await collectStripeLifecycleEvidence({ stripe, pageBudget: 90 });
+    const reconciliation = reconcileStripeProviderEvidence({ bookings:rows.map(row=>({id:row.id,reference:row.public_reference,amount_cents:Number(row.online_due_usd)*100,currency:'usd',customer_email:customer(row).email})), evidence:provider.evidence, scanComplete:provider.scanComplete });
     const verified = new Set((reconciliation as Array<{ reference:string; status:string }>).filter((row:{reference:string;status:string})=>row.status==='verified_paid').map((row:{reference:string;status:string})=>row.reference));
     const { data: events, error: eventsError } = await db.from('email_events').select('booking_id, template_key, status').in('booking_id',rows.map(row=>row.id)).in('template_key',LIFECYCLE_KEYS);
     if (eventsError) throw eventsError;
@@ -67,7 +58,7 @@ export async function GET(request: Request) {
     for (const booking of rows) {
       const schedule = getLifecycleEmailSchedule({ now:new Date(), tourDate:booking.tour_date });
       const template = selectPacedLifecycleCandidate({ verifiedStripe:verified.has(booking.public_reference), daysUntilDeparture:schedule.daysUntilDeparture, sentTemplates:existing.get(booking.id)||new Set() }) as TemplateKey|null;
-      if (!template) { results.push({ reference:booking.public_reference, status:verified.has(booking.public_reference) ? 'not_due_or_complete' : 'no_verified_payment' }); continue; }
+      if (!template) { results.push({ reference:booking.public_reference, status:(reconciliation as Array<{reference:string;status:string}>).find(row=>row.reference===booking.public_reference)?.status || 'scan_incomplete_unknown' }); continue; }
       if (dryRun) { results.push({ reference:booking.public_reference, status:'candidate', template, days_until_departure:schedule.daysUntilDeparture }); continue; }
       const recipient = customer(booking).email;
       if (!recipient) { results.push({ reference:booking.public_reference, status:'missing_customer_email', template }); continue; }
@@ -79,6 +70,6 @@ export async function GET(request: Request) {
       if (result.sent) await db.from('booking_events').insert({ booking_id:booking.id,event_type:'email',direction:'outbound',title:`Lifecycle email sent: ${template}`,body:`Resend email id: ${result.id || 'unknown'}`,created_by:'drip-cron' });
       results.push({ reference:booking.public_reference, status:result.sent?'sent':'failed', template });
     }
-    return NextResponse.json({ ok:true, dry_run:dryRun, stripe:'reachable', checked:rows.length, results }, { headers });
+    return NextResponse.json({ ok:true, dry_run:dryRun, stripe:'reachable', checked:rows.length, scan_complete:provider.scanComplete, results }, { headers });
   } catch { return NextResponse.json({ ok:false, error:'lifecycle_run_incomplete' }, { status:503, headers }); }
 }

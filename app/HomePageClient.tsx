@@ -1184,7 +1184,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .partnership-quote { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 1.6rem; font-style: italic; font-weight: 300; color: var(--cream); line-height: 1.6; border-left: 2px solid var(--gold); padding-left: 2rem; margin: 2.5rem 0; }
         .partnership-img { position: relative; overflow: hidden; min-height: 600px; border-left: 1px solid rgba(200,169,110,0.18); background: #0f0f0d; }
         .partnership-img::before { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(90deg, rgba(18,15,11,0.38), rgba(18,15,11,0.06) 42%, rgba(18,15,11,0.18)), linear-gradient(180deg, rgba(200,169,110,0.10), transparent 38%, rgba(14,12,9,0.30)); mix-blend-mode: multiply; }
-        .partnership-img::after { content: ''; position: absolute; inset: 1rem; z-index: 2; pointer-events: none; border: 1px solid rgba(200,169,110,0.20); }
         .partnership-img img { width: 100%; height: 100%; object-fit: cover; object-position: 52% center; filter: saturate(0.84) contrast(1.08) brightness(0.88); }
 
         .trust { background: var(--dark); padding: 7rem 5rem; }

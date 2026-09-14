@@ -1191,8 +1191,8 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .stripe-preview-secure { color: rgba(10,37,64,0.62); font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; }
         .stripe-preview-body { display: block; padding: 0.85rem 1rem 1rem; text-align: left; }
         .stripe-preview-label { display: block; color: rgba(10,37,64,0.58); font-size: 0.66rem; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 0.32rem; }
-        .stripe-preview-amount { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; color: #0a2540; font-size: 1.34rem; font-weight: 700; letter-spacing: -0.03em; }
-        .stripe-preview-amount span { color: rgba(10,37,64,0.56); font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 600; white-space: nowrap; }
+        .stripe-preview-amount { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; color: var(--cream); font-size: 1.34rem; font-weight: 700; letter-spacing: -0.03em; }
+        .stripe-preview-amount span { color: var(--mist); font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 600; white-space: nowrap; }
         .stripe-card-row { display: flex; gap: 0.35rem; margin-top: 0.85rem; }
         .stripe-card-row span { border: 1px solid rgba(10,37,64,0.14); border-radius: 4px; background: #fff; color: rgba(10,37,64,0.7); padding: 0.25rem 0.38rem; font-size: 0.58rem; font-weight: 700; letter-spacing: 0.04em; }
         .stripe-pay-button { display: flex; width: 100%; box-sizing: border-box; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 1.15rem; background: linear-gradient(135deg, #635bff, #7b72ff); border: 1px solid rgba(255,255,255,0.16); border-radius: 5px; color: #fff; font-size: 0.72rem; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 500; text-decoration: none; box-shadow: 0 14px 34px rgba(99,91,255,0.24); transition: transform 0.25s ease, box-shadow 0.25s ease; }
@@ -2053,7 +2053,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               <p className="checkout-eyebrow">Online Reservation Payment</p>
               {awaitsGroupInvoice ? (
                 <p className="checkout-copy">
-                  Groups of 3–8 pay together on one invoice. Submit the form and Rob will email a personal invoice for <strong>{pricing.onlinePayment}</strong> covering all {groupPricing.guestCount} guests, so nobody has to pay separately.
+                  Groups of 3–8 pay together on one invoice. Submit the form and Rob will email a personal invoice for <strong>{formatApproxUsd(groupPricing.onlinePaymentUsd, pricing.currency)}</strong> covering all {groupPricing.guestCount} guests, so nobody has to pay separately.
                 </p>
               ) : requiresHumanConfirmation ? (
                 <p className="checkout-copy">
@@ -2061,7 +2061,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                 </p>
               ) : (
                 <p className="checkout-copy">
-                  Submit the booking form with a valid email first, then pay <strong>{pricing.onlinePayment} online</strong> to reserve your place. The host-family cash portion is handled in Mongolia.
+                  Submit the booking form with a valid email first, then pay <strong>{formatApproxUsd(groupPricing.onlinePaymentUsd, pricing.currency)} online</strong> for {groupPricing.guestCount} guest{groupPricing.guestCount === 1 ? '' : 's'} to reserve your place. The host-family cash portion is handled in Mongolia.
                 </p>
               )}
               <p className="checkout-note">

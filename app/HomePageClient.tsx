@@ -1334,6 +1334,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .ask-card p { color: rgba(212,207,196,0.78); font-size: 0.82rem; line-height: 1.6; margin-bottom: 0.75rem; }
         .ask-card a { display: inline-flex; color: var(--gold); border-bottom: 1px solid rgba(200,169,110,0.45); text-decoration: none; font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase; }
         .ask-card a:hover { color: var(--cream); border-color: var(--cream); }
+        .ask-card-alt { margin-top: 0.95rem; padding-top: 0.95rem; border-top: 1px solid rgba(200,169,110,0.16); }
         .price-spec-list { display:flex; flex-direction:column; gap:0.8rem; margin-top:1.5rem; }
         .price-spec-row { display:flex; justify-content:space-between; gap:1rem; min-width:0; font-size:0.8rem; color:var(--mist); padding:0.6rem 0; border-bottom:1px solid rgba(245,240,232,0.07); }
         .price-spec-row span { min-width:0; overflow-wrap:anywhere; }
@@ -1563,6 +1564,8 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           .ask-card h3 { font-size:1.05rem; margin-bottom:0.35rem; }
           .ask-card p { display:none; }
           .ask-card a { font-size:0.58rem; letter-spacing:0.12em; }
+          .ask-card .ask-card-alt { margin-top:0.75rem; padding-top:0.75rem; }
+          .ask-card .ask-card-alt p { display:block; font-size:0.74rem; line-height:1.5; margin-bottom:0.5rem; }
           .tour-dates-card { margin-top: 1rem; padding: 0.8rem 0.62rem; border-radius: var(--radius-card); }
           .tour-dates-heading { font-size:0.52rem !important; letter-spacing:0.22em !important; margin-bottom:0.62rem !important; }
           .tour-date-list { grid-template-columns: 1fr; gap: 0.26rem; }
@@ -1925,14 +1928,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         <a href="/gallery" className="btn-ghost">View Full Gallery</a>
       </section>
       {/* GETTING THERE */}
-      <section className="riding-stay-section">
-        <div style={{maxWidth:'980px', margin:'0 auto', border:'1px solid rgba(200,169,110,0.24)', borderRadius:'var(--radius-card)', background:'rgba(200,169,110,0.065)', padding:'2rem'}}>
-          <h2 className="section-title">Host-Family Stay<br /><em>&amp; Daily Horse Riding</em></h2>
-          <p className="section-body" style={{maxWidth:'760px'}}>Some guests want the Mongolian horse experience without committing to the full camping trek to Eight Lakes. If you&apos;d rather stay with the host family, be looked after at the ger camp, and focus on daily riding lessons or shorter rides, email Rob and the team. We can discuss a custom hosted riding stay around your dates.</p>
-          <a className="btn-primary" href="mailto:info@8lakestours.com?subject=Custom%20host-family%20riding%20stay" style={{marginTop:'1.4rem'}}>Ask About Riding-Only Stay</a>
-        </div>
-      </section>
-
       <section className="getting-there-section">
         <div className="getting-there-panel">
           <div className="reveal">
@@ -2088,6 +2083,10 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               <h3>Not sure if this fits?</h3>
               <p>Ask before paying. We&apos;re happy to check riding level, food restrictions, route expectations, dates, or whether this is the right kind of adventure for you.</p>
               <a href="mailto:info@8lakestours.com?subject=Question%20before%20booking%208%20Lakes%20Tours">Ask a question first</a>
+              <div className="ask-card-alt">
+                <p>Prefer to stay with the host family and ride daily, without the full camping trek to Eight Lakes? We can plan a custom riding stay around your dates.</p>
+                <a href="mailto:info@8lakestours.com?subject=Custom%20host-family%20riding%20stay">Ask about a riding-only stay</a>
+              </div>
             </div>
           </div>
           <div className="tour-dates-card" id="tour-dates">

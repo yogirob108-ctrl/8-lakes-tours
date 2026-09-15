@@ -41,15 +41,17 @@ export async function GET(request: Request) {
   if (!dryRun && process.env.PUBLIC_LIFECYCLE_SEND_ENABLED !== 'true') {
     return NextResponse.json({ ok:true, dry_run:false, disabled:true, reason:'public_lifecycle_send_disabled' }, { headers });
   }
-  // Narrow targeted rollout: when the reference guard is configured, ONLY the
-  // exact booking (reference AND id) may dispatch, and ONLY the named
-  // template. An incomplete configuration fails closed.
-  const targetedReference = (process.env.PUBLIC_LIFECYCLE_TARGETED_REFERENCE || '').trim();
-  const targetedBookingId = (process.env.PUBLIC_LIFECYCLE_TARGETED_BOOKING_ID || '').trim();
-  const targetedTemplate = (process.env.PUBLIC_LIFECYCLE_TARGETED_TEMPLATE || '').trim();
-  const targeted = Boolean(targetedReference) || Boolean(targetedBookingId);
+  // Narrow targeted rollout: when targeting is configured — persistent env or
+  // per-request query params on this authenticated endpoint — ONLY the exact
+  // booking (reference AND id) may dispatch, and ONLY the named template. An
+  // incomplete configuration fails closed.
+  const url = new URL(request.url);
+  const targetedReference = (process.env.PUBLIC_LIFECYCLE_TARGETED_REFERENCE || url.searchParams.get('target_reference') || '').trim();
+  const targetedBookingId = (process.env.PUBLIC_LIFECYCLE_TARGETED_BOOKING_ID || url.searchParams.get('target_booking_id') || '').trim();
+  const targetedTemplate = (process.env.PUBLIC_LIFECYCLE_TARGETED_TEMPLATE || url.searchParams.get('target_template') || '').trim();
+  const targeted = Boolean(targetedReference) || Boolean(targetedBookingId) || Boolean(targetedTemplate);
   if (targeted && (!targetedReference || !targetedBookingId || !targetedTemplate)) {
-    return NextResponse.json({ ok:false, error:'targeted_configuration_incomplete' }, { status:503, headers });
+    return NextResponse.json({ ok:false, error:'targeted_configuration_incomplete' }, { status:400, headers });
   }
   try {
     const db = createSupabaseAdminClient();

@@ -9,6 +9,9 @@ const TOTAL_PRICE_USD = '$1,999';
 const ONLINE_PAYMENT_USD = '$999';
 const FAMILY_CASH_USD = '$1,000';
 
+// Email visual direction: minimal, plain, like a real person writing from Gmail.
+// White background, system font, left aligned short paragraphs, restrained width.
+// No hero banner, no cards, no shadows, no badges, no promotional footer.
 function usd(amount: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
 }
@@ -60,57 +63,48 @@ function nl2br(value: string) {
   return escapeHtml(value || 'None').replaceAll('\n', '<br>');
 }
 
-function emailShell({ preheader, title, intro, children, footer = true }: { preheader: string; title: string; intro?: string; children: string; footer?: boolean }) {
+// One consistent lightweight wrapper for every 8 Lakes email.
+function wrap(preheader: string, body: string) {
   return `
-    <style>html,body{margin:0!important;padding:0!important;width:100%!important;} table{border-collapse:collapse;}</style>
-    <div style="display:none;max-height:0;overflow:hidden;color:transparent;opacity:0">${escapeHtml(preheader)}</div>
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fffaf1;margin:0;padding:0;font-family:Arial,Helvetica,sans-serif;color:#241d14">
-      <tr>
-        <td align="left" style="padding:0">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;max-width:none;background:#fffaf1;border:0;border-radius:0;overflow:hidden;box-shadow:none">
-            <tr>
-              <td style="background:#171209;padding:15px 12px 14px;color:#f8eedb;border-bottom:4px solid #c8a96e">
-                <p style="margin:0 0 10px;text-transform:uppercase;letter-spacing:.22em;font-size:11px;color:#c8a96e;font-weight:700">8 Lakes Tours</p>
-                <h1 style="margin:0;font-family:Georgia,'Times New Roman',serif;font-weight:400;font-size:34px;line-height:1.05;color:#fff8ea">${title}</h1>
-                ${intro ? `<p style="margin:14px 0 0;color:#e9dcc6;font-size:16px;line-height:1.55">${intro}</p>` : ''}
-              </td>
-            </tr>
-            <tr>
-              <td style="padding:13px 12px 16px">
-                ${children}
-                ${footer ? `
-                  <hr style="border:0;border-top:1px solid #eadcc6;margin:22px 0 14px">
-                  <p style="margin:0 0 6px;color:#5f513f;font-size:14px;line-height:1.55">Questions? Reply to this email or write to <a href="mailto:info@8lakestours.com" style="color:#8a5a13">info@8lakestours.com</a>.</p>
-                  <p style="margin:0;color:#8b7a63;font-size:13px">8 Lakes Tours · Mongolia horse trekking · Orkhon Valley & Eight Lakes region</p>
-                ` : ''}
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-    </table>
-  `;
+<div style="display:none;max-height:0;overflow:hidden;color:transparent;opacity:0">${escapeHtml(preheader)}</div>
+<div style="margin:0;padding:24px 16px;background:#ffffff">
+  <div style="max-width:640px;margin:0 auto;text-align:left;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#222222;font-size:15px;line-height:1.6">
+${body}
+  </div>
+</div>`;
 }
 
-function pill(label: string, value: string, detail: string) {
-  return `
-    <td style="width:33.333%;padding:4px" valign="top">
-      <div style="border-left:4px solid #c8a96e;background:#fff6e7;border-radius:0;padding:11px;min-height:82px">
-        <p style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.12em;color:#8a6a2c;font-size:11px;font-weight:700">${label}</p>
-        <p style="margin:0;color:#241d14;font-size:24px;font-weight:700;line-height:1">${value}</p>
-        <p style="margin:8px 0 0;color:#6c5c48;font-size:13px;line-height:1.35">${detail}</p>
-      </div>
-    </td>
-  `;
+function p(html: string) {
+  return `    <p style="margin:0 0 16px">${html}</p>`;
 }
 
-function detailRow(label: string, value: string) {
-  return `
-    <tr>
-      <td style="padding:10px 0;border-bottom:1px solid #efe2ce;color:#7b6a54;font-size:13px;text-transform:uppercase;letter-spacing:.08em;width:34%">${label}</td>
-      <td style="padding:10px 0;border-bottom:1px solid #efe2ce;color:#241d14;font-size:15px;font-weight:700">${value}</td>
-    </tr>
-  `;
+// Quiet signature block appended to every customer-facing email: plain muted
+// small text under the signoff, no logo, no wordmark banner, no footer strip.
+function signatureBlockHtml() {
+  return `    <p style="margin:12px 0 0;font-size:13px;line-height:1.6;color:#767676">Rob Zaher<br>8 Lakes Tours<br>www.8lakestours.com<br>info@8lakestours.com</p>`;
+}
+
+function signoffHtml(withSignature = true) {
+  return `    <p style="margin:24px 0 0">Rob Zaher<br>8 Lakes Tours</p>` + (withSignature ? '\n' + signatureBlockHtml() : '');
+}
+
+// Subtle plain-text style section rules for longer customer emails: a thin
+// light gray dashed line in HTML and a literal dash rule in text, separating
+// natural sections (greeting, facts, payment, logistics, closing). No colors,
+// no graphics, no heavy dividers; internal notifications stay clean.
+const DASH_RULE_TEXT = '--------------------------------';
+function sectionRuleHtml() {
+  return `    <div style="border-top:1px dashed #cccccc;margin:0 0 16px"></div>`;
+}
+
+// Plain summary lines (reference, date, amounts) with real text, readable on mobile.
+function detailsHtml(pairs: Array<[string, string]>) {
+  const lines = pairs.map(([label, value]) => `${escapeHtml(label)}: <strong>${value}</strong>`).join('<br>');
+  return `    <p style="margin:0 0 16px">${lines}</p>`;
+}
+
+function bulletHtml(items: string[]) {
+  return `    <p style="margin:0 0 16px">${items.join('<br>')}</p>`;
 }
 
 export function getInternalEmailRecipients() {
@@ -170,53 +164,52 @@ export function bookingInternalEmail(input: {
     : input.requiresManualPaymentLink
       ? 'Confirm date/horse/guide/host-family capacity, then create or send the correct Stripe payment link/custom order for the online reservation amount.'
       : 'Stripe payment should auto-match via webhook and mark the booking confirmed/paid. Only check Stripe manually if the dashboard has not updated after a few minutes.';
-  const text = `New 8 Lakes ${needsGroupInvoice ? 'group booking (invoice needed)' : input.requiresManualPaymentLink ? 'availability request' : 'booking'}\n\nReference: ${input.reference}\nGuest: ${name}\nEmail: ${input.email}\nPhone: ${input.phone || 'Not provided'}\nTour date: ${input.tourDate || 'TBC'}\nGuests: ${guestCount}\nTraveller names:\n${input.travellerNames || name}\nPrice: ${pricePerPerson} per person / ${totalTripValue} total\nOnline reservation due: ${onlinePayment}\nLocal family cash: ${familyCash}\nRiding experience: ${input.ridingExperience || 'Not provided'}\n\nOperator checklist:\n1. Open the 8 Lakes ops dashboard and confirm ${input.reference} is visible.\n2. ${operatorPaymentStep}\n3. Reply personally if anything looks odd or needs referral/review.\n4. Make sure the guest knows to bring ${familyCash} clean USD cash for the host family.\n\nNotes:\n${input.notes || 'None'}`;
+  const kind = needsGroupInvoice ? 'group booking (invoice needed)' : input.requiresManualPaymentLink ? 'availability request' : 'booking';
+  const text = `New 8 Lakes ${kind}\n\nReference: ${input.reference}\nGuest: ${name}\nEmail: ${input.email}\nPhone: ${input.phone || 'Not provided'}\nTour date: ${input.tourDate || 'TBC'}\nGuests: ${guestCount}\nTraveller names:\n${input.travellerNames || name}\nPrice: ${pricePerPerson} per person / ${totalTripValue} total\nOnline reservation due: ${onlinePayment}\nLocal family cash: ${familyCash}\nRiding experience: ${input.ridingExperience || 'Not provided'}\n\nOperator checklist:\n1. Open the 8 Lakes ops dashboard and confirm ${input.reference} is visible.\n2. ${operatorPaymentStep}\n3. Reply personally if anything looks odd or needs referral/review.\n4. Make sure the guest knows to bring ${familyCash} clean USD cash for the host family.\n\nNotes:\n${input.notes || 'None'}`;
+
+  const body = [
+    p(`<strong>${escapeHtml(name)}</strong> submitted the ${escapeHtml(kind)} form. Reference <strong>${escapeHtml(input.reference)}</strong>.`),
+    detailsHtml([
+      ['Reference', escapeHtml(input.reference)],
+      ['Name', escapeHtml(name)],
+      ['Email', `<a href="mailto:${escapeHtml(input.email)}" style="color:#1155cc">${escapeHtml(input.email)}</a>`],
+      ['Phone', escapeHtml(input.phone || 'Not provided')],
+      ['Tour date', escapeHtml(input.tourDate || 'TBC')],
+      ['Guests', `${guestCount}`],
+      ['Traveller names', nl2br(input.travellerNames || name)],
+      ['Price', `${escapeHtml(pricePerPerson)} pp / ${escapeHtml(totalTripValue)} total`],
+      ['Online reservation due', escapeHtml(onlinePayment)],
+      ['Local family cash', escapeHtml(familyCash)],
+      ['Riding experience', escapeHtml(input.ridingExperience || 'Not provided')],
+    ]),
+    p('<strong>Operator checklist</strong>'),
+    `    <ol style="margin:0 0 16px;padding-left:20px">` +
+      `<li>Open the <a href="${OPS_URL}/bookings" style="color:#1155cc">8 Lakes ops dashboard</a> and confirm <strong>${escapeHtml(input.reference)}</strong> is visible.</li>` +
+      `<li>${escapeHtml(operatorPaymentStep)}</li>` +
+      `<li>Reply personally if anything looks odd or needs referral/review.</li>` +
+      `<li>Make sure the guest knows to bring <strong>${escapeHtml(familyCash)} clean USD cash</strong> for the host family.</li>` +
+      `</ol>`,
+    p('<strong>Guest notes</strong>'),
+    p(nl2br(input.notes)),
+    signoffHtml(false),
+  ].join('\n');
 
   return {
     subject,
     text,
-    html: emailShell({
-      preheader: needsGroupInvoice ? `${name} booked ${input.tourDate || 'a future 8 Lakes date'} for ${guestCount} guests. Send a ${onlinePayment} invoice.` : input.requiresManualPaymentLink ? `${name} requested availability for ${guestCount} guest${guestCount === 1 ? '' : 's'}. Confirm manually before payment.` : `${name} booked ${input.tourDate || 'a future 8 Lakes date'}. Check the 8 Lakes ops dashboard; Stripe should auto-match after payment.`,
-      title: needsGroupInvoice ? 'New group booking — invoice needed' : input.requiresManualPaymentLink ? 'New availability request received' : 'New booking received',
-      intro: needsGroupInvoice ? `<strong>${escapeHtml(name)}</strong> booked ${guestCount} guests together on a fixed date. Send one personal invoice for <strong>${onlinePayment}</strong>; the public Buy Button cannot collect a group amount.` : input.requiresManualPaymentLink ? `<strong>${escapeHtml(name)}</strong> submitted an availability request for ${guestCount} guest${guestCount === 1 ? '' : 's'}. Confirm availability and send the correct payment link/custom order before taking payment.` : `<strong>${escapeHtml(name)}</strong> submitted the booking form. Payment should automatically match and confirm the booking once Stripe checkout completes.`,
-      footer: false,
-      children: `
-        <div style="border-left:4px solid #c8a96e;background:#fff3dd;padding:12px 14px;margin-bottom:16px">
-          <p style="margin:0 0 8px;text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:#8a6a2c;font-weight:700">Operator checklist</p>
-          <ol style="margin:0;padding-left:20px;color:#3a3024;line-height:1.7;font-size:15px">
-            <li>Open the 8 Lakes ops dashboard and confirm <strong>${escapeHtml(input.reference)}</strong> is visible.</li>
-            <li>${escapeHtml(operatorPaymentStep)}</li>
-            <li>Reply personally if the booking needs clarification, referral, or review.</li>
-            <li>Make sure the guest knows to bring <strong>${familyCash} clean USD cash</strong> for the host family.</li>
-          </ol>
-          <p style="margin:14px 0 0"><a href="${OPS_URL}/bookings" style="display:inline-block;background:#241d14;color:#fff8ea;text-decoration:none;border-radius:0;padding:10px 14px;font-size:12px;text-transform:uppercase;letter-spacing:.12em;font-weight:700">Open 8 Lakes ops</a></p>
-        </div>
-
-        <h2 style="font-family:Georgia,'Times New Roman',serif;font-weight:400;font-size:24px;margin:0 0 10px;color:#241d14">Guest details</h2>
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:20px">
-          ${detailRow('Reference', escapeHtml(input.reference))}
-          ${detailRow('Name', escapeHtml(name))}
-          ${detailRow('Email', `<a href="mailto:${escapeHtml(input.email)}" style="color:#8a5a13">${escapeHtml(input.email)}</a>`)}
-          ${detailRow('Phone', escapeHtml(input.phone || 'Not provided'))}
-          ${detailRow('Tour date', escapeHtml(input.tourDate || 'TBC'))}
-          ${detailRow('Guests', `${guestCount}`)}
-          ${detailRow('Traveller names', nl2br(input.travellerNames || name))}
-          ${detailRow('Price', `${pricePerPerson} pp / ${totalTripValue} total`)}
-          ${detailRow('Riding level', escapeHtml(input.ridingExperience || 'Not provided'))}
-        </table>
-
-        <div style="border-left:4px solid #eadcc6;padding:12px 14px;background:#fffdf8">
-          <p style="margin:0 0 8px;text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:#8a6a2c;font-weight:700">Guest notes</p>
-          <p style="margin:0;color:#3a3024;line-height:1.6">${nl2br(input.notes)}</p>
-        </div>
-      `,
-    }),
+    html: wrap(
+      needsGroupInvoice
+        ? `${name} booked ${input.tourDate || 'a future 8 Lakes date'} for ${guestCount} guests. Send a ${onlinePayment} invoice.`
+        : input.requiresManualPaymentLink
+          ? `${name} requested availability for ${guestCount} guest${guestCount === 1 ? '' : 's'}. Confirm manually before payment.`
+          : `${name} booked ${input.tourDate || 'a future 8 Lakes date'}. Check the 8 Lakes ops dashboard; Stripe should auto-match after payment.`,
+      body,
+    ),
   };
 }
 
 export function bookingCustomerEmail(input: { reference: string; firstName: string; tourDate: string; guestCount?: number; pricePerPersonUsd?: number; onlinePaymentUsd?: number; localFamilyPaymentUsd?: number; totalTripValueUsd?: number; requiresManualPaymentLink?: boolean; manualPaymentReason?: string | null; travellerNames?: string; paymentUrl?: string }) {
-  const subject = `8 Lakes Tours booking received — ${input.reference}`;
-  const paymentRecovery = input.paymentUrl ? `Resume your secure payment (no new booking needed): ${input.paymentUrl}` : '';
+  const subject = `Your 8 Lakes Tours booking (${input.reference})`;
   const name = firstName(input.firstName);
   const guestCount = input.guestCount ?? 1;
   const needsGroupInvoice = input.manualPaymentReason === GROUP_INVOICE;
@@ -224,282 +217,414 @@ export function bookingCustomerEmail(input: { reference: string; firstName: stri
   const onlinePayment = input.onlinePaymentUsd ? usd(input.onlinePaymentUsd) : ONLINE_PAYMENT_USD;
   const familyCash = input.localFamilyPaymentUsd ? usd(input.localFamilyPaymentUsd) : FAMILY_CASH_USD;
   const totalTripValue = input.totalTripValueUsd ? usd(input.totalTripValueUsd) : TOTAL_PRICE_USD;
+  const resumeLine = input.paymentUrl ? `Resume your secure payment (no new booking needed): ${input.paymentUrl}` : '';
+
   const paymentIntro = needsGroupInvoice
-    ? `Because you are booking ${guestCount} guests together, our team will email you one personal invoice for the ${onlinePayment} online amount so the whole group can pay in a single step.`
+    ? `Since you are booking ${guestCount} guests together, Rob will email you one invoice for the ${onlinePayment} online amount so the whole group can pay in a single step. Your places are confirmed once that invoice is paid.`
     : input.requiresManualPaymentLink
-      ? `Because this date or group needs an availability check, our team will personally confirm the details and the correct payment link before you pay.`
-      : `Your place is confirmed once the online booking payment has been completed.`;
-  const nextSteps = needsGroupInvoice
-    ? `1. Our team will email a personal invoice for ${onlinePayment}, covering all ${guestCount} guests.\n2. Pay that invoice to reserve the group's places.\n3. We send preparation notes before departure once the booking is confirmed.`
+      ? `Since this date or group needs an availability check, Rob will personally confirm the details before you pay. If the date, group size, horses, guide, and host-family capacity all work, Rob will send you the correct payment link.`
+      : `Your place is not confirmed yet. That happens once the ${onlinePayment} online booking payment is completed. You will get an automatic payment confirmation email once Stripe checkout completes.`;
+
+  const steps = needsGroupInvoice
+    ? `1. Rob will email one invoice for ${onlinePayment}, covering all ${guestCount} guests.\n2. Pay that invoice to reserve the group's places.\n3. We send preparation notes before departure once the booking is confirmed.`
     : input.requiresManualPaymentLink
-      ? `1. Our team will check the date, group size, horses, guide, and host-family capacity.\n2. If everything is available, we will send the correct Stripe payment link or custom order for the online reservation amount.\n3. We send preparation notes before departure once the booking is confirmed.`
-      : `1. Complete the online booking payment on the website if you have not already done so.\n2. You will receive an automatic payment confirmation email once Stripe checkout completes.\n3. We send preparation notes before departure.`;
-  const text = `Hi ${name},\n\nThanks — your 8 Lakes Tours ${needsGroupInvoice ? 'group booking' : input.requiresManualPaymentLink ? 'availability request' : 'booking'} has been received.\n\nBooking reference: ${input.reference}\nSelected tour date: ${input.tourDate || 'TBC'}\nGuests: ${guestCount}\n\nSubmitted traveller names:\n${input.travellerNames || input.firstName}\n\nPayment structure:\nTotal 2026 trip price: ${pricePerPerson} per person / ${totalTripValue} total\nOnline booking payment: ${onlinePayment}\nCash paid directly to the host family in Mongolia: ${familyCash}\n\n${paymentIntro} The ${familyCash} family portion is not collected online; please plan to bring clean USD notes to Mongolia for the host family.\n\nFood note:\nTraditional host-family food is meat- and dairy-heavy. For guests who can enjoy it, the dairy is one of the highest-quality parts of the trip: families always produce their own milk from yaks or cows and serve it fresh as milk tea, yoghurt, cheese, and other traditional foods.\n\nPacking note:\nMongolia's steppe weather can change fast. Pack for all seasons, even in summer, and bring more warm layers than you think you need.\n\nFacilities note:\nOnce you leave the city, countryside toilets are simple outhouses with squat toilets rather than Western flush toilets, and there are no regular showers. Bring wet wipes for cleaning hands and body between river washes; washing in the river can be part of the simple, therapeutic steppe rhythm when conditions allow.\n\nTranslation note:\nEnglish is not always strong in the host-family setting. So far we have found ChatGPT voice mode to be one of the easiest ways to communicate: say something like, “Please translate the following sentence into Mongolian for me,” then speak naturally and play/show the translation. Other translation apps can help too, but ChatGPT voice mode has worked especially well for simple back-and-forth conversation.\n\nNext steps:\n${nextSteps}\n\n${paymentRecovery}\n\nQuestions? Reply to this email and our team will pick it up.\n\nRob & the 8 Lakes Tours team`;
+      ? `1. Rob will check the date, group size, horses, guide, and host-family capacity.\n2. If everything is available, Rob will send the correct Stripe payment link or custom order for the online reservation amount.\n3. We send preparation notes before departure once the booking is confirmed.`
+      : `1. Complete the online booking payment on the website if you have not already done so.\n2. You will receive an automatic payment confirmation email once Stripe checkout completes.\n3. Before departure we send practical prep notes: packing guidance, insurance reminders, WhatsApp coordination, Bat-Ulzii pickup timing, and cash-payment instructions.`;
+
+  const text = `Hi ${name},
+
+Thanks for booking with 8 Lakes Tours. Your details are all in.
+
+${DASH_RULE_TEXT}
+
+Booking reference: ${input.reference}
+Tour date: ${input.tourDate || 'TBC'}
+Guests: ${guestCount}
+
+Submitted traveller names:
+${input.travellerNames || input.firstName}
+
+${DASH_RULE_TEXT}
+
+How the payment is split:
+Total trip price: ${pricePerPerson} per person / ${totalTripValue} total
+Online booking payment: ${onlinePayment}
+Cash for the host family in Mongolia: ${familyCash}
+
+The ${familyCash} family portion is not collected online. Please plan to bring clean USD notes to Mongolia and pay the family directly. Many host families cannot reliably receive cards or bank transfers, so cash is what works.
+
+${paymentIntro}
+
+${DASH_RULE_TEXT}
+
+A few things worth knowing before you travel:
+
+Food: traditional host-family food is meat- and dairy-heavy. Families make their own milk from yaks or cows and serve it fresh as milk tea, yoghurt, cheese, and other traditional foods.
+
+Packing: Mongolia's steppe weather can change fast. Pack for all seasons, even in summer, and bring more warm layers than you think you need.
+
+Facilities: once you leave the city, countryside toilets are simple outhouses with squat toilets rather than Western flush toilets, and there are no regular showers. Bring wet wipes for cleaning hands and body between river washes. Washing in the river can be part of the simple steppe rhythm when conditions allow.
+
+Translation: English is not always strong in the host-family setting. ChatGPT voice mode has been the easiest way to communicate so far: say "Please translate the following sentence into Mongolian for me," then speak naturally and play or show the translation. Other translation apps help too.
+
+What happens next:
+${steps}
+${resumeLine ? `\n${resumeLine}\n` : ''}
+The preparation and arrival emails for this booking are separate from the general newsletter. Please plan to bring ${familyCash} in clean USD notes for the host family.
+
+If anything comes up, just reply to this email.
+
+Rob Zaher
+8 Lakes Tours
+www.8lakestours.com
+info@8lakestours.com`;
+
+  const resumeHtml = input.paymentUrl
+    ? p(`Resume secure payment for this booking (no new booking needed, keep this link private): <a href="${escapeHtml(input.paymentUrl)}" style="color:#1155cc">${escapeHtml(input.paymentUrl)}</a>`)
+    : '';
+  const body = [
+    p(`Hi ${escapeHtml(name)},`),
+    p(`Thanks for booking with 8 Lakes Tours. Your details are all in.`),
+    sectionRuleHtml(),
+    detailsHtml([
+      ['Booking reference', escapeHtml(input.reference)],
+      ['Tour date', escapeHtml(input.tourDate || 'TBC')],
+      ['Guests', `${guestCount}`],
+    ]),
+    p('<strong>Submitted traveller names</strong>'),
+    p(nl2br(input.travellerNames || input.firstName)),
+    sectionRuleHtml(),
+    p('<strong>How the payment is split</strong>'),
+    p(`Total trip price: ${escapeHtml(pricePerPerson)} per person / ${escapeHtml(totalTripValue)} total<br>Online booking payment: ${escapeHtml(onlinePayment)}<br>Cash for the host family in Mongolia: ${escapeHtml(familyCash)}`),
+    p(`The ${escapeHtml(familyCash)} family portion is not collected online. Please plan to bring clean USD notes to Mongolia and pay the family directly. Many host families cannot reliably receive cards or bank transfers, so cash is what works.`),
+    p(paymentIntro),
+    sectionRuleHtml(),
+    p('<strong>A few things worth knowing before you travel</strong>'),
+    p(`<strong>Food:</strong> traditional host-family food is meat- and dairy-heavy. Families make their own milk from yaks or cows and serve it fresh as milk tea, yoghurt, cheese, and other traditional foods.`),
+    p(`<strong>Packing:</strong> Mongolia&#39;s steppe weather can change fast. Pack for all seasons, even in summer, and bring more warm layers than you think you need.`),
+    p(`<strong>Facilities:</strong> once you leave the city, countryside toilets are simple outhouses with squat toilets rather than Western flush toilets, and there are no regular showers. Bring wet wipes for cleaning hands and body between river washes. Washing in the river can be part of the simple steppe rhythm when conditions allow.`),
+    p(`<strong>Translation:</strong> English is not always strong in the host-family setting. ChatGPT voice mode has been the easiest way to communicate so far: say &quot;Please translate the following sentence into Mongolian for me,&quot; then speak naturally and play or show the translation. Other translation apps help too.`),
+    p('<strong>What happens next</strong>'),
+    `    <p style="margin:0 0 16px;white-space:pre-line">${escapeHtml(steps)}</p>`,
+    resumeHtml,
+    p(`The preparation and arrival emails for this booking are separate from the general newsletter. Please plan to bring ${escapeHtml(familyCash)} in clean USD notes for the host family.`),
+    p(`If anything comes up, just reply to this email.`),
+    signoffHtml(),
+  ].join('\n');
 
   return {
     subject,
     text,
-    html: emailShell({
-      preheader: needsGroupInvoice ? `Reference ${input.reference}. Our team will email a ${onlinePayment} invoice for your group.` : input.requiresManualPaymentLink ? `Reference ${input.reference}. Our team will confirm availability before payment.` : `Reference ${input.reference}. Complete the ${onlinePayment} online booking payment to confirm your place.`,
-      title: needsGroupInvoice ? `Thanks ${escapeHtml(name)} — group booking received.` : input.requiresManualPaymentLink ? `Thanks ${escapeHtml(name)} — availability request received.` : `Thanks ${escapeHtml(name)} — booking received.`,
-      intro: `Your booking has been saved. Your booking reference is <strong>${escapeHtml(input.reference)}</strong> for <strong>${escapeHtml(input.tourDate || 'TBC')}</strong>.`,
-      children: `
-        <div style="border-left:4px solid #c8a96e;background:#fff3dd;padding:12px 14px;margin-bottom:16px">
-          <p style="margin:0 0 10px;text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:#8a6a2c;font-weight:700">Important</p>
-          <p style="margin:0;color:#3a3024;font-size:16px;line-height:1.55">${needsGroupInvoice ? `Our team will email one personal invoice for <strong>${onlinePayment}</strong> covering all ${guestCount} guests. Your places are confirmed once that invoice is paid.` : input.requiresManualPaymentLink ? `Our team will confirm availability for ${guestCount} guest${guestCount === 1 ? '' : 's'} before sending the correct payment link or custom order.` : `Your place is confirmed once your <strong>${onlinePayment} online booking payment</strong> has been completed.`}</p>
-        </div>
-
-        <div style="border-left:4px solid #eadcc6;padding:12px 14px;background:#fffdf8;margin-bottom:16px">
-          ${input.paymentUrl ? `<p><a href="${escapeHtml(input.paymentUrl)}">Resume secure payment for this booking</a> — no new booking needed. Keep this link private.</p>` : ''}
-          <p style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:#8a6a2c;font-weight:700">Submitted traveller names</p>
-          <p style="margin:0;color:#3a3024;line-height:1.6;font-size:15px">${nl2br(input.travellerNames || input.firstName)}</p>
-        </div>
-
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 -4px 16px">
-          <tr>
-            ${pill('Trip price', pricePerPerson, `${guestCount} guest${guestCount === 1 ? '' : 's'} · ${totalTripValue} total.`)}
-            ${pill('Pay online', onlinePayment, 'Confirms your place with 8 Lakes Tours.')}
-            ${pill('Bring in cash', familyCash, 'Paid directly to the nomadic host family in Mongolia.')}
-          </tr>
-        </table>
-
-        <h2 style="font-family:Georgia,'Times New Roman',serif;font-weight:400;font-size:24px;margin:0 0 10px;color:#241d14">Why the payment is split</h2>
-        <p style="margin:0 0 18px;color:#3a3024;line-height:1.65;font-size:15px">Many nomadic host families cannot reliably receive cards, online payments, or bank transfers. The local family portion is paid directly in cash so that money reaches the hosts cleanly and transparently.</p>
-
-        <div style="border-left:4px solid #eadcc6;padding:12px 14px;background:#fffdf8;margin-bottom:16px">
-          <p style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:#8a6a2c;font-weight:700">Food note</p>
-          <p style="margin:0;color:#3a3024;line-height:1.6;font-size:15px">Traditional host-family food is meat- and dairy-heavy. For guests who can enjoy it, the dairy is one of the highest-quality parts of the trip: families always produce their own milk from yaks or cows and serve it fresh as milk tea, yoghurt, cheese, and other traditional foods.</p>
-        </div>
-
-        <h2 style="font-family:Georgia,'Times New Roman',serif;font-weight:400;font-size:24px;margin:0 0 10px;color:#241d14">Next steps</h2>
-        <ol style="margin:0 0 22px;padding-left:20px;color:#3a3024;line-height:1.75;font-size:15px">
-          ${needsGroupInvoice ? `<li>Our team will email a personal invoice for <strong>${onlinePayment}</strong>, covering all ${guestCount} guests.</li><li>Pay that invoice to reserve the group&apos;s places — no one has to pay separately.</li>` : input.requiresManualPaymentLink ? '<li>Our team will check the date, horse, guide, host-family capacity, and group details.</li><li>If available, we will send the correct Stripe payment link or custom order for the online reservation amount.</li>' : '<li>Complete the online booking payment on the website if you have not already done so.</li><li>You will receive an automatic payment confirmation email once Stripe checkout completes.</li>'}
-          <li>Before arrival, we send practical prep notes: packing guidance, insurance reminders, operator WhatsApp coordination, Bat-Ulzii pickup timing, and cash-payment instructions.</li>
-          <li>Please plan to bring <strong>${familyCash} in clean USD notes</strong> for the host family.</li>
-        </ol>
-
-        <div style="border-left:4px solid #eadcc6;padding:12px 14px;background:#fffdf8;margin-bottom:16px">
-          <p style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:#8a6a2c;font-weight:700">Packing note</p>
-          <p style="margin:0;color:#3a3024;line-height:1.6;font-size:15px">Mongolia&apos;s steppe weather can change quickly. Pack for all seasons, even in summer, and bring more warm layers than you think you need: base layers, fleece/down, warm socks, hat, gloves, and waterproof outerwear.</p>
-        </div>
-
-        <div style="border-left:4px solid #eadcc6;padding:12px 14px;background:#fffdf8;margin-bottom:16px">
-          <p style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:#8a6a2c;font-weight:700">Facilities note</p>
-          <p style="margin:0;color:#3a3024;line-height:1.6;font-size:15px">Once you leave the city, countryside toilets are simple outhouses with squat toilets rather than Western flush toilets, and there are no regular showers. Bring wet wipes for cleaning hands and body between river washes; washing in the river can be part of the simple, therapeutic steppe rhythm when conditions allow.</p>
-        </div>
-
-        <div style="border-left:4px solid #eadcc6;padding:12px 14px;background:#fffdf8;margin-bottom:16px">
-          <p style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:#8a6a2c;font-weight:700">Translation note</p>
-          <p style="margin:0;color:#3a3024;line-height:1.6;font-size:15px">English is not always strong in the host-family setting. So far, we&apos;ve found <strong>ChatGPT voice mode</strong> to be one of the easiest ways to communicate: say something like, “Please translate the following sentence into Mongolian for me,” then speak naturally and play or show the translation. Other translation apps can help too, but ChatGPT voice mode has worked especially well for simple back-and-forth conversation.</p>
-        </div>
-
-        <div style="border-left:4px solid #eadcc6;padding:12px 14px;background:#fffdf8;margin-bottom:16px">
-          <p style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:#8a6a2c;font-weight:700">Booking communication</p>
-          <p style="margin:0;color:#3a3024;line-height:1.6;font-size:15px">We’ll send the practical preparation and arrival emails needed for this booking. Those are separate from the general newsletter.</p>
-        </div>
-
-        <div style="border-left:4px solid #eadcc6;padding:12px 14px;background:#fffdf8">
-          <p style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:#8a6a2c;font-weight:700">Keep this reference</p>
-          <p style="margin:0;color:#241d14;font-size:18px;font-weight:700">${escapeHtml(input.reference)}</p>
-        </div>
-      `,
-    }),
+    html: wrap(
+      needsGroupInvoice
+        ? `Reference ${input.reference}. Rob will email a ${onlinePayment} invoice for your group.`
+        : input.requiresManualPaymentLink
+          ? `Reference ${input.reference}. Rob will confirm availability before payment.`
+          : `Reference ${input.reference}. Your place is confirmed once the ${onlinePayment} online booking payment is completed.`,
+      body,
+    ),
   };
 }
-
 
 export function paymentReceivedInternalEmail(input: LifecycleEmailInput & { amountUsd: number; customerName: string; customerEmail: string; stripeReference: string }) {
   const amount = `$${input.amountUsd.toLocaleString('en-US')}`;
   const subject = `Payment received: ${input.customerName} ${input.reference}`;
   const text = `8 Lakes payment received\n\nReference: ${input.reference}\nGuest: ${input.customerName}\nEmail: ${input.customerEmail}\nTour date: ${input.tourDate || 'TBC'}\nOnline payment received: ${amount}\nStripe reference: ${input.stripeReference}\n\nThe booking has been matched by the Stripe webhook and marked paid/confirmed in the ops dashboard.`;
 
+  const body = [
+    p(`<strong>${escapeHtml(input.customerName)}</strong> has paid the online reservation amount for booking <strong>${escapeHtml(input.reference)}</strong>.`),
+    detailsHtml([
+      ['Reference', escapeHtml(input.reference)],
+      ['Guest', escapeHtml(input.customerName)],
+      ['Email', `<a href="mailto:${escapeHtml(input.customerEmail)}" style="color:#1155cc">${escapeHtml(input.customerEmail)}</a>`],
+      ['Tour date', escapeHtml(input.tourDate || 'TBC')],
+      ['Online payment received', escapeHtml(amount)],
+      ['Stripe reference', escapeHtml(input.stripeReference)],
+    ]),
+    p(`The Stripe webhook matched this payment to the booking and marked the online reservation amount as paid in the ops dashboard. Open the <a href="${OPS_URL}/ops/bookings/${escapeHtml(input.reference)}" style="color:#1155cc">booking record</a>.`),
+    signoffHtml(false),
+  ].join('\n');
+
   return {
     subject,
     text,
-    html: emailShell({
-      preheader: `${amount} Stripe payment matched for ${input.reference}.`,
-      title: 'Payment received',
-      intro: `<strong>${escapeHtml(input.customerName)}</strong> has paid the online reservation amount for booking <strong>${escapeHtml(input.reference)}</strong>.`,
-      footer: false,
-      children: `
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:18px">
-          ${detailRow('Reference', escapeHtml(input.reference))}
-          ${detailRow('Guest', escapeHtml(input.customerName))}
-          ${detailRow('Email', `<a href="mailto:${escapeHtml(input.customerEmail)}" style="color:#8a5a13">${escapeHtml(input.customerEmail)}</a>`)}
-          ${detailRow('Tour date', escapeHtml(input.tourDate || 'TBC'))}
-          ${detailRow('Online payment received', escapeHtml(amount))}
-          ${detailRow('Stripe reference', escapeHtml(input.stripeReference))}
-        </table>
-        <p style="margin:0 0 14px;color:#3a3024;line-height:1.65;font-size:15px">The Stripe webhook matched this payment to the booking and marked the online reservation amount as paid in the ops dashboard.</p>
-        <p style="margin:0"><a href="${OPS_URL}/ops/bookings/${escapeHtml(input.reference)}" style="display:inline-block;background:#241d14;color:#fff8ea;text-decoration:none;border-radius:0;padding:10px 14px;font-size:12px;text-transform:uppercase;letter-spacing:.12em;font-weight:700">Open booking record</a></p>
-      `,
-    }),
+    html: wrap(`${amount} Stripe payment matched for ${input.reference}.`, body),
   };
 }
 
 export function paymentConfirmedCustomerEmail(input: LifecycleEmailInput & { amountUsd: number }) {
-  const subject = `Payment received — 8 Lakes Tours ${input.reference}`;
+  const subject = `Payment received for your 8 Lakes booking (${input.reference})`;
   const name = firstName(input.firstName);
   const amount = `$${input.amountUsd.toLocaleString('en-US')}`;
 
+  const text = `Hi ${name},
+
+We have received your ${amount} online booking payment. Your place is confirmed.
+
+Booking reference: ${input.reference}
+Tour date: ${input.tourDate || 'TBC'}
+Online payment received: ${amount}
+Paid locally in Mongolia: ${FAMILY_CASH_USD}
+
+${DASH_RULE_TEXT}
+
+The remaining ${FAMILY_CASH_USD} goes directly to the host family in Mongolia, in clean USD cash.
+
+Next we send preparation notes, packing guidance, insurance reminders, and arrival coordination before departure.
+
+If anything comes up before then, just reply to this email.
+
+Rob Zaher
+8 Lakes Tours
+www.8lakestours.com
+info@8lakestours.com`;
+
+  const body = [
+    p(`Hi ${escapeHtml(name)},`),
+    p(`We have received your <strong>${escapeHtml(amount)}</strong> online booking payment. Your place is confirmed.`),
+    detailsHtml([
+      ['Booking reference', escapeHtml(input.reference)],
+      ['Tour date', escapeHtml(input.tourDate || 'TBC')],
+      ['Online payment received', escapeHtml(amount)],
+      ['Paid locally in Mongolia', escapeHtml(FAMILY_CASH_USD)],
+    ]),
+    sectionRuleHtml(),
+    p(`The remaining ${escapeHtml(FAMILY_CASH_USD)} goes directly to the host family in Mongolia, in clean USD cash.`),
+    p(`Next we send preparation notes, packing guidance, insurance reminders, and arrival coordination before departure.`),
+    p(`If anything comes up before then, just reply to this email.`),
+    signoffHtml(),
+  ].join('\n');
+
   return {
     subject,
-    text: `Hi ${name},\n\nGood news — we’ve received your ${amount} online booking payment for 8 Lakes Tours.\n\nBooking reference: ${input.reference}\nTour date: ${input.tourDate || 'TBC'}\n\nYour place is now confirmed.\n\nThe remaining ${FAMILY_CASH_USD} is paid directly to the host family in Mongolia in clean USD cash. We’ll send preparation notes, packing guidance, insurance reminders, and arrival coordination before departure.\n\nIf you have any questions before then, just reply to this email.\n\n8 Lakes Tours`,
-    html: emailShell({
-      preheader: `Payment received for booking ${input.reference}. Your 8 Lakes Tours place is confirmed.`,
-      title: `Payment received — you’re confirmed.`,
-      intro: `Hi ${escapeHtml(name)}, we’ve received your <strong>${escapeHtml(amount)} online booking payment</strong> for 8 Lakes Tours.`,
-      children: `
-        <div style="border-left:4px solid #c8a96e;background:#fff3dd;padding:12px 14px;margin-bottom:16px">
-          <p style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:#8a6a2c;font-weight:700">Booking confirmed</p>
-          <p style="margin:0;color:#3a3024;font-size:16px;line-height:1.55">Your place is now confirmed for <strong>${escapeHtml(input.tourDate || 'TBC')}</strong>.</p>
-        </div>
-
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:18px">
-          ${detailRow('Reference', escapeHtml(input.reference))}
-          ${detailRow('Online payment received', escapeHtml(amount))}
-          ${detailRow('Paid locally in Mongolia', FAMILY_CASH_USD)}
-        </table>
-
-        <p style="margin:0 0 18px;color:#3a3024;line-height:1.65;font-size:15px">The remaining <strong>${FAMILY_CASH_USD}</strong> is paid directly to the host family in Mongolia in clean USD cash. We’ll send preparation notes, packing guidance, insurance reminders, and arrival coordination before departure.</p>
-        <p style="margin:0;color:#3a3024;line-height:1.65;font-size:15px">If you have any questions before then, just reply to this email.</p>
-      `,
-    }),
+    text,
+    html: wrap(`Payment received for booking ${input.reference}. Your 8 Lakes Tours place is confirmed.`, body),
   };
 }
 
 export function preparationCustomerEmail(input: LifecycleEmailInput) {
-  const subject = `Preparing for Mongolia — 8 Lakes Tours ${input.reference}`;
+  const subject = `Getting ready for Mongolia (${input.reference})`;
   const name = firstName(input.firstName);
+  const text = `Hi ${name},
+
+Here is how to prepare for your 8 Lakes Tours trip.
+
+Booking reference: ${input.reference}
+Tour date: ${input.tourDate || 'TBC'}
+Cash for the host family: ${FAMILY_CASH_USD} (clean USD notes, paid directly in Mongolia)
+
+${DASH_RULE_TEXT}
+
+Packing: pack for all seasons, even in summer. Steppe weather moves quickly between warm sun, cold wind, rain, and very cold nights. Bring warm layers, waterproof outerwear, comfortable riding clothes, warm socks, a hat, gloves, and basic toiletries.
+
+Facilities: once outside the city, expect simple outhouse squat toilets rather than Western flush toilets, and no regular showers. Bring wet wipes for cleaning hands and body between river washes.
+
+Food: meals are traditional host-family food, meat- and dairy-heavy, with fresh milk tea, yoghurt, cheese, and other local foods. Strict vegan or serious dairy-free needs are difficult in this remote setting.
+
+Getting from Ulaanbaatar to Bat-Ulzii: this part needs a little planning. Arrive in Ulaanbaatar at least two days before your tour date so there is time to sort the countryside bus and any schedule changes. Book a hostel or hotel in Ulaanbaatar and ask them to help book your bus ticket to Bat-Ulzii. These buses do not run every day, so please do not leave it until the last minute. Once your bus is booked, send us the details and we will coordinate the host-family pickup on the Bat-Ulzii side.
+
+Getting around Ulaanbaatar: the tapa. app works well for scooter and bicycle rental and accepts international cards: https://apps.apple.com/app/id1563199559
+
+Insurance: please make sure you have travel insurance that covers horseback riding or adventure activity and emergency evacuation.
+
+${DASH_RULE_TEXT}
+
+Any last questions, just reply to this email.
+
+Rob Zaher
+8 Lakes Tours
+www.8lakestours.com
+info@8lakestours.com`;
+
+  const body = [
+    p(`Hi ${escapeHtml(name)},`),
+    p(`Here is how to prepare for your 8 Lakes Tours trip.`),
+    detailsHtml([
+      ['Booking reference', escapeHtml(input.reference)],
+      ['Tour date', escapeHtml(input.tourDate || 'TBC')],
+      ['Cash for the host family', `${escapeHtml(FAMILY_CASH_USD)} (clean USD notes, paid directly in Mongolia)`],
+    ]),
+    sectionRuleHtml(),
+    p(`<strong>Packing:</strong> pack for all seasons, even in summer. Steppe weather moves quickly between warm sun, cold wind, rain, and very cold nights. Bring warm layers, waterproof outerwear, comfortable riding clothes, warm socks, a hat, gloves, and basic toiletries.`),
+    p(`<strong>Facilities:</strong> once outside the city, expect simple outhouse squat toilets rather than Western flush toilets, and no regular showers. Bring wet wipes for cleaning hands and body between river washes.`),
+    p(`<strong>Food:</strong> meals are traditional host-family food, meat- and dairy-heavy, with fresh milk tea, yoghurt, cheese, and other local foods. Strict vegan or serious dairy-free needs are difficult in this remote setting.`),
+    p(`<strong>Getting from Ulaanbaatar to Bat-Ulzii:</strong> this part needs a little planning. Arrive in Ulaanbaatar at least <strong>two days before your tour date</strong> so there is time to sort the countryside bus and any schedule changes. Book a hostel or hotel in Ulaanbaatar and ask them to help book your bus ticket to Bat-Ulzii. These buses do not run every day, so please do not leave it until the last minute. Once your bus is booked, send us the details and we will coordinate the host-family pickup on the Bat-Ulzii side.`),
+    p(`<strong>Getting around Ulaanbaatar:</strong> the <a href="https://apps.apple.com/app/id1563199559" style="color:#1155cc">tapa. app</a> works well for scooter and bicycle rental and accepts international cards.`),
+    p(`<strong>Insurance:</strong> please make sure you have travel insurance that covers horseback riding or adventure activity and emergency evacuation.`),
+    sectionRuleHtml(),
+    p(`Any last questions, just reply to this email.`),
+    signoffHtml(),
+  ].join('\n');
+
   return {
     subject,
-    text: `Hi ${name},\n\nHere are the main preparation notes for your 8 Lakes Tours booking.\n\nBooking reference: ${input.reference}\nTour date: ${input.tourDate || 'TBC'}\n\nPack for all seasons, even in summer. Mongolia’s steppe weather can shift quickly between warm sun, cold wind, rain, and very cold nights. Bring warm layers, waterproof outerwear, comfortable riding clothes, warm socks, hat, gloves, and basic toiletries.\n\nCountryside facilities are simple. Once outside the city, expect outhouse squat toilets rather than Western flush toilets, and no regular showers. Bring wet wipes for cleaning hands and body between river washes.\n\nFood is traditional host-family food: meat- and dairy-heavy, with fresh milk tea, yoghurt, cheese, and other local foods. Strict vegan or serious dairy-free needs are difficult in this remote setting.\n\nGetting from Ulaanbaatar to Bat-Ulzii needs a little planning. We recommend arriving in Ulaanbaatar at least two days before your tour date so there is enough time to sort the countryside bus and any schedule changes. Book a hostel or hotel in Ulaanbaatar and ask them to help book your bus ticket to Bat-Ulzii. These buses do not run every day, so please do not leave this until the last minute. Once your bus is booked, send us the details and we will help coordinate the host-family pickup on the Bat-Ulzii side.\n\nFor getting around Ulaanbaatar before or after the trip, the tapa. app works well for scooter and bicycle rental and accepts international cards: https://apps.apple.com/app/id1563199559\n\nPlease also make sure you have travel insurance that covers horseback riding/adventure activity and emergency evacuation.\n\nIf you have any last questions, just reply to this email.\n\n8 Lakes Tours`,
-    html: emailShell({
-      preheader: `Packing, food, facilities, insurance, and practical prep for booking ${input.reference}.`,
-      title: `Preparing for Mongolia.`,
-      intro: `Hi ${escapeHtml(name)}, here are the main preparation notes for your 8 Lakes Tours booking.`,
-      children: `
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:18px">
-          ${detailRow('Reference', escapeHtml(input.reference))}
-          ${detailRow('Tour date', escapeHtml(input.tourDate || 'TBC'))}
-          ${detailRow('Local cash payment', FAMILY_CASH_USD)}
-        </table>
-
-        <div style="border-left:4px solid #eadcc6;padding:12px 14px;background:#fffdf8;margin-bottom:16px">
-          <p style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:#8a6a2c;font-weight:700">Packing</p>
-          <p style="margin:0;color:#3a3024;line-height:1.6;font-size:15px">Pack for all seasons, even in summer. Mongolia’s steppe weather can shift quickly between warm sun, cold wind, rain, and very cold nights. Bring warm layers, waterproof outerwear, comfortable riding clothes, warm socks, hat, gloves, and basic toiletries.</p>
-        </div>
-
-        <div style="border-left:4px solid #eadcc6;padding:12px 14px;background:#fffdf8;margin-bottom:16px">
-          <p style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:#8a6a2c;font-weight:700">Facilities</p>
-          <p style="margin:0;color:#3a3024;line-height:1.6;font-size:15px">Once outside the city, expect simple outhouse squat toilets rather than Western flush toilets, and no regular showers. Bring wet wipes for cleaning hands and body between river washes.</p>
-        </div>
-
-        <div style="border-left:4px solid #eadcc6;padding:12px 14px;background:#fffdf8;margin-bottom:16px">
-          <p style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:#8a6a2c;font-weight:700">Food</p>
-          <p style="margin:0;color:#3a3024;line-height:1.6;font-size:15px">Food is traditional host-family food: meat- and dairy-heavy, with fresh milk tea, yoghurt, cheese, and other local foods. Strict vegan or serious dairy-free needs are difficult in this remote setting.</p>
-        </div>
-
-        <div style="border-left:4px solid #eadcc6;padding:12px 14px;background:#fffdf8;margin-bottom:16px">
-          <p style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:#8a6a2c;font-weight:700">Getting from Ulaanbaatar to Bat-Ulzii</p>
-          <p style="margin:0 0 10px;color:#3a3024;line-height:1.6;font-size:15px">This part needs a little planning. We recommend arriving in Ulaanbaatar at least <strong>two days before your tour date</strong> so there is enough time to sort the countryside bus and any schedule changes.</p>
-          <p style="margin:0;color:#3a3024;line-height:1.6;font-size:15px">Book a hostel or hotel in Ulaanbaatar and ask them to help book your bus ticket to <strong>Bat-Ulzii</strong>. These buses do not run every day, so please do not leave this until the last minute. Once your bus is booked, send us the details and we will help coordinate the host-family pickup on the Bat-Ulzii side.</p>
-        </div>
-
-        <div style="border-left:4px solid #eadcc6;padding:12px 14px;background:#fffdf8;margin-bottom:16px">
-          <p style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:#8a6a2c;font-weight:700">Ulaanbaatar transport tip</p>
-          <p style="margin:0;color:#3a3024;line-height:1.6;font-size:15px">For getting around Ulaanbaatar before or after the trip, the <a href="https://apps.apple.com/app/id1563199559" style="color:#8a5a13">tapa. app</a> works well for scooter and bicycle rental and accepts international cards.</p>
-        </div>
-
-        <p style="margin:0;color:#3a3024;line-height:1.65;font-size:15px">Please also make sure you have travel insurance that covers horseback riding/adventure activity and emergency evacuation. If you have any last questions, just reply to this email.</p>
-      `,
-    }),
+    text,
+    html: wrap(`Packing, food, facilities, insurance, and practical prep for booking ${input.reference}.`, body),
   };
 }
 
 export function insuranceReminderCustomerEmail(input: LifecycleEmailInput) {
-  const subject = `Travel insurance check — 8 Lakes Tours ${input.reference}`;
+  const subject = `Travel insurance check (${input.reference})`;
   const name = firstName(input.firstName);
+  const text = `Hi ${name},
+
+A quick check before your 8 Lakes Tours departure.
+
+Booking reference: ${input.reference}
+Tour date: ${input.tourDate || 'TBC'}
+
+${DASH_RULE_TEXT}
+
+Please make sure your travel insurance is active and covers horseback riding or adventure activity, medical treatment, emergency evacuation, and repatriation. Not every standard policy includes horseback riding, so it is worth double checking that part.
+
+Also check that your passport, flights, warm layers, personal medication, first-aid basics, and ${FAMILY_CASH_USD} clean USD cash for the host family are sorted.
+
+Any last questions, just reply to this email.
+
+Rob Zaher
+8 Lakes Tours
+www.8lakestours.com
+info@8lakestours.com`;
+
+  const body = [
+    p(`Hi ${escapeHtml(name)},`),
+    p(`A quick check before your 8 Lakes Tours departure.`),
+    detailsHtml([
+      ['Booking reference', escapeHtml(input.reference)],
+      ['Tour date', escapeHtml(input.tourDate || 'TBC')],
+    ]),
+    sectionRuleHtml(),
+    p(`Please make sure your travel insurance is active and covers <strong>horseback riding or adventure activity, medical treatment, emergency evacuation, and repatriation</strong>. Not every standard policy includes horseback riding, so it is worth double checking that part.`),
+    p(`Also check that your passport, flights, warm layers, personal medication, first-aid basics, and ${escapeHtml(FAMILY_CASH_USD)} clean USD cash for the host family are sorted.`),
+    p(`Any last questions, just reply to this email.`),
+    signoffHtml(),
+  ].join('\n');
+
   return {
     subject,
-    text: `Hi ${name},\n\nQuick check before your 8 Lakes Tours departure: please make sure your travel insurance is active and covers horseback riding or adventure activity, medical treatment, emergency evacuation, and repatriation.\n\nBooking reference: ${input.reference}\nTour date: ${input.tourDate || 'TBC'}\n\nAlso check that your passport, flights, warm layers, personal medication, first-aid basics, and ${FAMILY_CASH_USD} clean USD cash for the host family are sorted.\n\nIf you have any last questions, don’t hesitate to reply.\n\n8 Lakes Tours`,
-    html: emailShell({
-      preheader: `Insurance, documents, cash, and final preparation check for booking ${input.reference}.`,
-      title: `Quick insurance check.`,
-      intro: `Hi ${escapeHtml(name)}, a quick check before your 8 Lakes Tours departure.`,
-      children: `
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:18px">
-          ${detailRow('Reference', escapeHtml(input.reference))}
-          ${detailRow('Tour date', escapeHtml(input.tourDate || 'TBC'))}
-        </table>
-
-        <div style="border-left:4px solid #c8a96e;background:#fff3dd;padding:12px 14px;margin-bottom:16px">
-          <p style="margin:0 0 6px;text-transform:uppercase;letter-spacing:.12em;font-size:12px;color:#8a6a2c;font-weight:700">Required insurance</p>
-          <p style="margin:0;color:#3a3024;line-height:1.6;font-size:15px">Please make sure your travel insurance is active and covers horseback riding or adventure activity, medical treatment, emergency evacuation, and repatriation.</p>
-        </div>
-
-        <p style="margin:0 0 18px;color:#3a3024;line-height:1.65;font-size:15px">Also check that your passport, flights, warm layers, personal medication, first-aid basics, and <strong>${FAMILY_CASH_USD} clean USD cash</strong> for the host family are sorted.</p>
-        <p style="margin:0;color:#3a3024;line-height:1.65;font-size:15px">If you have any last questions, don’t hesitate to reply.</p>
-      `,
-    }),
+    text,
+    html: wrap(`Insurance, documents, cash, and final preparation check for booking ${input.reference}.`, body),
   };
 }
 
 export function arrivalCoordinationCustomerEmail(input: LifecycleEmailInput) {
   const name = firstName(input.firstName);
+  const text = `Hi ${name},
+
+Your 8 Lakes Tours departure is getting close.
+
+Booking reference: ${input.reference}
+Tour date: ${input.tourDate || 'TBC'}
+
+${DASH_RULE_TEXT}
+
+Please reply with your Ulaanbaatar arrival details and your Bat-Ulzii bus date and time once booked, so we can coordinate the host-family pickup.
+
+The countryside bus does not run every day, so ask your Ulaanbaatar hostel or hotel to help book it. Once your bus timing is confirmed, Rob will coordinate the pickup from Bat-Ulzii. Please do not assume the pickup is final until it is confirmed in writing.
+
+Keep your travel insurance, passport, warm layers, and clean USD cash for the host family ready.
+
+Rob Zaher
+8 Lakes Tours
+www.8lakestours.com
+info@8lakestours.com`;
+
+  const body = [
+    p(`Hi ${escapeHtml(name)},`),
+    p(`Your 8 Lakes Tours departure is getting close.`),
+    detailsHtml([
+      ['Booking reference', escapeHtml(input.reference)],
+      ['Tour date', escapeHtml(input.tourDate || 'TBC')],
+    ]),
+    sectionRuleHtml(),
+    p(`Please reply with your Ulaanbaatar arrival details and your Bat-Ulzii bus date and time once booked, so we can coordinate the host-family pickup.`),
+    p(`The countryside bus does not run every day, so ask your Ulaanbaatar hostel or hotel to help book it. Once your bus timing is confirmed, Rob will coordinate the pickup from Bat-Ulzii. Please do not assume the pickup is final until it is confirmed in writing.`),
+    p(`Keep your travel insurance, passport, warm layers, and clean USD cash for the host family ready.`),
+    signoffHtml(),
+  ].join('\n');
+
   return {
-    subject: `Arrival coordination — 8 Lakes Tours ${input.reference}`,
-    text: `Hi ${name},\n\nYour 8 Lakes Tours departure is getting close. Please reply with your Ulaanbaatar arrival and Bat-Ulzii bus details once booked, so we can coordinate the host-family pickup.\n\nBooking reference: ${input.reference}\nTour date: ${input.tourDate || 'TBC'}\n\nPlease keep your travel insurance, passport, warm layers, and clean USD cash for the host family ready.\n\nRob & the 8 Lakes Tours team`,
-    html: emailShell({ preheader: `Arrival coordination for booking ${input.reference}.`, title: 'Arrival coordination.', intro: `Hi ${escapeHtml(name)}, your departure is getting close.`, children: `<p style="margin:0 0 18px;color:#3a3024;line-height:1.65;font-size:15px">Please reply with your Ulaanbaatar arrival and Bat-Ulzii bus details once booked, so we can coordinate the host-family pickup.</p><p style="margin:0;color:#3a3024;line-height:1.65;font-size:15px"><strong>Booking:</strong> ${escapeHtml(input.reference)}<br><strong>Tour date:</strong> ${escapeHtml(input.tourDate || 'TBC')}</p>` }),
+    subject: `Arrival and Bat-Ulzii pickup (${input.reference})`,
+    text,
+    html: wrap(`Arrival coordination for booking ${input.reference}.`, body),
   };
 }
 
 export function finalChecklistCustomerEmail(input: LifecycleEmailInput) {
   const name = firstName(input.firstName);
+  const text = `Hi ${name},
+
+A final check before your 8 Lakes Tours departure.
+
+Booking reference: ${input.reference}
+Tour date: ${input.tourDate || 'TBC'}
+
+${DASH_RULE_TEXT}
+
+Passport, insurance covering riding and emergency evacuation, flights and bus, warm layers, medication, and clean USD cash for the host family.
+
+If anything has changed, just reply.
+
+Rob Zaher
+8 Lakes Tours
+www.8lakestours.com
+info@8lakestours.com`;
+
+  const body = [
+    p(`Hi ${escapeHtml(name)},`),
+    p(`A final check before your 8 Lakes Tours departure.`),
+    detailsHtml([
+      ['Booking reference', escapeHtml(input.reference)],
+      ['Tour date', escapeHtml(input.tourDate || 'TBC')],
+    ]),
+    sectionRuleHtml(),
+    p(`Passport, insurance covering riding and emergency evacuation, flights and bus, warm layers, medication, and clean USD cash for the host family.`),
+    p(`If anything has changed, just reply.`),
+    signoffHtml(),
+  ].join('\n');
+
   return {
-    subject: `Final check before Mongolia — 8 Lakes Tours ${input.reference}`,
-    text: `Hi ${name},\n\nA final check before your 8 Lakes Tours departure: passport, insurance covering riding and evacuation, flights/bus, warm layers, medication, and clean USD cash for the host family.\n\nBooking reference: ${input.reference}\nTour date: ${input.tourDate || 'TBC'}\n\nReply if anything has changed.\n\nRob & the 8 Lakes Tours team`,
-    html: emailShell({ preheader: `Final departure check for booking ${input.reference}.`, title: 'Final departure check.', intro: `Hi ${escapeHtml(name)}, a quick final check before departure.`, children: `<p style="margin:0;color:#3a3024;line-height:1.65;font-size:15px">Please check your passport, riding/evacuation insurance, flights or bus, warm layers, medication, and clean USD cash for the host family. Reply if anything has changed.</p>` }),
+    subject: `Final check before Mongolia (${input.reference})`,
+    text,
+    html: wrap(`Final departure check for booking ${input.reference}.`, body),
   };
 }
 
 export function leadInternalEmail(input: { name: string; email: string; source: string; interest: string }) {
   const name = input.name || 'Subscriber';
+  const text = `New newsletter subscriber\n\nName: ${name}\nEmail: ${input.email}\nInterest: ${input.interest}\nSource: ${input.source}`;
+  const body = [
+    p(`<strong>${escapeHtml(input.email)}</strong> joined the 8 Lakes newsletter list.`),
+    detailsHtml([
+      ['Name', escapeHtml(name)],
+      ['Email', `<a href="mailto:${escapeHtml(input.email)}" style="color:#1155cc">${escapeHtml(input.email)}</a>`],
+      ['Interest', escapeHtml(input.interest || 'Not provided')],
+      ['Source', escapeHtml(input.source || 'website')],
+    ]),
+    signoffHtml(false),
+  ].join('\n');
   return {
     subject: `New 8 Lakes newsletter subscriber: ${input.email}`,
-    text: `New newsletter subscriber\n\nName: ${name}\nEmail: ${input.email}\nInterest: ${input.interest}\nSource: ${input.source}`,
-    html: emailShell({
-      preheader: `${input.email} joined the 8 Lakes newsletter list.`,
-      title: 'New newsletter subscriber',
-      footer: false,
-      children: `
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">
-          ${detailRow('Name', escapeHtml(name))}
-          ${detailRow('Email', `<a href="mailto:${escapeHtml(input.email)}" style="color:#8a5a13">${escapeHtml(input.email)}</a>`)}
-          ${detailRow('Interest', escapeHtml(input.interest || 'Not provided'))}
-          ${detailRow('Source', escapeHtml(input.source || 'website'))}
-        </table>
-      `,
-    }),
+    text,
+    html: wrap(`${input.email} joined the 8 Lakes newsletter list.`, body),
   };
 }
 
 export function leadCustomerEmail(input: { name: string }) {
   const greetingName = input.name ? firstName(input.name) : '';
   const greeting = greetingName ? `Hi ${escapeHtml(greetingName)},` : 'Hi,';
+  const subject = 'Welcome to the 8 Lakes Tours newsletter';
+  const text = `${greetingName ? `Hi ${greetingName},` : 'Hi,'}\n\nThanks for joining the 8 Lakes Tours newsletter. We send occasional updates about Mongolia horse trekking, new departure dates, offers, deals, blog posts, field notes, and news from the business.\n\nNo booking has been made from this signup. If you ever want to reserve a place, you can do that on the website: ${SITE_URL}/#application\n\nYou can opt out any time by replying to this email.\n\nRob Zaher\n8 Lakes Tours\nwww.8lakestours.com\ninfo@8lakestours.com`;
+  const body = [
+    p(greeting),
+    p(`Thanks for joining the 8 Lakes Tours newsletter. We send occasional updates about Mongolia horse trekking, new departure dates, offers, deals, blog posts, field notes, and news from the business.`),
+    p(`No booking has been made from this signup. If you ever want to reserve a place, you can do that on the website: <a href="${SITE_URL}/#application" style="color:#1155cc">${SITE_URL}/#application</a>`),
+    p(`You can opt out any time by replying to this email.`),
+    signoffHtml(),
+  ].join('\n');
   return {
-    subject: 'Welcome to the 8 Lakes Tours newsletter',
-    text: `${greetingName ? `Hi ${greetingName},` : 'Hi,'}\n\nThanks for joining the 8 Lakes Tours newsletter. We’ll send occasional updates about Mongolia horse trekking, new departure dates, offers, deals, blog posts, field notes, and behind-the-scenes news from the business.\n\nNo booking has been made from this signup. If you ever want to reserve a place, you can do that on the website: ${SITE_URL}/#application\n\nYou can opt out any time by replying to this email.\n\n8 Lakes Tours`,
-    html: emailShell({
-      preheader: 'Occasional 8 Lakes Tours news, offers, dates, blog posts, and field notes.',
-      title: greeting,
-      intro: 'Thanks for joining the 8 Lakes Tours newsletter.',
-      children: `
-        <p style="margin:0 0 18px;color:#3a3024;line-height:1.65;font-size:15px">We’ll send occasional updates about Mongolia horse trekking, new departure dates, offers, deals, blog posts, field notes, and behind-the-scenes news from the business.</p>
-        <p style="margin:0 0 18px;color:#3a3024;line-height:1.65;font-size:15px">No booking has been made from this signup. If you ever want to reserve a place, you can do that on the website.</p>
-        <p style="margin:0 0 18px;color:#3a3024;line-height:1.65;font-size:15px">You can opt out any time by replying to this email.</p>
-        <p style="margin:0"><a href="${SITE_URL}" style="display:inline-block;background:#241d14;color:#fff8ea;text-decoration:none;border-radius:0;padding:12px 16px;font-size:12px;text-transform:uppercase;letter-spacing:.12em;font-weight:700">Visit 8 Lakes Tours</a></p>
-      `,
-    }),
+    subject,
+    text,
+    html: wrap('Occasional 8 Lakes Tours news, offers, dates, blog posts, and field notes.', body),
   };
 }

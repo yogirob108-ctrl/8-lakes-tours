@@ -61,7 +61,11 @@ export async function GET(request: Request) {
     for (const booking of rows) {
       const schedule = getLifecycleEmailSchedule({ now:new Date(), tourDate:booking.tour_date });
       const template = selectPacedLifecycleCandidate({ verifiedStripe:verified.has(booking.public_reference), daysUntilDeparture:schedule.daysUntilDeparture, sentTemplates:existing.get(booking.id)||new Set() }) as TemplateKey|null;
-      if (!template) { results.push({ reference:booking.public_reference, status:(reconciliation as Array<{reference:string;status:string}>).find(row=>row.reference===booking.public_reference)?.status || 'scan_incomplete_unknown' }); continue; }
+      if (!template) {
+        const reconciliationResult = (reconciliation as Array<Record<string, unknown>>).find(row => row.reference===booking.public_reference);
+        results.push(reconciliationResult || { reference:booking.public_reference, status:'scan_incomplete_unknown' });
+        continue;
+      }
       if (dryRun) { results.push({ reference:booking.public_reference, status:'candidate', template, days_until_departure:schedule.daysUntilDeparture }); continue; }
       const recipient = customer(booking).email;
       if (!recipient || !booking.customer_id) { results.push({ reference:booking.public_reference, status:'missing_customer_email', template }); continue; }

@@ -51,7 +51,7 @@ export default function GalleryPage() {
         <h1>Photo Gallery</h1>
         <p>
           A deeper look at the world around the expedition: horses, gers, river crossings,
-          host-family country, big weather, and the valleys between Orkhon and Eight Lakes.
+          host-family country and the valleys between Orkhon and Eight Lakes.
         </p>
         <div className="gallery-meta">
           <span>{GALLERY_IMAGES.length} photos</span>

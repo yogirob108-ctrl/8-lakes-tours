@@ -28,7 +28,7 @@ const storyCards = [
   },
   {
     title: 'Hosted by nomadic families',
-    body: 'Guests stay close to local life: gers, horses, shared meals, weather, tea, work, rest, and the rhythm of the valley. The local family portion of the price is paid directly in cash to the hosts because many families cannot reliably receive online transfers.',
+    body: 'Guests stay close to local life: gers, horses, shared meals, tea, work, rest, and the rhythm of the valley. The local family portion of the price is paid directly in cash to the hosts because many families cannot reliably receive online transfers.',
   },
   {
     title: 'Built around the real thing',
@@ -174,7 +174,7 @@ export default function Page() {
         <h2>Keep exploring</h2>
         <div className="next-grid">
           <Link href="/#book"><strong>Reserve a spot</strong><span>Dates, price, booking form, and payment structure.</span></Link>
-          <Link href="/gallery"><strong>Gallery</strong><span>See the horses, gers, weather, guides, and valley.</span></Link>
+          <Link href="/gallery"><strong>Gallery</strong><span>See the horses, gers, guides, and valley.</span></Link>
           <Link href="/faq"><strong>FAQ</strong><span>Food, flexibility, safety, insurance, payment, and logistics.</span></Link>
           <Link href="/contact"><strong>Contact</strong><span>Ask Rob and the team before you book.</span></Link>
         </div>

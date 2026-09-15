@@ -1219,8 +1219,17 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .testimonial-body { padding: 1.6rem; }
         .testimonial-quote { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 1.45rem; line-height: 1.45; color: var(--cream); font-style: italic; }
         .testimonial-name { margin-top: 1.2rem; font-size: 0.68rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); }
-        .contact-instagram-icon { display: inline-flex; color: var(--cream); }
-        .contact-instagram-icon .instagram-glyph { width: 1.2rem; height: 1.2rem; }
+        .contact-section { background: var(--dark); padding: 5.5rem 6rem; }
+        .contact-layout { max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 3.5rem; align-items: center; }
+        .contact-intro .section-body { margin: 1rem 0 1.6rem; }
+        .contact-cards { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.75rem; }
+        .contact-card { display: flex; align-items: center; gap: 0.8rem; min-width: 0; padding: 0.9rem 1rem; background: rgba(200,169,110,0.06); border: 1px solid rgba(200,169,110,0.25); border-radius: var(--radius-soft); color: inherit; text-decoration: none; transition: border-color 0.3s ease; }
+        .contact-card:hover { border-color: var(--gold); }
+        .contact-card-icon { display: inline-flex; flex-shrink: 0; color: var(--cream); font-size: 1.1rem; }
+        .contact-card-icon .instagram-glyph { width: 1.15rem; height: 1.15rem; }
+        .contact-card-text { display: grid; gap: 0.2rem; min-width: 0; }
+        .contact-card-label { font-size: 0.58rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); }
+        .contact-card-value { font-size: 0.85rem; color: var(--cream); overflow-wrap: anywhere; }
 
         .itinerary { background: var(--dark); padding-top: 4.5rem; }
         .itinerary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-top: 4rem; }
@@ -1381,6 +1390,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .booking-error-summary button { padding: 0.18rem 0; border: 0; background: transparent; color: #fff; text-decoration: underline; cursor: pointer; text-align: left; font: inherit; }
         .form-input[aria-invalid="true"], .form-select[aria-invalid="true"], .form-textarea[aria-invalid="true"] { border: 2px solid #ff8f70; box-shadow: inset 0 0 0 1px #35170f; background-image: linear-gradient(135deg, transparent calc(100% - 1.2rem), rgba(255,143,112,0.35)); }
         @media (max-width: 520px) { .date-of-birth-inputs { gap: 0.4rem; } .date-of-birth-part .form-select { padding-inline: 0.5rem; } }
+        @media (max-width: 520px) { .contact-cards, .lead-card-public .lead-form { grid-template-columns: 1fr; } }
         .form-input:-webkit-autofill, .form-input:-webkit-autofill:hover, .form-input:-webkit-autofill:focus, input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, textarea:-webkit-autofill, textarea:-webkit-autofill:hover, textarea:-webkit-autofill:focus { -webkit-box-shadow: 0 0 0 1000px #15120e inset !important; box-shadow: 0 0 0 1000px #15120e inset !important; -webkit-text-fill-color: var(--cream) !important; caret-color: var(--cream); border-color: rgba(200,169,110,0.35) !important; transition: background-color 9999s ease-in-out 0s; }
         .form-select option { background: var(--ink); }
         .form-textarea { resize: vertical; min-height: 80px; }
@@ -1438,10 +1448,11 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .group-request-next-step { display:flex; flex-direction:column; gap:0.35rem; border:1px solid rgba(200,169,110,0.28); background:rgba(200,169,110,0.08); border-radius:var(--radius-card); padding:0.9rem; text-align:left; }
         .group-request-next-step strong { color:var(--cream); font-size:0.86rem; }
         .group-request-next-step span { color:var(--mist); font-size:0.76rem; line-height:1.55; opacity:0.78; }
-        .lead-card-public { margin: 2.2rem auto 0; max-width: 460px; padding: 1.2rem; border: 1px solid rgba(200,169,110,0.22); border-radius: var(--radius-card); background: rgba(245,240,232,0.045); }
+        .lead-card-public { margin: 0; padding: 1.6rem; border: 1px solid rgba(200,169,110,0.22); border-radius: var(--radius-card); background: rgba(245,240,232,0.045); }
         .lead-card-public h3 { color: var(--cream); font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 1.65rem; font-weight: 300; margin: 0 0 0.4rem; }
         .lead-card-public p { color: rgba(212,207,196,0.72); font-size: 0.82rem; line-height: 1.6; margin: 0 0 1rem; }
-        .lead-form { display: grid; gap: 0.6rem; }
+        .lead-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.6rem; }
+        .lead-form button { grid-column: 1 / -1; }
         .lead-form input { width: 100%; box-sizing: border-box; border: 1px solid rgba(245,240,232,0.14); background: rgba(14,12,9,0.54); color: var(--cream); border-radius: var(--radius-soft); padding: 0.86rem 1rem; font: inherit; outline: none; }
         .lead-form input:focus { border-color: var(--gold); }
         .lead-form button { display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--gold); background: var(--gold); color: var(--dark); border-radius: var(--radius-soft); padding: 1rem 1.25rem; font-family: var(--font-jost), 'Jost', sans-serif; font-size: 0.72rem; letter-spacing: 0.18em; line-height: 1; text-transform: uppercase; font-weight: 700; cursor: pointer; transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease, transform 0.3s ease; }
@@ -1552,6 +1563,9 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           .ask-card a { font-size:0.58rem; letter-spacing:0.12em; }
           .ask-card .ask-card-alt { margin-top:0.75rem; padding-top:0.75rem; }
           .ask-card .ask-card-alt p { display:block; font-size:0.74rem; line-height:1.5; margin-bottom:0.5rem; }
+          .contact-section { padding: 4rem 1.5rem; }
+          .contact-layout { grid-template-columns: 1fr; gap: 2rem; }
+          .lead-card-public { padding: 1.2rem; }
           .tour-dates-card { margin-top: 1rem; padding: 0.8rem 0.62rem; border-radius: var(--radius-card); }
           .tour-dates-heading { font-size:0.52rem !important; letter-spacing:0.22em !important; margin-bottom:0.62rem !important; }
           .tour-date-list { grid-template-columns: 1fr; gap: 0.26rem; }
@@ -2340,36 +2354,28 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
       </section>
 
       {/* CONTACT */}
-      <section style={{background:'var(--dark)', padding:'7rem 2rem', textAlign:'center'}}>
-        <div style={{maxWidth:'560px', margin:'0 auto'}}>
-          <div className="reveal">
+      <section className="contact-section">
+        <div className="contact-layout">
+          <div className="contact-intro reveal">
             <span className="section-eyebrow">Get In Touch</span>
             <h2 className="section-title">Have a<br /><em>Question?</em></h2>
-            <p className="section-body" style={{marginTop:'1rem', marginBottom:'3rem'}}>We&apos;re happy to answer anything before you book — whether it&apos;s about the route, the horses, visa requirements, or packing. Reach out and we&apos;ll get back to you promptly.</p>
-          </div>
-          <div className="reveal" style={{display:'flex', flexDirection:'column', gap:'1rem', alignItems:'center'}}>
-            <a
-              href="mailto:info@8lakestours.com"
-              style={{display:'flex', alignItems:'center', gap:'1rem', width:'100%', maxWidth:'380px', padding:'1.2rem 1.8rem', background:'rgba(200,169,110,0.06)', border:'1px solid rgba(200,169,110,0.25)', borderRadius:'var(--radius-soft)', textDecoration:'none', transition:'border-color 0.3s', color:'inherit'}}
-            >
-              <span style={{fontSize:'1.2rem'}}>✉</span>
-              <div style={{textAlign:'left'}}>
-                <p style={{fontSize:'0.6rem', letterSpacing:'0.25em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'0.25rem'}}>Email</p>
-                <p style={{fontSize:'0.9rem', color:'var(--cream)'}}>info@8lakestours.com</p>
-              </div>
-            </a>
-            <a
-              href="https://www.instagram.com/8lakestours"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{display:'flex', alignItems:'center', gap:'1rem', width:'100%', maxWidth:'380px', padding:'1.2rem 1.8rem', background:'rgba(200,169,110,0.06)', border:'1px solid rgba(200,169,110,0.25)', borderRadius:'var(--radius-soft)', textDecoration:'none', transition:'border-color 0.3s', color:'inherit'}}
-            >
-              <span className="contact-instagram-icon"><svg className="instagram-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" /><circle cx="12" cy="12" r="4.2" /><circle cx="17.6" cy="6.4" r="1.15" fill="currentColor" stroke="none" /></svg></span>
-              <div style={{textAlign:'left'}}>
-                <p style={{fontSize:'0.6rem', letterSpacing:'0.25em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'0.25rem'}}>Follow along on Instagram</p>
-                <p style={{fontSize:'0.9rem', color:'var(--cream)'}}>@8lakestours</p>
-              </div>
-            </a>
+            <p className="section-body">We&apos;re happy to answer anything before you book — whether it&apos;s about the route, the horses, visa requirements, or packing. Reach out and we&apos;ll get back to you promptly.</p>
+            <div className="contact-cards">
+              <a className="contact-card" href="mailto:info@8lakestours.com">
+                <span className="contact-card-icon" aria-hidden="true">✉</span>
+                <span className="contact-card-text">
+                  <span className="contact-card-label">Email</span>
+                  <span className="contact-card-value">info@8lakestours.com</span>
+                </span>
+              </a>
+              <a className="contact-card" href="https://www.instagram.com/8lakestours" target="_blank" rel="noopener noreferrer">
+                <span className="contact-card-icon"><svg className="instagram-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" /><circle cx="12" cy="12" r="4.2" /><circle cx="17.6" cy="6.4" r="1.15" fill="currentColor" stroke="none" /></svg></span>
+                <span className="contact-card-text">
+                  <span className="contact-card-label">Instagram</span>
+                  <span className="contact-card-value">@8lakestours</span>
+                </span>
+              </a>
+            </div>
           </div>
           <div className="lead-card-public reveal">
             <h3>Join the newsletter</h3>

@@ -1723,10 +1723,10 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           <button
             type="button"
             className="image-button"
-            aria-label="View larger image: Mongolian horseman in traditional dress"
-            onClick={() => openLightbox('/images/guide.jpg', 'Mongolian horseman in traditional dress')}
+            aria-label="View larger image: Suma on horseback in a traditional deel on the Mongolian steppe"
+            onClick={() => openLightbox('/images/suma-horseback-deel.jpg', 'Suma on horseback in a traditional deel on the Mongolian steppe')}
           >
-            <Image src="/images/guide.jpg" alt="Mongolian horseman in traditional dress" fill quality={72} sizes="(max-width: 900px) 100vw, 50vw" />
+            <Image src="/images/suma-horseback-deel.jpg" alt="Suma on horseback in a traditional deel on the Mongolian steppe" fill quality={72} sizes="(max-width: 900px) 100vw, 50vw" />
           </button>
           <span style={{position:'absolute', bottom:'1rem', left:'1rem', fontSize:'0.62rem', letterSpacing:'0.2em', textTransform:'uppercase', color:'rgba(245,240,232,0.75)', background:'rgba(14,12,9,0.55)', padding:'0.35rem 0.7rem', backdropFilter:'blur(4px)', pointerEvents:'none'}}>Suma — Your Guide</span>
         </div>

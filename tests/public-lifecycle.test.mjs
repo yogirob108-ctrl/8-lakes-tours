@@ -51,8 +51,8 @@ test('reconciliation accepts exactly bound PaymentIntent and Invoice evidence bu
   const conflicting = one([{ ...paidSession }, { ...paidSession, id: 'cs_second', payment_intent_id: undefined }]);
   assert.equal(conflicting.status, 'review_multiple_conflicting_matches');
   assert.deepEqual(conflicting.provider_payments, [
-    { source: 'checkout_session', id: 'cs_paid', payment_intent_id: undefined },
-    { source: 'checkout_session', id: 'cs_second', payment_intent_id: undefined },
+    { source: 'checkout_session', id: 'cs_paid', payment_intent_id: undefined, amount_cents:99900, currency:'usd', checkout_status:'complete', payment_status:'paid', payment_intent_status:'succeeded', charge_amount_cents:99900, charge_amount_refunded_cents:0 },
+    { source: 'checkout_session', id: 'cs_second', payment_intent_id: undefined, amount_cents:99900, currency:'usd', checkout_status:'complete', payment_status:'paid', payment_intent_status:'succeeded', charge_amount_cents:99900, charge_amount_refunded_cents:0 },
   ]);
 });
 

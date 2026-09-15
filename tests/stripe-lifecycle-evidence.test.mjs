@@ -16,6 +16,14 @@ test('collector explicitly paginates all provider collections and returns normal
   assert.deepEqual(result.evidence.map(row => row.source), ['checkout_session', 'payment_intent', 'invoice']);
 });
 
+test('collector never mistakes an unexpanded Checkout Session id for its PaymentIntent id', async () => {
+  const sessions = async () => ({ data: [{ id:'cs_live_session', client_reference_id:'8L-ABC123', amount_total:99900, currency:'usd', status:'complete', payment_status:'paid', payment_intent:'pi_live_intent' }], has_more:false });
+  const empty = async () => ({ data:[], has_more:false });
+  const result = await collectStripeLifecycleEvidence({ stripe:{ checkout:{sessions:{list:sessions}}, paymentIntents:{list:empty}, invoices:{list:empty} } });
+  assert.equal(result.evidence[0].payment_intent_id, 'pi_live_intent');
+  assert.notEqual(result.evidence[0].payment_intent_id, 'cs_live_session');
+});
+
 test('collector reports scan incomplete rather than silently returning no payment when its explicit page budget is exhausted', async () => {
   const endless = async () => ({ data: [{ id: 'next', amount: 99900, amount_received: 99900, currency: 'usd', status: 'succeeded', latest_charge: { amount: 99900, amount_refunded: 0 } }], has_more: true });
   const result = await collectStripeLifecycleEvidence({ stripe: { checkout: { sessions: { list: endless } }, paymentIntents: { list: endless }, invoices: { list: endless } }, pageBudget: 1 });

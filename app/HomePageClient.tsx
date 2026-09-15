@@ -7,6 +7,7 @@ import { getDefaultTourDate } from '@/lib/tour-dates.mjs';
 import { BASE_LOCAL_FAMILY_PAYMENT_USD, BASE_ONLINE_PAYMENT_USD, BASE_PRICE_USD, GROUP_PRICING_TIERS, MAX_GROUP_SIZE, clampGuestCount, getGroupPricing } from '@/lib/group-pricing.mjs';
 import { normalizeBookingTravellers } from '@/lib/booking-travellers.mjs';
 import { composeDateOfBirth, splitDateOfBirth } from '@/lib/date-of-birth-fields.mjs';
+import MobileNavMenu from './components/MobileNavMenu';
 
 type FunnelEventProperties = Record<string, string | number | boolean>;
 
@@ -1665,6 +1666,9 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           <a href="/faq" className="nav-social">FAQ</a>
           <a href="/contact" className="nav-social">Contact</a>
           <a href="#application" className="nav-cta">Reserve</a>
+        </div>
+        <div className="nav-mobile-actions">
+          <MobileNavMenu reserveHref="#application" />
         </div>
       </nav>
 

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect } from 'react';
+import MobileNavMenu from './MobileNavMenu';
 
 export default function SiteNav() {
   useEffect(() => {
@@ -31,8 +32,8 @@ export default function SiteNav() {
         <Link href="/#application" className="site-nav-cta">Reserve</Link>
       </div>
 
-      <div className="site-nav-mobile-actions" aria-label="Quick navigation">
-        <Link href="/#application" className="site-nav-cta">Book</Link>
+      <div className="site-nav-mobile-actions">
+        <MobileNavMenu reserveHref="/#application" />
       </div>
     </nav>
   );

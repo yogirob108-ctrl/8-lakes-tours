@@ -1188,7 +1188,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .intro-img.portrait-full:hover img { transform: none; }
         .intro-img-accent { position: absolute; bottom: -1.5rem; right: -1.5rem; width: 55%; aspect-ratio: 1; overflow: hidden; border: 4px solid var(--dark); border-radius: var(--radius-photo); }
         .intro-img-accent img { width: 100%; height: 100%; object-fit: cover; }
-        .intro-points { margin-top: 2.5rem; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2rem; }
+        .intro-points { margin-top: 2.5rem; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.6rem 2rem; }
         .intro-point-value { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 1.8rem; color: var(--gold); line-height: 1; }
         .intro-point-label { font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--mist); opacity: 0.6; margin-top: 0.4rem; line-height: 1.4; }
 
@@ -1219,15 +1219,8 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .testimonial-body { padding: 1.6rem; }
         .testimonial-quote { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 1.45rem; line-height: 1.45; color: var(--cream); font-style: italic; }
         .testimonial-name { margin-top: 1.2rem; font-size: 0.68rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); }
-        .proof-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; max-width: 1120px; margin: 2rem auto 0; background: rgba(200,169,110,0.18); border: 1px solid rgba(200,169,110,0.18); border-radius: var(--radius-card); overflow: hidden; }
-        .proof-item { background: var(--ink); padding: 1.2rem; text-align: center; }
-        .proof-value { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 1.6rem; color: var(--gold); display: block; }
-        .proof-label { font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--mist); opacity: 0.7; margin-top: 0.35rem; display: block; }
-        .instagram-link { color: var(--gold); text-decoration: none; }
-        .instagram-link .instagram-glyph { width: 1.05em; height: 1.05em; vertical-align: -0.18em; margin-right: 0.35em; }
-        .instagram-link .instagram-handle { border-bottom: 1px solid rgba(200,169,110,0.45); }
-        .instagram-link:hover { color: var(--cream); }
-        .instagram-link:hover .instagram-handle { border-color: var(--cream); }
+        .contact-instagram-icon { display: inline-flex; color: var(--cream); }
+        .contact-instagram-icon .instagram-glyph { width: 1.2rem; height: 1.2rem; }
 
         .itinerary { background: var(--dark); }
         .itinerary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-top: 4rem; }
@@ -1529,7 +1522,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           .hero-sub .desktop-line { display: none; }
           .hero-actions { flex-direction: column; align-items: stretch; gap: 0.8rem; }
           .hero-actions .btn-primary, .hero-actions .btn-ghost { text-align: center; }
-          .intro-points { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; margin-top: 2.2rem; align-items: start; }
+          .intro-points { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.1rem 0.75rem; margin-top: 2.2rem; align-items: start; }
           .offer-strip { padding: 1.25rem 1.2rem; grid-template-columns: 1fr; gap: 1rem; }
           .offer-strip-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
           .offer-fact { padding-left: 0.65rem; }
@@ -1591,7 +1584,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           .testimonial-grid { grid-template-columns: 1fr; }
           .testimonial-photo { height: 280px; }
           .image-button.testimonial-photo { height: 280px; }
-          .proof-strip { grid-template-columns: 1fr 1fr; }
           .itinerary-grid { grid-template-columns: 1fr; }
           .itin-tag { font-size: 0.75rem; }
           .itin-title { font-size: 2rem; }
@@ -1750,8 +1742,9 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           <p className="section-body" style={{marginTop:'1.2rem'}}>Remote does not mean abandoned. On the steppe, uncertainty has always been part of life: travellers could lose their way between gers, so stopping at another family&apos;s home for tea, food, shelter, or directions became part of the culture. The same spirit runs through this trip — adapt to the land, accept hospitality, and let the day unfold without needing everything to go exactly to plan.</p>
           <div className="intro-points">
             <div><span className="intro-point-value">Beginner</span><p className="intro-point-label">Riders Welcome</p></div>
-            <div><span className="intro-point-value">Small</span><p className="intro-point-label">Intimate Group</p></div>
-            <div><span className="intro-point-value">Real</span><p className="intro-point-label">Family Partnership</p></div>
+            <div><span className="intro-point-value">Max 8</span><p className="intro-point-label">Guests Per Departure</p></div>
+            <div><span className="intro-point-value">16+</span><p className="intro-point-label">With a Parent or Guardian</p></div>
+            <div><span className="intro-point-value">Direct</span><p className="intro-point-label">Family Partnership</p></div>
           </div>
         </div>
       </section>
@@ -1849,13 +1842,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             </article>
           ))}
         </div>
-        <div className="proof-strip reveal">
-          <div className="proof-item"><span className="proof-value">8</span><span className="proof-label">Max guests</span></div>
-          <div className="proof-item"><span className="proof-value">16+</span><span className="proof-label">With parents</span></div>
-          <div className="proof-item"><span className="proof-value">Insurance</span><span className="proof-label">Required</span></div>
-          <div className="proof-item"><span className="proof-value">Direct</span><span className="proof-label">Family partnership</span></div>
-        </div>
-        <p className="section-body reveal" style={{textAlign:'center', margin:'2rem auto 0', maxWidth:'720px'}}>Follow the route, camp life and behind-the-scenes buildout on <a className="instagram-link" href="https://www.instagram.com/8lakestours" target="_blank" rel="noopener noreferrer"><svg className="instagram-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" /><circle cx="12" cy="12" r="4.2" /><circle cx="17.6" cy="6.4" r="1.15" fill="currentColor" stroke="none" /></svg><span className="instagram-handle">Instagram @8lakestours</span></a>.</p>
       </section>
 
       {/* ITINERARY */}
@@ -2410,6 +2396,18 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               <div style={{textAlign:'left'}}>
                 <p style={{fontSize:'0.6rem', letterSpacing:'0.25em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'0.25rem'}}>Email</p>
                 <p style={{fontSize:'0.9rem', color:'var(--cream)'}}>info@8lakestours.com</p>
+              </div>
+            </a>
+            <a
+              href="https://www.instagram.com/8lakestours"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{display:'flex', alignItems:'center', gap:'1rem', width:'100%', maxWidth:'380px', padding:'1.2rem 1.8rem', background:'rgba(200,169,110,0.06)', border:'1px solid rgba(200,169,110,0.25)', borderRadius:'var(--radius-soft)', textDecoration:'none', transition:'border-color 0.3s', color:'inherit'}}
+            >
+              <span className="contact-instagram-icon"><svg className="instagram-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" /><circle cx="12" cy="12" r="4.2" /><circle cx="17.6" cy="6.4" r="1.15" fill="currentColor" stroke="none" /></svg></span>
+              <div style={{textAlign:'left'}}>
+                <p style={{fontSize:'0.6rem', letterSpacing:'0.25em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'0.25rem'}}>Follow along on Instagram</p>
+                <p style={{fontSize:'0.9rem', color:'var(--cream)'}}>@8lakestours</p>
               </div>
             </a>
           </div>

@@ -48,7 +48,12 @@ test('reconciliation accepts exactly bound PaymentIntent and Invoice evidence bu
   assert.equal(one([paymentIntent]).status, 'verified_paid');
   const invoice = { ...paidSession, source: 'invoice', id: 'in_paid', checkout_status: undefined };
   assert.equal(one([invoice]).status, 'verified_paid');
-  assert.equal(one([{ ...paidSession }, { ...paidSession, id: 'cs_second' }]).status, 'review_multiple_conflicting_matches');
+  const conflicting = one([{ ...paidSession }, { ...paidSession, id: 'cs_second', payment_intent_id: undefined }]);
+  assert.equal(conflicting.status, 'review_multiple_conflicting_matches');
+  assert.deepEqual(conflicting.provider_payments, [
+    { source: 'checkout_session', id: 'cs_paid', payment_intent_id: undefined },
+    { source: 'checkout_session', id: 'cs_second', payment_intent_id: undefined },
+  ]);
 });
 
 test('reconciliation returns unknown rather than no payment when a bounded provider scan is incomplete', () => {

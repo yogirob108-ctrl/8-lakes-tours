@@ -1702,8 +1702,8 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           <p className="hero-eyebrow">Mongolian Horse Trekking · Orkhon Valley &amp; Eight Lakes</p>
           <h1 className="hero-title">Ride Into the<br /><em>Endless Steppe</em></h1>
           <p className="hero-sub">
-            <span className="mobile-line">A 9-day small-group Mongolian horse trekking expedition — hosted with nomadic families and open to beginner/intermediate riders.</span>
-            <span className="desktop-line">A 9-day small-group Mongolian horse trekking expedition through the Orkhon Valley and Eight Lakes region — hosted with nomadic families, guided by local horsemen, and open to beginner/intermediate riders who want the real thing.</span>
+            <span className="mobile-line">Nine days on horseback across the vastness of the steppe, living alongside nomadic families. Small groups, beginner and intermediate riders welcome.</span>
+            <span className="desktop-line">Nine days on horseback through the vastness of the Orkhon Valley and Eight Lakes, living alongside nomadic families whose way of life is still attuned to the steppe. Small groups, local horsemen, beginner and intermediate riders welcome.</span>
           </p>
           <div className="hero-actions">
             <a href="#application" className="btn-primary">Reserve Online</a>

@@ -1917,7 +1917,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
       <section className="gallery-handoff">
         <div className="gallery-handoff-copy">
           <p>Want more photos?</p>
-          <p>The homepage stays focused on the trip decision. The fuller Mongolia photo archive lives in the gallery.</p>
         </div>
         <a href="/gallery" className="btn-ghost">View Full Gallery</a>
       </section>

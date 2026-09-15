@@ -1733,10 +1733,9 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         <div className="reveal reveal-delay-1">
           <span className="section-eyebrow">What This Is</span>
           <h2 className="section-title">Mongolia<br /><em>Beyond Tourism</em></h2>
-          <p className="section-body">This isn&apos;t a curated tourist experience. You&apos;ll wake up in a ger, ride across open steppe with experienced local horsemen, and camp under skies that have no end. Every meal is shared. Every kilometer is earned.</p>
-          <p className="section-body" style={{marginTop:'1.2rem'}}>8 Lakes Tours is built for people who want to be somewhere real, not just pass through it.</p>
-          <p className="section-body" style={{marginTop:'1.2rem'}}>That means some flexibility is part of the experience. Weather, horses, roads, group rhythm, and traditional host-family food can shape the day. You may be invited to step outside your comfort zone, but you are never forced to do every challenge — saying no, resting, or taking a quieter day around nomadic life is always allowed.</p>
-          <p className="section-body" style={{marginTop:'1.2rem'}}>Remote does not mean abandoned. On the steppe, uncertainty has always been part of life: travellers could lose their way between gers, so stopping at another family&apos;s home for tea, food, shelter, or directions became part of the culture. The same spirit runs through this trip — adapt to the land, accept hospitality, and let the day unfold without needing everything to go exactly to plan.</p>
+          <p className="section-body">This is a chance to step out of everyday life and into the vastness of the steppe. You&apos;ll wake up in a ger, ride open country with local horsemen, and live alongside a family whose way of life has been attuned to this land for generations.</p>
+          <p className="section-body" style={{marginTop:'1.2rem'}}>The steppe moves to her own natural rhythms. Ride, eat, rest, laugh, drink tea, look at the sky, and remember what simplicity feels like. For some people that is the whole point.</p>
+          <p className="section-body" style={{marginTop:'1.2rem'}}>Plans can change, so come open and flexible. You may be invited outside your comfort zone, but nothing is ever forced. You can always say no, rest, or spend the day closer to nomadic life, and there is always a gracious and helpful hand on the steppe.</p>
           <div className="intro-points">
             <div><span className="intro-point-value">Beginner</span><p className="intro-point-label">Riders Welcome</p></div>
             <div><span className="intro-point-value">Max 8</span><p className="intro-point-label">Guests Per Departure</p></div>

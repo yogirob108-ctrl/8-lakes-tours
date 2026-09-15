@@ -1206,13 +1206,13 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .partnership-img::before { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(90deg, rgba(18,15,11,0.38), rgba(18,15,11,0.06) 42%, rgba(18,15,11,0.18)), linear-gradient(180deg, rgba(200,169,110,0.10), transparent 38%, rgba(14,12,9,0.30)); mix-blend-mode: multiply; }
         .partnership-img img { width: 100%; height: 100%; object-fit: cover; object-position: 52% center; filter: saturate(0.84) contrast(1.08) brightness(0.88); }
 
-        .trust { background: var(--dark); padding: 7rem 5rem; }
+        .trust { background: var(--dark); padding: 7rem 5rem 3.5rem; }
         .trust-header { max-width: 760px; margin: 0 auto 3rem; text-align: center; }
         .trust-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; max-width: 1120px; margin: 0 auto; }
         .trust-card { border: 1px solid rgba(200,169,110,0.2); border-radius: var(--radius-card); background: rgba(200,169,110,0.045); padding: 1.6rem; min-height: 210px; display: flex; flex-direction: column; justify-content: space-between; }
         .trust-quote { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 1.25rem; color: var(--cream); line-height: 1.55; font-style: italic; }
         .trust-source { font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); margin-top: 1.4rem; }
-        .testimonial-grid { max-width: 1120px; margin: 0 auto 3rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
+        .testimonial-grid { max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
         .testimonial-card { background: rgba(245,240,232,0.04); border: 1px solid rgba(200,169,110,0.18); border-radius: var(--radius-card); overflow: hidden; }
         .testimonial-photo { position: relative; height: 360px; overflow: hidden; display: block; width: 100%; }
         .testimonial-photo img { object-fit: cover; }
@@ -1222,7 +1222,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .contact-instagram-icon { display: inline-flex; color: var(--cream); }
         .contact-instagram-icon .instagram-glyph { width: 1.2rem; height: 1.2rem; }
 
-        .itinerary { background: var(--dark); }
+        .itinerary { background: var(--dark); padding-top: 4.5rem; }
         .itinerary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-top: 4rem; }
         .itin-card { background: var(--ink); border-radius: var(--radius-card); padding: 3rem; position: relative; overflow: hidden; transition: background 0.3s ease; }
         .itin-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--gold); transform: scaleX(0); transform-origin: left; transition: transform 0.4s ease; }
@@ -1582,7 +1582,8 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           .form-textarea { min-height: 88px; }
           .form-grid { grid-template-columns: 1fr; gap: 0.75rem; }
           .form-grid.compact-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-          .trust { padding: 4rem 1.5rem; }
+          .trust { padding: 4rem 1.5rem 2.5rem; }
+          .itinerary { padding-top: 3rem; }
           .trust-grid { grid-template-columns: 1fr; }
           .testimonial-grid { grid-template-columns: 1fr; }
           .testimonial-photo { height: 280px; }

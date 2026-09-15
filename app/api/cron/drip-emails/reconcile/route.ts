@@ -35,6 +35,12 @@ export async function GET(request: Request) {
       .limit(200);
     if (error) throw error;
 
+    const { data: approvedBindings, error: bindingsError } = await db
+      .from('approved_payment_bindings')
+      .select('booking_id, provider_object_id')
+      .eq('provider', 'stripe');
+    if (bindingsError) throw bindingsError;
+
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { maxNetworkRetries: 0, timeout: 5000 });
     const provider = await collectStripeLifecycleEvidence({ stripe, pageBudget: 90 });
     const candidates = reconcileStripeProviderEvidence({
@@ -46,6 +52,7 @@ export async function GET(request: Request) {
         customer_email: customerEmail(row),
       })),
       evidence: provider.evidence,
+      approvedBindings: (approvedBindings || []) as Array<{ booking_id: string; provider_object_id: string }>,
       scanComplete: provider.scanComplete,
       scanIncompleteReason: provider.scanIncompleteReason,
       scanIncompleteCollection: provider.scanIncompleteCollection,

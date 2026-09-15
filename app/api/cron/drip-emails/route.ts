@@ -41,15 +41,29 @@ export async function GET(request: Request) {
   if (!dryRun && process.env.PUBLIC_LIFECYCLE_SEND_ENABLED !== 'true') {
     return NextResponse.json({ ok:true, dry_run:false, disabled:true, reason:'public_lifecycle_send_disabled' }, { headers });
   }
+  // Narrow targeted rollout: when the reference guard is configured, ONLY the
+  // exact booking (reference AND id) may dispatch, and ONLY the named
+  // template. An incomplete configuration fails closed.
+  const targetedReference = (process.env.PUBLIC_LIFECYCLE_TARGETED_REFERENCE || '').trim();
+  const targetedBookingId = (process.env.PUBLIC_LIFECYCLE_TARGETED_BOOKING_ID || '').trim();
+  const targetedTemplate = (process.env.PUBLIC_LIFECYCLE_TARGETED_TEMPLATE || '').trim();
+  const targeted = Boolean(targetedReference) || Boolean(targetedBookingId);
+  if (targeted && (!targetedReference || !targetedBookingId || !targetedTemplate)) {
+    return NextResponse.json({ ok:false, error:'targeted_configuration_incomplete' }, { status:503, headers });
+  }
   try {
     const db = createSupabaseAdminClient();
-    const { data: bookings, error } = await db.from('bookings').select('id, public_reference, customer_id, tour_date, status, online_due_usd, online_paid_usd, customer:customers(first_name, email)').in('status',['awaiting_payment','confirmed','prep_sent','ready_for_departure']).limit(200);
+    let bookingQuery = db.from('bookings').select('id, public_reference, customer_id, tour_date, status, online_due_usd, online_paid_usd, customer:customers(first_name, email)').in('status',['awaiting_payment','confirmed','prep_sent','ready_for_departure']);
+    if (targetedReference) bookingQuery = bookingQuery.eq('public_reference', targetedReference);
+    const { data: bookings, error } = await bookingQuery.limit(200);
     if (error) throw error;
+    const { data: approvedBindings, error: bindingsError } = await db.from('approved_payment_bindings').select('booking_id, provider_object_id').eq('provider','stripe');
+    if (bindingsError) throw bindingsError;
     const rows = (bookings || []) as BookingRow[];
     if (!process.env.STRIPE_SECRET_KEY) throw new Error('stripe_unavailable');
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { maxNetworkRetries: 0, timeout: 5000 });
     const provider = await collectStripeLifecycleEvidence({ stripe, pageBudget: 90 });
-    const reconciliation = reconcileStripeProviderEvidence({ bookings:rows.map(row=>({id:row.id,reference:row.public_reference,amount_cents:Number(row.online_due_usd)*100,currency:'usd',customer_email:customer(row).email})), evidence:provider.evidence, scanComplete:provider.scanComplete });
+    const reconciliation = reconcileStripeProviderEvidence({ bookings:rows.map(row=>({id:row.id,reference:row.public_reference,amount_cents:Number(row.online_due_usd)*100,currency:'usd',customer_email:customer(row).email})), evidence:provider.evidence, approvedBindings:(approvedBindings||[]) as Array<{booking_id:string;provider_object_id:string}>, scanComplete:provider.scanComplete });
     const verified = new Set((reconciliation as Array<{ reference:string; status:string }>).filter((row:{reference:string;status:string})=>row.status==='verified_paid').map((row:{reference:string;status:string})=>row.reference));
     const { data: events, error: eventsError } = await db.from('email_events').select('booking_id, template_key, status').in('booking_id',rows.map(row=>row.id)).in('template_key',LIFECYCLE_KEYS);
     if (eventsError) throw eventsError;
@@ -64,6 +78,12 @@ export async function GET(request: Request) {
       if (!template) {
         const reconciliationResult = (reconciliation as Array<Record<string, unknown>>).find(row => row.reference===booking.public_reference);
         results.push(reconciliationResult || { reference:booking.public_reference, status:'scan_incomplete_unknown' });
+        continue;
+      }
+      // Targeted rollout guard: only the exact approved booking may dispatch,
+      // and only the explicitly approved template for it.
+      if (targeted && !(booking.public_reference===targetedReference && booking.id===targetedBookingId && template===targetedTemplate)) {
+        results.push({ reference:booking.public_reference, status:'targeted_guard_blocked', template });
         continue;
       }
       if (dryRun) { results.push({ reference:booking.public_reference, status:'candidate', template, days_until_departure:schedule.daysUntilDeparture }); continue; }

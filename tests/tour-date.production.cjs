@@ -13,7 +13,7 @@
       if (await page.getByRole('button', { name: 'Necessary only', exact: true }).count()) await page.getByRole('button', { name: 'Necessary only', exact: true }).click();
       const select = page.locator('#tour_date');
       const scheduled = await select.locator('option:not([value=""])').nth(0).getAttribute('value');
-      const privateDate = await select.locator('option[value*="Private Group Date"]').last().getAttribute('value');
+      const privateDate = await select.locator('option[value*="on request"]').last().getAttribute('value');
       assert.ok(scheduled && privateDate);
       assert.equal(await select.getAttribute('required'), '');
       await select.selectOption(scheduled);
@@ -21,7 +21,7 @@
       await page.waitForTimeout(800);
       assert.equal(await select.inputValue(), scheduled, `${viewport.width}px scheduled selection persists`);
       await select.selectOption(privateDate);
-      assert.match(await select.inputValue(), /Private Group Date/, `${viewport.width}px private selection persists`);
+      assert.match(await select.inputValue(), /on request/, `${viewport.width}px unified private request selection persists`);
       await select.selectOption('');
       await page.locator('#application form').evaluate(form => form.requestSubmit());
       await page.locator('#tour_date-inline-error').waitFor();

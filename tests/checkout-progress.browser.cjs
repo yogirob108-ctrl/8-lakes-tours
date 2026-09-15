@@ -41,7 +41,7 @@
    }
    await page.locator('#email').fill('local@example.invalid');
    await page.locator('[name="signature"]').fill('Local Fixture');
-   await page.locator('[name="tour_date"]').selectOption(scenario==='private'?'2027 Private Group Date':{index:1});
+   await page.locator('[name="tour_date"]').selectOption(scenario==='private'?'Private group date on request':{index:1});
    if(n>1)await page.locator('[name="companion_details_permission"]').check();
    await page.locator('#application .submit-btn').click();
    await page.waitForFunction(()=>document.querySelector('#application button[type="submit"]')?.disabled);

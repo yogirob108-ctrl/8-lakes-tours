@@ -19,6 +19,7 @@ Key facts:
 - Online booking payment: $899–$999 USD per guest paid through Stripe / 8 Lakes Tours ($999 for 1–2 guests, $974 for 3–4, $949 for 5–6, $899 for 7–8)
 - Local family payment: remaining group-rate cash portion paid directly in clean USD cash to the nomadic host family in Mongolia
 - Departure availability: the live homepage is the source of truth and automatically removes fixed departures when their Mongolia start day arrives
+- Private group date on request: one unified booking option covering private/custom dates and 2027 interest; guests pick it in the booking form and Rob confirms availability before any payment
 - 2027 small-group departures: dates are being planned; guests may register interest without automatic payment
 - 2027 private/custom group dates: June–September dates may be requested, subject to host-family, horse, guide, and group logistics; Rob confirms availability before payment
 - Confirmation/preparation email: intended to include packing notes, insurance reminders, operator WhatsApp coordination, Bat-Ulzii pickup timing after the guest books the bus, and host-family cash payment instructions

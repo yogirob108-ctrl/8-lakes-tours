@@ -3,18 +3,18 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 import { AVAILABILITY_CHECK, UNKNOWN_SELECTION, canAutomaticallyConfirmBooking, isBookableTourDate, isRequestOnlyTourDate, manualPaymentReason, requiresManualPaymentLink } from '../lib/tour-booking.mjs';
-import { TOUR_DATES, getVisibleTourDates } from '../lib/tour-dates.mjs';
+import { TOUR_DATES, getVisibleTourDates, REQUEST_ONLY_OPTION_DATE } from '../lib/tour-dates.mjs';
 
 test('2027 public inventory is request-only and contains no invented fixed dates', () => {
-  const interest = TOUR_DATES.find(option => option.date === '2027 Small-Group Departures');
-  const privateDate = TOUR_DATES.find(option => option.date === '2027 Private Group Date');
+  const unified = TOUR_DATES.find(option => option.date === 'Private group date on request');
 
-  assert.ok(interest);
-  assert.ok(privateDate);
-  assert.equal(interest.requiresConfirmation, true);
-  assert.equal(privateDate.requiresConfirmation, true);
-  assert.equal('startDate' in interest, false);
-  assert.equal('startDate' in privateDate, false);
+  assert.ok(unified);
+  assert.equal(unified.requiresConfirmation, true);
+  assert.equal('startDate' in unified, false);
+  // Every fixed departure is a real scheduled 2026 date; 2027 has no invented fixed dates.
+  for (const option of TOUR_DATES.filter(option => option.startDate)) {
+    assert.match(option.startDate, /^2026-/, `${option.date} must be a scheduled 2026 departure`);
+  }
 });
 
 test('expired request-only inventory is hidden using the Mongolia date boundary', () => {
@@ -29,6 +29,10 @@ test('expired request-only inventory is hidden using the Mongolia date boundary'
   );
 });
 
+// The 2026 private label is no longer a live inventory entry: it normalizes onto
+// the unified "Private group date on request" option, keeping the same
+// availability gate, confirmation-before-payment behaviour, and end-of-November
+// 2026 bookable window through normalization.
 test('request-only date requires manual confirmation for one or two guests', () => {
   assert.equal(isRequestOnlyTourDate('2027 Small-Group Departures'), true);
   assert.equal(requiresManualPaymentLink('2027 Small-Group Departures', 1), true);
@@ -45,6 +49,8 @@ test('groups on fixed dates no longer need an invoice', () => {
   assert.equal(manualPaymentReason('September 23 – October 1, 2026', 8), null);
 });
 
+// Legacy year-specific labels normalize to the unified request option, so these
+// assertions exercise the historical labels through the normalizer's behaviour.
 test('request-only options stay an availability question at every group size', () => {
   assert.equal(manualPaymentReason('2027 Private Group Date', 1), AVAILABILITY_CHECK);
   assert.equal(manualPaymentReason('2027 Private Group Date', 5), AVAILABILITY_CHECK);
@@ -82,13 +88,17 @@ test('September through November stays full with two directly bookable departure
   }
 });
 
+// The 2026 private-date option now lives on through the unified request option
+// and its normalizer mapping: private dates stay bookable through November 2026,
+// and the unified option keeps a request window into 2027.
 test('the 2026 private-date option remains available through November', () => {
-  const privateDate = TOUR_DATES.find(option => option.date === '2026 Private Group Date');
+  const privateDate = TOUR_DATES.find(option => option.date === REQUEST_ONLY_OPTION_DATE);
 
   assert.ok(privateDate);
-  assert.equal(privateDate.availableUntil, '2026-11-30');
-  assert.match(privateDate.detail, /November 2026/);
+  assert.equal(privateDate.availableUntil, '2027-09-30');
+  assert.equal(privateDate.availableUntil > '2026-11-30', true, 'private/custom dates stay requestable beyond November 2026');
   assert.equal(privateDate.requiresConfirmation, true);
+  assert.equal(isRequestOnlyTourDate('2026 Private Group Date'), true, 'the 2026 private label still resolves through normalization');
 });
 
 test('every fixed 2026 departure is free of the request-only gate', () => {
@@ -109,6 +119,7 @@ test('server bookability excludes expired departures and allows visible inventor
   assert.equal(isBookableTourDate('August 4 – 12, 2026', now), false);
   assert.equal(isBookableTourDate('September 14 – 22, 2026', now), true);
   assert.equal(isBookableTourDate('September 23 – October 1, 2026', now), true);
+  // The legacy interest label stays bookable through the normalizer.
   assert.equal(isBookableTourDate('2027 Small-Group Departures', now), true);
 });
 

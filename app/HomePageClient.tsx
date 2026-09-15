@@ -2,7 +2,8 @@
 import Image from 'next/image';
 import { track } from '@vercel/analytics';
 import { type FormEvent, type MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { GROUP_INVOICE, manualPaymentReason } from '@/lib/tour-booking.mjs';
+import { GROUP_INVOICE, manualPaymentReason, normalizeTourDateSelection } from '@/lib/tour-booking.mjs';
+import { getDefaultTourDate } from '@/lib/tour-dates.mjs';
 import { BASE_LOCAL_FAMILY_PAYMENT_USD, BASE_ONLINE_PAYMENT_USD, BASE_PRICE_USD, GROUP_PRICING_TIERS, MAX_GROUP_SIZE, clampGuestCount, getGroupPricing } from '@/lib/group-pricing.mjs';
 import { normalizeBookingTravellers } from '@/lib/booking-travellers.mjs';
 import { composeDateOfBirth, splitDateOfBirth } from '@/lib/date-of-birth-fields.mjs';
@@ -428,8 +429,10 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
   const [leadEmail, setLeadEmail] = useState('');
   const [leadStatus, setLeadStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [leadError, setLeadError] = useState('');
-  const [selectedTourDate, setSelectedTourDate] = useState('');
+  const [selectedTourDate, setSelectedTourDate] = useState(() => getDefaultTourDate(tourDates));
+  const tourDateTouchedRef = useRef(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  const tourDateOptions = tourDates.map(dateOption => dateOption.date);
   const groupPricing = useMemo(() => getGroupPricing(guestCount), [guestCount]);
   const bookingFormStartedRef = useRef(false);
   const stripeClickTrackedRef = useRef(false);
@@ -488,12 +491,15 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
     });
     // This form has controlled fields.  A restore response can arrive after the
     // visitor has already picked a date, so never write stale draft state over a
-    // value currently in the form.
+    // value currently in the form.  The date starts at the earliest bookable
+    // departure, so "empty select" is no longer the user-edit signal: a draft
+    // date only lands while the visitor has not personally touched either date
+    // control, and a real user edit is never overwritten.
     const currentEmail = (form.elements.namedItem('email') as HTMLInputElement | null)?.value;
-    const currentTourDate = (form.elements.namedItem('tour_date') as HTMLSelectElement | null)?.value;
     const currentGuestCount = (form.elements.namedItem('guest_count') as HTMLSelectElement | null)?.value;
+    const draftTourDate = normalizeTourDateSelection(String(draft.tour_date || ''));
     if (!currentEmail) setEmail(String(draft.email || ''));
-    if (!currentTourDate) setSelectedTourDate(String(draft.tour_date || ''));
+    if (!tourDateTouchedRef.current && draftTourDate) setSelectedTourDate(draftTourDate);
     if (!currentGuestCount) setGuestCount(Number(draft.guest_count) || 1);
   };
 
@@ -565,6 +571,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
   const chooseTourDate = (date: string) => {
     if (formSubmitted || formSubmitting) return;
     trackFunnelEvent('date_selected', { tour_date: date });
+    tourDateTouchedRef.current = true;
     setSelectedTourDate(date);
     window.setTimeout(() => {
       document.getElementById('application')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2160,10 +2167,10 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                 </div>
                 <div className="form-group">
                   <label className="form-label" htmlFor="tour_date">Preferred Tour Date</label>
-                  <select id="tour_date" className="form-select" name="tour_date" required value={selectedTourDate} onChange={e => setSelectedTourDate(e.target.value)}>
-                    <option value="">Select date</option>
-                    {tourDates.map(dateOption => (
-                      <option key={dateOption.date} value={dateOption.date}>{dateOption.date}</option>
+                  <select id="tour_date" className="form-select" name="tour_date" required value={selectedTourDate} onChange={e => { tourDateTouchedRef.current = true; setSelectedTourDate(e.target.value); }}>
+                    {!selectedTourDate && <option value="">Select date</option>}
+                    {tourDateOptions.map(dateOption => (
+                      <option key={dateOption} value={dateOption}>{dateOption}</option>
                     ))}
                   </select>
                 </div>

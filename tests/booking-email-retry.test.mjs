@@ -36,7 +36,7 @@ function harness({created=false, fail=false, conflict=false, manual=true}={}) {
   if(name==='@/lib/booking-checkout')return {recoveryUrl:()=>'/pay/private'};
   if(name==='@/lib/newsletter')return {};
   if(name==='@/lib/newsletter-consent.mjs')return {hasExplicitNewsletterOptIn:()=>false};
-  if(name==='@/lib/tour-booking.mjs')return {isBookableTourDate:()=>true,requiresManualPaymentLink:()=>manual,manualPaymentReason:()=>null};
+  if(name==='@/lib/tour-booking.mjs')return {isBookableTourDate:()=>true,requiresManualPaymentLink:()=>manual,manualPaymentReason:()=>null,normalizeTourDateSelection:value=>String(value??'').trim()};
   if(name==='@/lib/email')return {bookingCustomerEmail:()=>content,bookingInternalEmail:()=>content,getInternalEmailRecipients:()=>['ops@example.invalid'],sendEmail:async input=>{sent.push(input);return fail?{sent:false,error:'fault'}:{sent:true,id:'provider'};}};
   throw Error(name);
  }});

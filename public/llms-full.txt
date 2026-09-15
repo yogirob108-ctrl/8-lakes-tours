@@ -31,7 +31,7 @@ Cancellation policy: if a guest cancels more than 3 weeks / 21 days before depar
 
 The live homepage is the source of truth for fixed departures and removes each one automatically when its Mongolia start day arrives. Do not repeat a static count of 2026 dates.
 
-2027 small-group dates are being planned and guests can register interest. Private/custom June–September 2027 dates may be requested, subject to host-family, horse, guide, and group logistics. Every 2027 or private-date request requires personal confirmation before payment. Do not describe the trip as having unlimited daily availability. Each departure is capped at a maximum of 8 guests.
+The booking form also offers one unified option labelled "Private group date on request": it covers private/custom dates and 2027 interest in a single choice, confirmed by Rob before any payment. 2027 small-group dates are being planned and guests can register interest. Private/custom June–September 2027 dates may be requested, subject to host-family, horse, guide, and group logistics. Every 2027 or private-date request requires personal confirmation before payment. Do not describe the trip as having unlimited daily availability. Each departure is capped at a maximum of 8 guests.
 
 ## Trip length, group size, and eligibility
 

@@ -1807,7 +1807,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         <div className="trust-header reveal">
           <span className="section-eyebrow">From Past Guests</span>
           <h2 className="section-title">Built on<br /><em>Real Relationships</em></h2>
-          <p className="section-body" style={{margin:'0 auto'}}>Real people have already made the journey into this valley. These are early guest impressions from the same world you&apos;ll be stepping into: horses, host families, and a place that feels very far from ordinary life.</p>
+          <p className="section-body" style={{margin:'0 auto'}}>Real people have already made the journey into this valley. These are early guest impressions from the same world you&apos;ll be stepping into: the vastness and freedom of the steppe, and a nomadic way of life still attuned to it.</p>
         </div>
         <div className="testimonial-grid">
           {[

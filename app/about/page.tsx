@@ -28,7 +28,7 @@ const storyCards = [
   },
   {
     title: 'Hosted by nomadic families',
-    body: 'Guests stay close to local life: gers, horses, shared meals, tea, work, rest, and the rhythm of the valley. The local family portion of the price is paid directly in cash to the hosts because many families cannot reliably receive online transfers.',
+    body: 'Guests stay close to nomadic life: gers, horses, shared meals, and a daily rhythm attuned to the steppe by people who have adapted to it over millennia. The local family portion of the price is paid directly in cash to the hosts because many families cannot reliably receive online transfers.',
   },
   {
     title: 'Built around the real thing',

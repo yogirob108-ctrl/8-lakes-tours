@@ -50,8 +50,8 @@ export default function GalleryPage() {
         <p className="eyebrow">Field Notes · Mongolia</p>
         <h1>Photo Gallery</h1>
         <p>
-          A deeper look at the world around the expedition: horses, gers, river crossings,
-          host-family country and the valleys between Orkhon and Eight Lakes.
+          A deeper look at the world around the expedition: the vastness and rawness of the steppe,
+          and the nomadic families who have adapted to its conditions over millennia.
         </p>
         <div className="gallery-meta">
           <span>{GALLERY_IMAGES.length} photos</span>

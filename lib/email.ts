@@ -78,8 +78,14 @@ function p(html: string) {
   return `    <p style="margin:0 0 16px">${html}</p>`;
 }
 
-function signoffHtml() {
-  return `    <p style="margin:24px 0 0">Rob Zaher<br>8 Lakes Tours</p>`;
+// Quiet signature block appended to every customer-facing email: plain muted
+// small text under the signoff, no logo, no wordmark banner, no footer strip.
+function signatureBlockHtml() {
+  return `    <p style="margin:12px 0 0;font-size:13px;line-height:1.6;color:#767676">Rob Zaher<br>8 Lakes Tours<br>www.8lakestours.com<br>info@8lakestours.com</p>`;
+}
+
+function signoffHtml(withSignature = true) {
+  return `    <p style="margin:24px 0 0">Rob Zaher<br>8 Lakes Tours</p>` + (withSignature ? '\n' + signatureBlockHtml() : '');
 }
 
 // Plain summary lines (reference, date, amounts) with real text, readable on mobile.
@@ -176,7 +182,7 @@ export function bookingInternalEmail(input: {
       `</ol>`,
     p('<strong>Guest notes</strong>'),
     p(nl2br(input.notes)),
-    signoffHtml(),
+    signoffHtml(false),
   ].join('\n');
 
   return {
@@ -254,7 +260,9 @@ The preparation and arrival emails for this booking are separate from the genera
 If anything comes up, just reply to this email.
 
 Rob Zaher
-8 Lakes Tours`;
+8 Lakes Tours
+www.8lakestours.com
+info@8lakestours.com`;
 
   const resumeHtml = input.paymentUrl
     ? p(`Resume secure payment for this booking (no new booking needed, keep this link private): <a href="${escapeHtml(input.paymentUrl)}" style="color:#1155cc">${escapeHtml(input.paymentUrl)}</a>`)
@@ -316,7 +324,7 @@ export function paymentReceivedInternalEmail(input: LifecycleEmailInput & { amou
       ['Stripe reference', escapeHtml(input.stripeReference)],
     ]),
     p(`The Stripe webhook matched this payment to the booking and marked the online reservation amount as paid in the ops dashboard. Open the <a href="${OPS_URL}/ops/bookings/${escapeHtml(input.reference)}" style="color:#1155cc">booking record</a>.`),
-    signoffHtml(),
+    signoffHtml(false),
   ].join('\n');
 
   return {
@@ -347,7 +355,9 @@ Next we send preparation notes, packing guidance, insurance reminders, and arriv
 If anything comes up before then, just reply to this email.
 
 Rob Zaher
-8 Lakes Tours`;
+8 Lakes Tours
+www.8lakestours.com
+info@8lakestours.com`;
 
   const body = [
     p(`Hi ${escapeHtml(name)},`),
@@ -397,7 +407,9 @@ Insurance: please make sure you have travel insurance that covers horseback ridi
 Any last questions, just reply to this email.
 
 Rob Zaher
-8 Lakes Tours`;
+8 Lakes Tours
+www.8lakestours.com
+info@8lakestours.com`;
 
   const body = [
     p(`Hi ${escapeHtml(name)},`),
@@ -441,7 +453,9 @@ Also check that your passport, flights, warm layers, personal medication, first-
 Any last questions, just reply to this email.
 
 Rob Zaher
-8 Lakes Tours`;
+8 Lakes Tours
+www.8lakestours.com
+info@8lakestours.com`;
 
   const body = [
     p(`Hi ${escapeHtml(name)},`),
@@ -479,7 +493,9 @@ The countryside bus does not run every day, so ask your Ulaanbaatar hostel or ho
 Keep your travel insurance, passport, warm layers, and clean USD cash for the host family ready.
 
 Rob Zaher
-8 Lakes Tours`;
+8 Lakes Tours
+www.8lakestours.com
+info@8lakestours.com`;
 
   const body = [
     p(`Hi ${escapeHtml(name)},`),
@@ -515,7 +531,9 @@ Passport, insurance covering riding and emergency evacuation, flights and bus, w
 If anything has changed, just reply.
 
 Rob Zaher
-8 Lakes Tours`;
+8 Lakes Tours
+www.8lakestours.com
+info@8lakestours.com`;
 
   const body = [
     p(`Hi ${escapeHtml(name)},`),
@@ -547,7 +565,7 @@ export function leadInternalEmail(input: { name: string; email: string; source: 
       ['Interest', escapeHtml(input.interest || 'Not provided')],
       ['Source', escapeHtml(input.source || 'website')],
     ]),
-    signoffHtml(),
+    signoffHtml(false),
   ].join('\n');
   return {
     subject: `New 8 Lakes newsletter subscriber: ${input.email}`,
@@ -560,7 +578,7 @@ export function leadCustomerEmail(input: { name: string }) {
   const greetingName = input.name ? firstName(input.name) : '';
   const greeting = greetingName ? `Hi ${escapeHtml(greetingName)},` : 'Hi,';
   const subject = 'Welcome to the 8 Lakes Tours newsletter';
-  const text = `${greetingName ? `Hi ${greetingName},` : 'Hi,'}\n\nThanks for joining the 8 Lakes Tours newsletter. We send occasional updates about Mongolia horse trekking, new departure dates, offers, deals, blog posts, field notes, and news from the business.\n\nNo booking has been made from this signup. If you ever want to reserve a place, you can do that on the website: ${SITE_URL}/#application\n\nYou can opt out any time by replying to this email.\n\nRob Zaher\n8 Lakes Tours`;
+  const text = `${greetingName ? `Hi ${greetingName},` : 'Hi,'}\n\nThanks for joining the 8 Lakes Tours newsletter. We send occasional updates about Mongolia horse trekking, new departure dates, offers, deals, blog posts, field notes, and news from the business.\n\nNo booking has been made from this signup. If you ever want to reserve a place, you can do that on the website: ${SITE_URL}/#application\n\nYou can opt out any time by replying to this email.\n\nRob Zaher\n8 Lakes Tours\nwww.8lakestours.com\ninfo@8lakestours.com`;
   const body = [
     p(greeting),
     p(`Thanks for joining the 8 Lakes Tours newsletter. We send occasional updates about Mongolia horse trekking, new departure dates, offers, deals, blog posts, field notes, and news from the business.`),

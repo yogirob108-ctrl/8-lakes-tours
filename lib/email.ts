@@ -88,6 +88,15 @@ function signoffHtml(withSignature = true) {
   return `    <p style="margin:24px 0 0">Rob Zaher<br>8 Lakes Tours</p>` + (withSignature ? '\n' + signatureBlockHtml() : '');
 }
 
+// Subtle plain-text style section rules for longer customer emails: a thin
+// light gray dashed line in HTML and a literal dash rule in text, separating
+// natural sections (greeting, facts, payment, logistics, closing). No colors,
+// no graphics, no heavy dividers; internal notifications stay clean.
+const DASH_RULE_TEXT = '--------------------------------';
+function sectionRuleHtml() {
+  return `    <div style="border-top:1px dashed #cccccc;margin:0 0 16px"></div>`;
+}
+
 // Plain summary lines (reference, date, amounts) with real text, readable on mobile.
 function detailsHtml(pairs: Array<[string, string]>) {
   const lines = pairs.map(([label, value]) => `${escapeHtml(label)}: <strong>${value}</strong>`).join('<br>');
@@ -226,12 +235,16 @@ export function bookingCustomerEmail(input: { reference: string; firstName: stri
 
 Thanks for booking with 8 Lakes Tours. Your details are all in.
 
+${DASH_RULE_TEXT}
+
 Booking reference: ${input.reference}
 Tour date: ${input.tourDate || 'TBC'}
 Guests: ${guestCount}
 
 Submitted traveller names:
 ${input.travellerNames || input.firstName}
+
+${DASH_RULE_TEXT}
 
 How the payment is split:
 Total trip price: ${pricePerPerson} per person / ${totalTripValue} total
@@ -241,6 +254,8 @@ Cash for the host family in Mongolia: ${familyCash}
 The ${familyCash} family portion is not collected online. Please plan to bring clean USD notes to Mongolia and pay the family directly. Many host families cannot reliably receive cards or bank transfers, so cash is what works.
 
 ${paymentIntro}
+
+${DASH_RULE_TEXT}
 
 A few things worth knowing before you travel:
 
@@ -270,6 +285,7 @@ info@8lakestours.com`;
   const body = [
     p(`Hi ${escapeHtml(name)},`),
     p(`Thanks for booking with 8 Lakes Tours. Your details are all in.`),
+    sectionRuleHtml(),
     detailsHtml([
       ['Booking reference', escapeHtml(input.reference)],
       ['Tour date', escapeHtml(input.tourDate || 'TBC')],
@@ -277,10 +293,12 @@ info@8lakestours.com`;
     ]),
     p('<strong>Submitted traveller names</strong>'),
     p(nl2br(input.travellerNames || input.firstName)),
+    sectionRuleHtml(),
     p('<strong>How the payment is split</strong>'),
     p(`Total trip price: ${escapeHtml(pricePerPerson)} per person / ${escapeHtml(totalTripValue)} total<br>Online booking payment: ${escapeHtml(onlinePayment)}<br>Cash for the host family in Mongolia: ${escapeHtml(familyCash)}`),
     p(`The ${escapeHtml(familyCash)} family portion is not collected online. Please plan to bring clean USD notes to Mongolia and pay the family directly. Many host families cannot reliably receive cards or bank transfers, so cash is what works.`),
     p(paymentIntro),
+    sectionRuleHtml(),
     p('<strong>A few things worth knowing before you travel</strong>'),
     p(`<strong>Food:</strong> traditional host-family food is meat- and dairy-heavy. Families make their own milk from yaks or cows and serve it fresh as milk tea, yoghurt, cheese, and other traditional foods.`),
     p(`<strong>Packing:</strong> Mongolia&#39;s steppe weather can change fast. Pack for all seasons, even in summer, and bring more warm layers than you think you need.`),
@@ -348,6 +366,8 @@ Tour date: ${input.tourDate || 'TBC'}
 Online payment received: ${amount}
 Paid locally in Mongolia: ${FAMILY_CASH_USD}
 
+${DASH_RULE_TEXT}
+
 The remaining ${FAMILY_CASH_USD} goes directly to the host family in Mongolia, in clean USD cash.
 
 Next we send preparation notes, packing guidance, insurance reminders, and arrival coordination before departure.
@@ -368,6 +388,7 @@ info@8lakestours.com`;
       ['Online payment received', escapeHtml(amount)],
       ['Paid locally in Mongolia', escapeHtml(FAMILY_CASH_USD)],
     ]),
+    sectionRuleHtml(),
     p(`The remaining ${escapeHtml(FAMILY_CASH_USD)} goes directly to the host family in Mongolia, in clean USD cash.`),
     p(`Next we send preparation notes, packing guidance, insurance reminders, and arrival coordination before departure.`),
     p(`If anything comes up before then, just reply to this email.`),
@@ -392,6 +413,8 @@ Booking reference: ${input.reference}
 Tour date: ${input.tourDate || 'TBC'}
 Cash for the host family: ${FAMILY_CASH_USD} (clean USD notes, paid directly in Mongolia)
 
+${DASH_RULE_TEXT}
+
 Packing: pack for all seasons, even in summer. Steppe weather moves quickly between warm sun, cold wind, rain, and very cold nights. Bring warm layers, waterproof outerwear, comfortable riding clothes, warm socks, a hat, gloves, and basic toiletries.
 
 Facilities: once outside the city, expect simple outhouse squat toilets rather than Western flush toilets, and no regular showers. Bring wet wipes for cleaning hands and body between river washes.
@@ -403,6 +426,8 @@ Getting from Ulaanbaatar to Bat-Ulzii: this part needs a little planning. Arrive
 Getting around Ulaanbaatar: the tapa. app works well for scooter and bicycle rental and accepts international cards: https://apps.apple.com/app/id1563199559
 
 Insurance: please make sure you have travel insurance that covers horseback riding or adventure activity and emergency evacuation.
+
+${DASH_RULE_TEXT}
 
 Any last questions, just reply to this email.
 
@@ -419,12 +444,14 @@ info@8lakestours.com`;
       ['Tour date', escapeHtml(input.tourDate || 'TBC')],
       ['Cash for the host family', `${escapeHtml(FAMILY_CASH_USD)} (clean USD notes, paid directly in Mongolia)`],
     ]),
+    sectionRuleHtml(),
     p(`<strong>Packing:</strong> pack for all seasons, even in summer. Steppe weather moves quickly between warm sun, cold wind, rain, and very cold nights. Bring warm layers, waterproof outerwear, comfortable riding clothes, warm socks, a hat, gloves, and basic toiletries.`),
     p(`<strong>Facilities:</strong> once outside the city, expect simple outhouse squat toilets rather than Western flush toilets, and no regular showers. Bring wet wipes for cleaning hands and body between river washes.`),
     p(`<strong>Food:</strong> meals are traditional host-family food, meat- and dairy-heavy, with fresh milk tea, yoghurt, cheese, and other local foods. Strict vegan or serious dairy-free needs are difficult in this remote setting.`),
     p(`<strong>Getting from Ulaanbaatar to Bat-Ulzii:</strong> this part needs a little planning. Arrive in Ulaanbaatar at least <strong>two days before your tour date</strong> so there is time to sort the countryside bus and any schedule changes. Book a hostel or hotel in Ulaanbaatar and ask them to help book your bus ticket to Bat-Ulzii. These buses do not run every day, so please do not leave it until the last minute. Once your bus is booked, send us the details and we will coordinate the host-family pickup on the Bat-Ulzii side.`),
     p(`<strong>Getting around Ulaanbaatar:</strong> the <a href="https://apps.apple.com/app/id1563199559" style="color:#1155cc">tapa. app</a> works well for scooter and bicycle rental and accepts international cards.`),
     p(`<strong>Insurance:</strong> please make sure you have travel insurance that covers horseback riding or adventure activity and emergency evacuation.`),
+    sectionRuleHtml(),
     p(`Any last questions, just reply to this email.`),
     signoffHtml(),
   ].join('\n');
@@ -446,6 +473,8 @@ A quick check before your 8 Lakes Tours departure.
 Booking reference: ${input.reference}
 Tour date: ${input.tourDate || 'TBC'}
 
+${DASH_RULE_TEXT}
+
 Please make sure your travel insurance is active and covers horseback riding or adventure activity, medical treatment, emergency evacuation, and repatriation. Not every standard policy includes horseback riding, so it is worth double checking that part.
 
 Also check that your passport, flights, warm layers, personal medication, first-aid basics, and ${FAMILY_CASH_USD} clean USD cash for the host family are sorted.
@@ -464,6 +493,7 @@ info@8lakestours.com`;
       ['Booking reference', escapeHtml(input.reference)],
       ['Tour date', escapeHtml(input.tourDate || 'TBC')],
     ]),
+    sectionRuleHtml(),
     p(`Please make sure your travel insurance is active and covers <strong>horseback riding or adventure activity, medical treatment, emergency evacuation, and repatriation</strong>. Not every standard policy includes horseback riding, so it is worth double checking that part.`),
     p(`Also check that your passport, flights, warm layers, personal medication, first-aid basics, and ${escapeHtml(FAMILY_CASH_USD)} clean USD cash for the host family are sorted.`),
     p(`Any last questions, just reply to this email.`),
@@ -486,6 +516,8 @@ Your 8 Lakes Tours departure is getting close.
 Booking reference: ${input.reference}
 Tour date: ${input.tourDate || 'TBC'}
 
+${DASH_RULE_TEXT}
+
 Please reply with your Ulaanbaatar arrival details and your Bat-Ulzii bus date and time once booked, so we can coordinate the host-family pickup.
 
 The countryside bus does not run every day, so ask your Ulaanbaatar hostel or hotel to help book it. Once your bus timing is confirmed, Rob will coordinate the pickup from Bat-Ulzii. Please do not assume the pickup is final until it is confirmed in writing.
@@ -504,6 +536,7 @@ info@8lakestours.com`;
       ['Booking reference', escapeHtml(input.reference)],
       ['Tour date', escapeHtml(input.tourDate || 'TBC')],
     ]),
+    sectionRuleHtml(),
     p(`Please reply with your Ulaanbaatar arrival details and your Bat-Ulzii bus date and time once booked, so we can coordinate the host-family pickup.`),
     p(`The countryside bus does not run every day, so ask your Ulaanbaatar hostel or hotel to help book it. Once your bus timing is confirmed, Rob will coordinate the pickup from Bat-Ulzii. Please do not assume the pickup is final until it is confirmed in writing.`),
     p(`Keep your travel insurance, passport, warm layers, and clean USD cash for the host family ready.`),
@@ -526,6 +559,8 @@ A final check before your 8 Lakes Tours departure.
 Booking reference: ${input.reference}
 Tour date: ${input.tourDate || 'TBC'}
 
+${DASH_RULE_TEXT}
+
 Passport, insurance covering riding and emergency evacuation, flights and bus, warm layers, medication, and clean USD cash for the host family.
 
 If anything has changed, just reply.
@@ -542,6 +577,7 @@ info@8lakestours.com`;
       ['Booking reference', escapeHtml(input.reference)],
       ['Tour date', escapeHtml(input.tourDate || 'TBC')],
     ]),
+    sectionRuleHtml(),
     p(`Passport, insurance covering riding and emergency evacuation, flights and bus, warm layers, medication, and clean USD cash for the host family.`),
     p(`If anything has changed, just reply.`),
     signoffHtml(),

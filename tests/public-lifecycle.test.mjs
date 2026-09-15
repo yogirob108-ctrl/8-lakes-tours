@@ -54,6 +54,7 @@ test('reconciliation accepts exactly bound PaymentIntent and Invoice evidence bu
     { source: 'checkout_session', id: 'cs_paid', payment_intent_id: undefined, amount_cents:99900, currency:'usd', checkout_status:'complete', payment_status:'paid', payment_intent_status:'succeeded', charge_amount_cents:99900, charge_amount_refunded_cents:0 },
     { source: 'checkout_session', id: 'cs_second', payment_intent_id: undefined, amount_cents:99900, currency:'usd', checkout_status:'complete', payment_status:'paid', payment_intent_status:'succeeded', charge_amount_cents:99900, charge_amount_refunded_cents:0 },
   ]);
+  assert.deepEqual(conflicting.unbound_provider_payments, []);
 });
 
 test('reconciliation returns unknown rather than no payment when a bounded provider scan is incomplete', () => {

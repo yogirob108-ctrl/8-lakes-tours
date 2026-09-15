@@ -45,7 +45,7 @@ const route = [
   {
     days: 'Days 4–7',
     title: 'Cross the Eight Lakes',
-    body: 'Ride with local horsemen through the Orkhon Valley and Naiman Nuur, camp remotely and adapt each day to weather, horses and the group.',
+    body: 'Ride with local horsemen through the Orkhon Valley and Naiman Nuur, camp remotely and adapt each day to the horses and the group.',
   },
   {
     days: 'Days 8–9',

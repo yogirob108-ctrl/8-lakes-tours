@@ -104,12 +104,12 @@ export default function Page() {
       <section className="intro-grid">
         <div>
           <p className="eyebrow">The idea</p>
-          <h2>Real people. Real horses. Real weather.</h2>
+          <h2>The natural rhythms of the steppe.</h2>
         </div>
         <div className="intro-copy">
           <p>The trip exists because Rob travelled through Mongolia, met Ganbold&apos;s family, rode with them, stayed with them, and saw that this valley could host something deeper than a standard sightseeing product.</p>
           <p>Guests do not come here to consume something polished and disconnected from the natural rhythms of the steppe. They come to live closer to generational nomadic ways of being for a short time: ride, eat, rest, laugh, drink tea, look at the sky, and remember what simplicity feels like.</p>
-          <p>That includes embracing variance. In steppe life, the plan is shaped by weather, distance, animals, and the people you meet along the way. The ancestral customs of hospitality are still very much alive here: tea, food, shelter, and help are offered to the traveller who appears at the door of a ger. Despite the variance of weather, animals, and distance, there is always a gracious and helpful hand on the steppe.</p>
+          <p>That includes embracing variance. In steppe life, the plan is shaped by the land, the animals, and the people you meet along the way. The ancestral customs of hospitality are still very much alive here: tea, food, shelter, and help are offered to the traveller who appears at the door of a ger. Despite the variance of weather, animals, and distance, there is always a gracious and helpful hand on the steppe.</p>
         </div>
       </section>
 

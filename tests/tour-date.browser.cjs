@@ -5,7 +5,7 @@
   const origin = process.env.LOCAL_TEST_ORIGIN || 'http://127.0.0.1:3319';
   assert.match(origin, /^http:\/\/127\.0\.0\.1:\d+$/);
   const scheduledDate = 'October 7 – 15, 2026';
-  const privateDate = '2026 Private Group Date';
+  const privateDate = 'Private group date on request';
   const browser = await chromium.launch({ headless: true, channel: 'chrome' });
 
   async function dismissConsent(page) {
@@ -61,17 +61,27 @@
     const page = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
     let bookings = 0;
     await page.route('**/api/bookings', route => { bookings++; return route.fulfill({ status: 500, body: 'unexpected' }); });
+    await page.route('**/api/checkout', route => route.fulfill({ contentType: 'application/json', body: JSON.stringify({ url: 'https://checkout.stripe.com/c/pay/cs_test_local' }) }));
+    await page.route('https://checkout.stripe.com/**', route => route.fulfill({ contentType: 'text/html', body: '<h1>Local Stripe target</h1>' }));
     await page.goto(origin, { waitUntil: 'networkidle' });
     await dismissConsent(page);
-    await fillValidForm(page, scheduledDate);
-    await page.locator('#tour_date').selectOption('');
+    // With available dates the fresh form preselects the earliest departure and
+    // offers no blank "Select date" placeholder at all.
+    const freshDate = await page.locator('#tour_date').inputValue();
+    assert.equal(freshDate, 'September 23 – October 1, 2026', 'fresh form preselects the earliest bookable departure');
+    assert.equal(await page.locator('#tour_date option[value=""]').count(), 0, 'no blank placeholder option with available dates');
+    assert.match(await page.locator('#application .submit-btn').innerText(), /Book & pay/i, 'preselected scheduled departure shows the immediate Book & pay CTA');
+    // The blank-value guard still exists: a forced-empty select blocks submit.
+    // Fill everything else validly so the date is the only invalid field and focus lands on it.
+    await fillValidForm(page, freshDate);
+    await page.locator('#tour_date').evaluate(select => { select.value = ''; select.dispatchEvent(new Event('change', { bubbles: true })); });
     await page.locator('#application form').evaluate(form => form.requestSubmit());
     await page.locator('#tour_date-inline-error').filter({ hasText: 'Choose a tour date before continuing.' }).waitFor();
     assert.match(await page.locator('.booking-error-summary').innerText(), /Choose a tour date before continuing\./);
     assert.equal(bookings, 0, 'placeholder date never reaches the booking API');
     assert.equal(await page.locator('#tour_date').getAttribute('aria-invalid'), 'true');
     assert.equal(await page.evaluate(() => document.activeElement?.id), 'tour_date');
-    console.log('PASS empty date blocks API, focuses date, and has inline/summary error');
+    console.log('PASS default preselect with no placeholder; forced-empty still blocks API, focuses date, shows errors');
     await page.close();
 
     const privacyPage = await browser.newPage({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });

@@ -6,6 +6,8 @@ import { AVAILABILITY_CHECK, UNKNOWN_SELECTION, manualPaymentReason } from '../l
 test('blank and unknown dates fail closed rather than becoming availability requests', () => {
   assert.equal(manualPaymentReason('', 1), UNKNOWN_SELECTION);
   assert.equal(manualPaymentReason('not a published departure', 1), UNKNOWN_SELECTION);
+  // The historical private labels normalize onto the unified request option,
+  // which stays an availability question at every group size.
   assert.equal(manualPaymentReason('2026 Private Group Date', 1), AVAILABILITY_CHECK);
 });
 
@@ -16,7 +18,7 @@ test('date selector is required, validates before submit, and restoration cannot
   ]);
   assert.match(source, /<select id="tour_date"[\s\S]*required/);
   assert.match(source, /Choose a tour date before continuing\./);
-  assert.match(source, /if \(!currentTourDate\) setSelectedTourDate/);
+  assert.match(source, /if \(!tourDateTouchedRef\.current && draftTourDate\) setSelectedTourDate\(draftTourDate\)/, 'a draft date lands only while the visitor has not touched a date control');
   assert.match(api, /if \(!tourDate \|\| !isBookableTourDate\(tourDate\)\) return jsonError/);
   assert.ok(api.indexOf('!tourDate || !isBookableTourDate') < api.indexOf('!isSupabaseAdminConfigured'));
 });

@@ -5,7 +5,7 @@ import { createSupabaseAdminClient } from '@/lib/supabase-admin';
 import { bookingCustomerEmail, bookingInternalEmail, getInternalEmailRecipients, sendEmail } from '@/lib/email';
 import { subscribeToNewsletter } from '@/lib/newsletter';
 import { hasExplicitNewsletterOptIn } from '@/lib/newsletter-consent.mjs';
-import { GROUP_INVOICE, isBookableTourDate, manualPaymentReason, requiresManualPaymentLink } from '@/lib/tour-booking.mjs';
+import { GROUP_INVOICE, isBookableTourDate, manualPaymentReason, normalizeTourDateSelection, requiresManualPaymentLink } from '@/lib/tour-booking.mjs';
 import { getGroupPricing } from '@/lib/group-pricing.mjs';
 import { normalizePublicBookingPayload } from '@/lib/public-booking.mjs';
 import { recoveryUrl } from '@/lib/booking-checkout';
@@ -134,7 +134,9 @@ export async function POST(request: Request) {
   const email = leadTraveller.email as string;
   const firstName = leadTraveller.first_name;
   const lastName = leadTraveller.last_name;
-  const tourDate = bookingInput.tour_date;
+  // Stored drafts and old bookings may carry legacy request-only labels; map
+  // them onto the unified option before any bookability validation or storage.
+  const tourDate = normalizeTourDateSelection(bookingInput.tour_date);
 
   if (travellers.length > 1 && clean(payload.companion_details_permission) !== 'on') {
     return jsonError('The lead booker must confirm permission to provide companion details.');
@@ -195,7 +197,7 @@ export async function POST(request: Request) {
   });
   const booking = (Array.isArray(rpcData) ? rpcData[0] : rpcData) as BookingRpcRow | null;
   if (rpcError?.message === 'submission key already belongs to a different booking payload') {
-    return jsonError('This submission was already saved with different details. Your changes have not been saved. Please contact Rob to update the existing booking; do not submit a duplicate booking.', 409);
+    return jsonError('This submission was already saved with different details. Your changes have not been saved. Please contact our team at info@8lakestours.com to update the existing booking; do not submit a duplicate booking.', 409);
   }
   if (rpcError || !booking) return jsonError('Booking could not be saved. Please try again or email info@8lakestours.com.', 500);
   const reference = booking.public_reference;

@@ -28,7 +28,7 @@ const storyCards = [
   },
   {
     title: 'Hosted by nomadic families',
-    body: 'Guests stay close to local life: gers, horses, shared meals, weather, tea, work, rest, and the rhythm of the valley. The local family portion of the price is paid directly in cash to the hosts because many families cannot reliably receive online transfers.',
+    body: 'Guests stay close to nomadic life: gers, horses, shared meals, and a daily rhythm attuned to the steppe by people who have adapted to it over millennia. The local family portion of the price is paid directly in cash to the hosts because many families cannot reliably receive online transfers.',
   },
   {
     title: 'Built around the real thing',
@@ -39,11 +39,11 @@ const storyCards = [
 const expectationCards = [
   {
     title: 'Real adventure, optional challenge',
-    body: 'The steppe moves to her own natural rhythms. Weather, animals, and distance shape each day, and group dynamics matter out in wild country. Come mentally prepared for simple living, some physical discomfort, and plans that can change. You may be invited outside your comfort zone, but nothing is ever forced. You can always say no, rest, or spend the day closer to nomadic life.',
+    body: 'Out here the weather, the animals and the distance set the pace, and the group matters. Come ready for simple living, some physical discomfort and a plan that bends. You will be invited past your comfort zone at times, but the choice is always yours: ride on, rest, or stay back and share the day with the family at camp.',
   },
   {
     title: 'Far from city life',
-    body: 'Once you leave the city, life gets simple fast. There are no regular showers, toilets are squat outhouses, and phone signal comes and goes. For some people that is the whole point. If being offline and far from comforts would weigh on you, it\'s worth sitting with before you book.',
+    body: 'Life gets simple quickly once you leave Ulaanbaatar. Showers are rare, toilets are squat outhouses, and signal comes and goes. Many guests find that is exactly what they came for. If being offline and without everyday comforts would weigh on you, it is worth thinking about before you book.',
   },
   {
     title: 'Food is part of the culture',
@@ -104,12 +104,12 @@ export default function Page() {
       <section className="intro-grid">
         <div>
           <p className="eyebrow">The idea</p>
-          <h2>Real people. Real horses. Real weather.</h2>
+          <h2>The natural rhythms of the steppe.</h2>
         </div>
         <div className="intro-copy">
           <p>The trip exists because Rob travelled through Mongolia, met Ganbold&apos;s family, rode with them, stayed with them, and saw that this valley could host something deeper than a standard sightseeing product.</p>
           <p>Guests do not come here to consume something polished and disconnected from the natural rhythms of the steppe. They come to live closer to generational nomadic ways of being for a short time: ride, eat, rest, laugh, drink tea, look at the sky, and remember what simplicity feels like.</p>
-          <p>That includes embracing variance. In steppe life, the plan is shaped by weather, distance, animals, and the people you meet along the way. The ancestral customs of hospitality are still very much alive here: tea, food, shelter, and help are offered to the traveller who appears at the door of a ger. Despite the variance of weather, animals, and distance, there is always a gracious and helpful hand on the steppe.</p>
+          <p>That includes embracing variance. In steppe life, the plan is shaped by the land, the animals, and the people you meet along the way. The ancestral customs of hospitality are still very much alive here: tea, food, shelter, and help are offered to the traveller who appears at the door of a ger. Despite the variance of weather, animals, and distance, there is always a gracious and helpful hand on the steppe.</p>
         </div>
       </section>
 
@@ -174,9 +174,9 @@ export default function Page() {
         <h2>Keep exploring</h2>
         <div className="next-grid">
           <Link href="/#book"><strong>Reserve a spot</strong><span>Dates, price, booking form, and payment structure.</span></Link>
-          <Link href="/gallery"><strong>Gallery</strong><span>See the horses, gers, weather, guides, and valley.</span></Link>
+          <Link href="/gallery"><strong>Gallery</strong><span>See the horses, gers, guides, and valley.</span></Link>
           <Link href="/faq"><strong>FAQ</strong><span>Food, flexibility, safety, insurance, payment, and logistics.</span></Link>
-          <Link href="/contact"><strong>Contact</strong><span>Ask Rob and the team before you book.</span></Link>
+          <Link href="/contact"><strong>Contact</strong><span>Ask our team before you book.</span></Link>
         </div>
       </section>
 

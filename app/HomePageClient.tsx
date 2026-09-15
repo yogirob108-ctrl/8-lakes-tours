@@ -2,10 +2,12 @@
 import Image from 'next/image';
 import { track } from '@vercel/analytics';
 import { type FormEvent, type MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { GROUP_INVOICE, manualPaymentReason } from '@/lib/tour-booking.mjs';
+import { GROUP_INVOICE, manualPaymentReason, normalizeTourDateSelection } from '@/lib/tour-booking.mjs';
+import { getDefaultTourDate } from '@/lib/tour-dates.mjs';
 import { BASE_LOCAL_FAMILY_PAYMENT_USD, BASE_ONLINE_PAYMENT_USD, BASE_PRICE_USD, GROUP_PRICING_TIERS, MAX_GROUP_SIZE, clampGuestCount, getGroupPricing } from '@/lib/group-pricing.mjs';
 import { normalizeBookingTravellers } from '@/lib/booking-travellers.mjs';
 import { composeDateOfBirth, splitDateOfBirth } from '@/lib/date-of-birth-fields.mjs';
+import MobileNavMenu from './components/MobileNavMenu';
 
 type FunnelEventProperties = Record<string, string | number | boolean>;
 
@@ -269,6 +271,15 @@ const MAIN_ALBUM_IMAGES = [
   { src: '/images/expedition-originals/rider-storm-valley-panorama-portrait.jpg', alt: 'Horseback point of view crossing a grassy Mongolian valley under storm clouds', orientation: 'portrait', mobileFullWidth: true, collage: 'bottom-right' },
 ];
 
+const HOME_FAQS = [
+  { q: 'What happens after I submit the form?', a: 'For standard 1–2 guest bookings, you can continue to the online payment and receive confirmation once payment is complete. Scheduled groups of 1–8 pay the exact group online amount in one Stripe checkout. Private, custom, and unconfirmed dates require our team to confirm availability before payment. Before arrival, our team coordinates timing with you and the host-family pickup from Bat-Ulzii.' },
+  { q: 'Do I need riding experience?', a: 'No experience necessary. Beginners are welcome — our local guides will teach you everything you need to know before the trek begins.' },
+  { q: 'What departure dates are available?', a: 'Remaining 2026 fixed departures stay listed while bookable. 2027 small-group dates are being planned, and private 2027 departures can be requested for June through September. All 2027 options require our team to confirm the host family, horses, guide and logistics before payment.' },
+  { q: 'How does payment work?', a: 'All official prices are in USD. The 2026 rate depends on group size: $1,999 per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8. Bookings of 1–2 guests on a fixed date pay the $999 per-guest online booking payment straight after the form. Groups of 1–8 book together and pay the exact group online amount in one secure Stripe checkout. Group discounts are shared evenly between 8 Lakes Tours and the host family, so the online payment runs $899–$999 per guest and the local family cash runs $900–$1,000 per guest. The family portion is paid directly in clean USD cash to the nomadic host families in Mongolia.' },
+  { q: 'Do I need a visa?', a: 'Many travellers can enter Mongolia visa-free for tourism, but the allowance depends on your passport. US and South Korean passport holders commonly receive up to 90 days; UK/EU, Australian, Canadian, Japanese, New Zealand, and many other passport holders commonly receive up to 30 days. Rules and temporary exemptions can change, so check the current Mongolian consular or e-visa guidance for your nationality before booking flights.' },
+  { q: 'Is there WiFi or cell service?', a: 'Remote trek days are mostly offline, with little to no cell service. The host family camp has Starlink and solar-powered charging for phones, cameras, and essentials, so you can reconnect between riding days. For simple Mongolian communication, Grok has worked best for us so far; ChatGPT also works well for translation when you have signal.' },
+];
+
 const GALLERY_IMAGES = [
   { src: '/images/guide.jpg', alt: 'Mongolian horseman in traditional dress' },
   { src: '/images/rob-family.jpg', alt: 'Robert with the host family outside a traditional ger in Mongolia' },
@@ -428,8 +439,10 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
   const [leadEmail, setLeadEmail] = useState('');
   const [leadStatus, setLeadStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [leadError, setLeadError] = useState('');
-  const [selectedTourDate, setSelectedTourDate] = useState('');
+  const [selectedTourDate, setSelectedTourDate] = useState(() => getDefaultTourDate(tourDates));
+  const tourDateTouchedRef = useRef(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  const tourDateOptions = tourDates.map(dateOption => dateOption.date);
   const groupPricing = useMemo(() => getGroupPricing(guestCount), [guestCount]);
   const bookingFormStartedRef = useRef(false);
   const stripeClickTrackedRef = useRef(false);
@@ -488,12 +501,15 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
     });
     // This form has controlled fields.  A restore response can arrive after the
     // visitor has already picked a date, so never write stale draft state over a
-    // value currently in the form.
+    // value currently in the form.  The date starts at the earliest bookable
+    // departure, so "empty select" is no longer the user-edit signal: a draft
+    // date only lands while the visitor has not personally touched either date
+    // control, and a real user edit is never overwritten.
     const currentEmail = (form.elements.namedItem('email') as HTMLInputElement | null)?.value;
-    const currentTourDate = (form.elements.namedItem('tour_date') as HTMLSelectElement | null)?.value;
     const currentGuestCount = (form.elements.namedItem('guest_count') as HTMLSelectElement | null)?.value;
+    const draftTourDate = normalizeTourDateSelection(String(draft.tour_date || ''));
     if (!currentEmail) setEmail(String(draft.email || ''));
-    if (!currentTourDate) setSelectedTourDate(String(draft.tour_date || ''));
+    if (!tourDateTouchedRef.current && draftTourDate) setSelectedTourDate(draftTourDate);
     if (!currentGuestCount) setGuestCount(Number(draft.guest_count) || 1);
   };
 
@@ -565,6 +581,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
   const chooseTourDate = (date: string) => {
     if (formSubmitted || formSubmitting) return;
     trackFunnelEvent('date_selected', { tour_date: date });
+    tourDateTouchedRef.current = true;
     setSelectedTourDate(date);
     window.setTimeout(() => {
       document.getElementById('application')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -971,18 +988,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
       },
       {
         '@type': 'FAQPage',
-        mainEntity: [
-          { '@type': 'Question', name: 'Is this trip legit?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. 8 Lakes Tours is organised by Robert Zaher through a direct relationship with Ganbold’s family in the Orkhon Valley. Online bookings and preparation are handled by 8 Lakes Tours; the local family portion is paid directly to your hosts in Mongolia.' } },
-          { '@type': 'Question', name: 'Can I speak to someone before booking?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Email info@8lakestours.com with any questions before paying. You can also check Rob’s Instagram at @robzaher108 while tour email communication stays centralised through the info@ address.' } },
-          { '@type': 'Question', name: 'What happens after I submit the form?', acceptedAnswer: { '@type': 'Answer', text: 'For standard 1–2 guest bookings, guests can continue to online payment and receive confirmation once payment is complete. Scheduled groups of 1–8 pay the exact group online amount in one Stripe checkout. Private, custom, and unconfirmed dates require Rob to confirm availability before payment. Before arrival, Rob or the tour operator coordinates timing and host-family pickup from Bat-Ulzii.' } },
-          { '@type': 'Question', name: 'Do I need riding experience?', acceptedAnswer: { '@type': 'Answer', text: 'No experience necessary. Beginners are welcome — our local guides will teach you everything you need to know before the trek begins.' } },
-          { '@type': 'Question', name: 'What departure dates are available?', acceptedAnswer: { '@type': 'Answer', text: 'Remaining 2026 fixed departures are listed while they are still bookable. 2027 small-group dates are being planned, and private 2027 departures can be requested for June through September. All 2027 requests require personal confirmation of the host family, horses, guide and logistics before payment.' } },
-          { '@type': 'Question', name: 'How does payment work?', acceptedAnswer: { '@type': 'Answer', text: 'All official prices are in USD. The 2026 rate depends on group size: $1,999 per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8. Bookings of 1–2 guests on a fixed date pay the $999 per-guest online booking payment straight after the form. Groups of 1–8 book together and pay the exact group online amount in one secure Stripe checkout. Group discounts are shared evenly between 8 Lakes Tours and the host family, so the online payment runs $899–$999 per guest and the local family cash runs $900–$1,000 per guest. The family portion is paid directly to the nomadic host families in Mongolia.' } },
-          { '@type': 'Question', name: 'What airport do I fly into?', acceptedAnswer: { '@type': 'Answer', text: "Fly into Chinggis Khaan International Airport in Ulaanbaatar (UB). From there you'll take a public bus to Bat-Ulzii — about an 8-hour ride through stunning countryside." } },
-          { '@type': 'Question', name: 'Do I need a visa?', acceptedAnswer: { '@type': 'Answer', text: 'Many travellers can enter Mongolia visa-free for tourism, but the allowance depends on your passport. US and South Korean passport holders commonly receive up to 90 days; UK/EU, Australian, Canadian, Japanese, New Zealand, and many other passport holders commonly receive up to 30 days. Rules and temporary exemptions can change, so check the current Mongolian consular or e-visa guidance for your nationality before booking flights.' } },
-          { '@type': 'Question', name: 'Is there WiFi or cell service?', acceptedAnswer: { '@type': 'Answer', text: 'Remote trek days are mostly offline, with little to no cell service. The host family camp has Starlink and solar-powered charging for phones, cameras, and essentials, so you can reconnect between riding days. For simple Mongolian communication, Grok has worked best for us so far; ChatGPT also works well for translation when you have signal.' } },
-          { '@type': 'Question', name: 'Is this trip safe?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Basic first aid is available on site and experienced local guides are with you throughout the journey. Ground transportation is on call for emergencies. All participants are required to carry travel insurance with emergency evacuation coverage before departure.' } },
-        ],
+        mainEntity: HOME_FAQS.map(({ q, a }) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })),
       },
     ],
   };
@@ -1142,6 +1148,8 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .section-title em { font-style: italic; color: var(--gold); }
         .section-body { font-size: 1rem; line-height: 1.8; color: var(--mist); max-width: 560px; }
         .faq-item { border-top: 1px solid rgba(200,169,110,0.15); }
+        .faq-see-all { display: inline-block; margin-top: 1.6rem; color: var(--gold); font-size: 0.7rem; letter-spacing: 0.18em; text-transform: uppercase; text-decoration: none; border-bottom: 1px solid rgba(200,169,110,0.45); padding-bottom: 0.2rem; }
+        .faq-see-all:hover { color: var(--cream); border-color: var(--cream); }
         .faq-question { width: 100%; cursor: pointer; appearance: none; border: 0; background: transparent; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.3rem 0; text-align: left; font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 1.15rem; font-weight: 400; color: var(--cream); }
         .faq-question:focus-visible { outline: 1px solid rgba(200,169,110,0.75); outline-offset: 4px; }
         .faq-toggle { position: relative; width: 1rem; height: 1rem; flex: 0 0 auto; color: var(--gold); }
@@ -1153,7 +1161,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .faq-item.is-open .faq-panel { grid-template-rows: 1fr; }
         .faq-panel-inner { overflow: hidden; }
         .faq-answer { padding: 0 0 1.35rem; font-size: 0.875rem; color: var(--mist); line-height: 1.75; opacity: 0.8; }
-        .faq-practical-link { margin: 2rem 0 2.4rem; padding: 1.15rem; border: 1px solid rgba(200,169,110,0.2); border-radius: var(--radius-card); background: rgba(245,240,232,0.04); }
+        .faq-practical-link { margin: 1.8rem 0 0; padding: 1.15rem; border: 1px solid rgba(200,169,110,0.2); border-radius: var(--radius-card); background: rgba(245,240,232,0.04); }
         .faq-practical-link span { display: block; color: var(--cream); font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 1.15rem; margin-bottom: 0.35rem; }
         .faq-practical-link p { color: var(--mist); font-size: 0.875rem; line-height: 1.65; opacity: 0.82; margin-bottom: 0.9rem; }
         .faq-practical-link a { color: var(--gold); text-transform: uppercase; letter-spacing: 0.14em; font-size: 0.68rem; font-weight: 800; text-decoration: none; }
@@ -1180,7 +1188,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .intro-img.portrait-full:hover img { transform: none; }
         .intro-img-accent { position: absolute; bottom: -1.5rem; right: -1.5rem; width: 55%; aspect-ratio: 1; overflow: hidden; border: 4px solid var(--dark); border-radius: var(--radius-photo); }
         .intro-img-accent img { width: 100%; height: 100%; object-fit: cover; }
-        .intro-points { margin-top: 2.5rem; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2rem; }
+        .intro-points { margin-top: 2.5rem; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.6rem 2rem; }
         .intro-point-value { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 1.8rem; color: var(--gold); line-height: 1; }
         .intro-point-label { font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--mist); opacity: 0.6; margin-top: 0.4rem; line-height: 1.4; }
 
@@ -1198,30 +1206,32 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .partnership-img::before { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(90deg, rgba(18,15,11,0.38), rgba(18,15,11,0.06) 42%, rgba(18,15,11,0.18)), linear-gradient(180deg, rgba(200,169,110,0.10), transparent 38%, rgba(14,12,9,0.30)); mix-blend-mode: multiply; }
         .partnership-img img { width: 100%; height: 100%; object-fit: cover; object-position: 52% center; filter: saturate(0.84) contrast(1.08) brightness(0.88); }
 
-        .trust { background: var(--dark); padding: 7rem 5rem; }
+        .trust { background: var(--dark); padding: 7rem 5rem 3.5rem; }
         .trust-header { max-width: 760px; margin: 0 auto 3rem; text-align: center; }
         .trust-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; max-width: 1120px; margin: 0 auto; }
         .trust-card { border: 1px solid rgba(200,169,110,0.2); border-radius: var(--radius-card); background: rgba(200,169,110,0.045); padding: 1.6rem; min-height: 210px; display: flex; flex-direction: column; justify-content: space-between; }
         .trust-quote { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 1.25rem; color: var(--cream); line-height: 1.55; font-style: italic; }
         .trust-source { font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); margin-top: 1.4rem; }
-        .testimonial-grid { max-width: 1120px; margin: 0 auto 3rem; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
+        .testimonial-grid { max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
         .testimonial-card { background: rgba(245,240,232,0.04); border: 1px solid rgba(200,169,110,0.18); border-radius: var(--radius-card); overflow: hidden; }
         .testimonial-photo { position: relative; height: 360px; overflow: hidden; display: block; width: 100%; }
         .testimonial-photo img { object-fit: cover; }
         .testimonial-body { padding: 1.6rem; }
         .testimonial-quote { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 1.45rem; line-height: 1.45; color: var(--cream); font-style: italic; }
         .testimonial-name { margin-top: 1.2rem; font-size: 0.68rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); }
-        .proof-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; max-width: 1120px; margin: 2rem auto 0; background: rgba(200,169,110,0.18); border: 1px solid rgba(200,169,110,0.18); border-radius: var(--radius-card); overflow: hidden; }
-        .proof-item { background: var(--ink); padding: 1.2rem; text-align: center; }
-        .proof-value { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 1.6rem; color: var(--gold); display: block; }
-        .proof-label { font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--mist); opacity: 0.7; margin-top: 0.35rem; display: block; }
-        .instagram-link { color: var(--gold); text-decoration: none; }
-        .instagram-link .instagram-glyph { width: 1.05em; height: 1.05em; vertical-align: -0.18em; margin-right: 0.35em; }
-        .instagram-link .instagram-handle { border-bottom: 1px solid rgba(200,169,110,0.45); }
-        .instagram-link:hover { color: var(--cream); }
-        .instagram-link:hover .instagram-handle { border-color: var(--cream); }
+        .contact-section { background: var(--dark); padding: 5.5rem 6rem; }
+        .contact-layout { max-width: 1080px; margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 3.5rem; align-items: center; }
+        .contact-intro .section-body { margin: 1rem 0 1.6rem; }
+        .contact-cards { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.75rem; }
+        .contact-card { display: flex; align-items: center; gap: 0.8rem; min-width: 0; padding: 0.9rem 1rem; background: rgba(200,169,110,0.06); border: 1px solid rgba(200,169,110,0.25); border-radius: var(--radius-soft); color: inherit; text-decoration: none; transition: border-color 0.3s ease; }
+        .contact-card:hover { border-color: var(--gold); }
+        .contact-card-icon { display: inline-flex; flex-shrink: 0; color: var(--cream); font-size: 1.1rem; }
+        .contact-card-icon .instagram-glyph { width: 1.15rem; height: 1.15rem; }
+        .contact-card-text { display: grid; gap: 0.2rem; min-width: 0; }
+        .contact-card-label { font-size: 0.58rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); }
+        .contact-card-value { font-size: 0.85rem; color: var(--cream); overflow-wrap: anywhere; }
 
-        .itinerary { background: var(--dark); }
+        .itinerary { background: var(--dark); padding-top: 4.5rem; }
         .itinerary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-top: 4rem; }
         .itin-card { background: var(--ink); border-radius: var(--radius-card); padding: 3rem; position: relative; overflow: hidden; transition: background 0.3s ease; }
         .itin-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--gold); transform: scaleX(0); transform-origin: left; transition: transform 0.4s ease; }
@@ -1299,6 +1309,11 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .packing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem 1.2rem; padding: 0 1.2rem 1.2rem; border-top: 1px solid rgba(200,169,110,0.15); }
         .packing-grid li { list-style: none; position: relative; padding-left: 1rem; font-size: 0.82rem; line-height: 1.55; color: rgba(212,207,196,0.82); }
         .packing-grid li::before { content: '•'; position: absolute; left: 0; color: var(--gold); }
+        .getting-there-steps { counter-reset: step; display: grid; gap: 0.8rem; margin: 0; padding: 1rem 1.2rem 0; border-top: 1px solid rgba(200,169,110,0.15); list-style: none; }
+        .getting-there-steps li { counter-increment: step; position: relative; padding-left: 2rem; font-size: 0.82rem; line-height: 1.55; color: rgba(212,207,196,0.82); }
+        .getting-there-steps li::before { content: counter(step, decimal-leading-zero); position: absolute; left: 0; top: 0.1rem; color: var(--gold); font-size: 0.62rem; letter-spacing: 0.12em; }
+        .getting-there-steps strong { display: block; color: var(--cream); font-weight: 400; }
+        .getting-there-note { margin: 0.9rem 1.2rem 1.2rem; padding-left: 0.8rem; border-left: 2px solid var(--gold); font-size: 0.78rem; line-height: 1.55; color: rgba(212,207,196,0.7); }
 
         .booking { background: var(--dark); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6rem; align-items: start; overflow-x: clip; }
         .scarcity-pill { display:inline-flex; max-width:100%; box-sizing:border-box; align-items:center; gap:0.6rem; margin-top:1.2rem; padding:0.6rem 1.1rem; background:rgba(185,74,48,0.12); border:1px solid rgba(185,74,48,0.35); border-radius: var(--radius-soft); overflow:hidden; }
@@ -1333,6 +1348,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .ask-card p { color: rgba(212,207,196,0.78); font-size: 0.82rem; line-height: 1.6; margin-bottom: 0.75rem; }
         .ask-card a { display: inline-flex; color: var(--gold); border-bottom: 1px solid rgba(200,169,110,0.45); text-decoration: none; font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase; }
         .ask-card a:hover { color: var(--cream); border-color: var(--cream); }
+        .ask-card-alt { margin-top: 0.95rem; padding-top: 0.95rem; border-top: 1px solid rgba(200,169,110,0.16); }
         .price-spec-list { display:flex; flex-direction:column; gap:0.8rem; margin-top:1.5rem; }
         .price-spec-row { display:flex; justify-content:space-between; gap:1rem; min-width:0; font-size:0.8rem; color:var(--mist); padding:0.6rem 0; border-bottom:1px solid rgba(245,240,232,0.07); }
         .price-spec-row span { min-width:0; overflow-wrap:anywhere; }
@@ -1374,6 +1390,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .booking-error-summary button { padding: 0.18rem 0; border: 0; background: transparent; color: #fff; text-decoration: underline; cursor: pointer; text-align: left; font: inherit; }
         .form-input[aria-invalid="true"], .form-select[aria-invalid="true"], .form-textarea[aria-invalid="true"] { border: 2px solid #ff8f70; box-shadow: inset 0 0 0 1px #35170f; background-image: linear-gradient(135deg, transparent calc(100% - 1.2rem), rgba(255,143,112,0.35)); }
         @media (max-width: 520px) { .date-of-birth-inputs { gap: 0.4rem; } .date-of-birth-part .form-select { padding-inline: 0.5rem; } }
+        @media (max-width: 520px) { .contact-cards, .lead-card-public .lead-form { grid-template-columns: 1fr; } }
         .form-input:-webkit-autofill, .form-input:-webkit-autofill:hover, .form-input:-webkit-autofill:focus, input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, textarea:-webkit-autofill, textarea:-webkit-autofill:hover, textarea:-webkit-autofill:focus { -webkit-box-shadow: 0 0 0 1000px #15120e inset !important; box-shadow: 0 0 0 1000px #15120e inset !important; -webkit-text-fill-color: var(--cream) !important; caret-color: var(--cream); border-color: rgba(200,169,110,0.35) !important; transition: background-color 9999s ease-in-out 0s; }
         .form-select option { background: var(--ink); }
         .form-textarea { resize: vertical; min-height: 80px; }
@@ -1431,10 +1448,11 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .group-request-next-step { display:flex; flex-direction:column; gap:0.35rem; border:1px solid rgba(200,169,110,0.28); background:rgba(200,169,110,0.08); border-radius:var(--radius-card); padding:0.9rem; text-align:left; }
         .group-request-next-step strong { color:var(--cream); font-size:0.86rem; }
         .group-request-next-step span { color:var(--mist); font-size:0.76rem; line-height:1.55; opacity:0.78; }
-        .lead-card-public { margin: 2.2rem auto 0; max-width: 460px; padding: 1.2rem; border: 1px solid rgba(200,169,110,0.22); border-radius: var(--radius-card); background: rgba(245,240,232,0.045); }
+        .lead-card-public { margin: 0; padding: 1.6rem; border: 1px solid rgba(200,169,110,0.22); border-radius: var(--radius-card); background: rgba(245,240,232,0.045); }
         .lead-card-public h3 { color: var(--cream); font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 1.65rem; font-weight: 300; margin: 0 0 0.4rem; }
         .lead-card-public p { color: rgba(212,207,196,0.72); font-size: 0.82rem; line-height: 1.6; margin: 0 0 1rem; }
-        .lead-form { display: grid; gap: 0.6rem; }
+        .lead-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0.6rem; }
+        .lead-form button { grid-column: 1 / -1; }
         .lead-form input { width: 100%; box-sizing: border-box; border: 1px solid rgba(245,240,232,0.14); background: rgba(14,12,9,0.54); color: var(--cream); border-radius: var(--radius-soft); padding: 0.86rem 1rem; font: inherit; outline: none; }
         .lead-form input:focus { border-color: var(--gold); }
         .lead-form button { display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--gold); background: var(--gold); color: var(--dark); border-radius: var(--radius-soft); padding: 1rem 1.25rem; font-family: var(--font-jost), 'Jost', sans-serif; font-size: 0.72rem; letter-spacing: 0.18em; line-height: 1; text-transform: uppercase; font-weight: 700; cursor: pointer; transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease, transform 0.3s ease; }
@@ -1445,27 +1463,8 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .lead-privacy { margin-top: 0.75rem !important; margin-bottom: 0 !important; font-size: 0.68rem !important; line-height: 1.5 !important; color: rgba(212,207,196,0.56) !important; }
         .lightbox-backdrop { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.94); display: flex; align-items: center; justify-content: center; padding: 2rem; cursor: zoom-out; }
         .gallery-handoff { background:#0f0f0d; border-top:1px solid rgba(200,169,110,0.14); border-bottom:1px solid rgba(200,169,110,0.14); padding: 1.6rem 6rem; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2rem; align-items:center; }
-        .gallery-handoff-copy p:first-child { font-size:0.62rem; letter-spacing:0.26em; text-transform:uppercase; color:var(--gold); margin-bottom:0.35rem; }
-        .gallery-handoff-copy p:last-child { font-size:0.88rem; color:rgba(212,207,196,0.72); line-height:1.55; max-width:640px; }
-        .getting-there-section { background: var(--ink); padding: 5.2rem 6rem 3.4rem; }
-        .getting-there-panel { border-top: 1px solid rgba(200,169,110,0.18); border-bottom: 1px solid rgba(200,169,110,0.18); padding: 3.2rem 0 2.7rem; display: grid; grid-template-columns: minmax(280px, 0.62fr) minmax(0, 1fr); gap: 5rem; align-items: start; }
-        .getting-there-section .section-title { margin-bottom: 0; }
-        .journey-route { display: grid; gap: 1.45rem; }
-        .journey-lede { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 0.72fr); gap: 2rem; align-items: start; padding-bottom: 1.6rem; border-bottom: 1px solid rgba(245,240,232,0.08); }
-        .journey-copy { font-size: 1rem; line-height: 1.85; color: rgba(245,240,232,0.78); max-width: 720px; }
-        .journey-meta { position: relative; border-left: 2px solid var(--gold); padding-left: 1rem; color: rgba(212,207,196,0.72); font-size: 0.82rem; line-height: 1.65; transition: color 0.25s ease, border-color 0.25s ease, transform 0.25s ease; }
-        .journey-meta:hover { color: rgba(245,240,232,0.86); border-color: var(--cream); transform: translateX(4px); }
-        .journey-steps { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: rgba(200,169,110,0.18); border: 1px solid rgba(200,169,110,0.18); border-radius: var(--radius-card); overflow: hidden; }
-        .journey-steps::before { content: ''; position: absolute; left: 7%; right: 7%; top: 1.9rem; height: 1px; background: linear-gradient(90deg, transparent, rgba(200,169,110,0.55), transparent); opacity: 0.55; pointer-events: none; z-index: 1; }
-        .journey-step { position: relative; z-index: 2; background: linear-gradient(180deg, rgba(245,240,232,0.018), rgba(14,12,9,0.08)), var(--ink); padding: 1.35rem 1rem 1.15rem; min-width: 0; transition: background 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease; }
-        .journey-step::before { content: ''; display: block; width: 0.58rem; height: 0.58rem; border: 1px solid rgba(200,169,110,0.78); border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 4px rgba(200,169,110,0.08); margin-bottom: 0.72rem; transition: background 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease; }
-        .journey-step:hover { background: linear-gradient(180deg, rgba(200,169,110,0.105), rgba(200,169,110,0.035)), var(--ink); transform: translateY(-4px); box-shadow: 0 18px 36px rgba(0,0,0,0.22); }
-        .journey-step:hover::before { background: var(--gold); transform: scale(1.12); box-shadow: 0 0 0 7px rgba(200,169,110,0.13); }
-        .journey-step-number { display: block; color: var(--gold); font-size: 0.58rem; letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 0.65rem; }
-        .journey-step-title { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; color: var(--cream); font-size: 1.25rem; line-height: 1.15; font-weight: 300; margin-bottom: 0.35rem; transition: color 0.25s ease; }
-        .journey-step:hover .journey-step-title { color: var(--gold); }
-        .journey-step-copy { color: rgba(212,207,196,0.66); font-size: 0.78rem; line-height: 1.5; transition: color 0.25s ease; }
-        .journey-step:hover .journey-step-copy { color: rgba(245,240,232,0.82); }
+        .gallery-handoff-copy p:first-child { font-size:0.62rem; letter-spacing:0.26em; text-transform:uppercase; color:var(--gold); margin-bottom:0; }
+        .gallery-handoff-copy p:not(:first-child) { font-size:0.88rem; color:rgba(212,207,196,0.72); line-height:1.55; max-width:640px; }
         .divider { display: flex; align-items: center; gap: 1.5rem; padding: 0 6rem; }
         .divider-line { flex: 1; height: 1px; background: rgba(200,169,110,0.15); }
         .divider-ornament { color: var(--gold); font-size: 0.8rem; }
@@ -1521,7 +1520,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           .hero-sub .desktop-line { display: none; }
           .hero-actions { flex-direction: column; align-items: stretch; gap: 0.8rem; }
           .hero-actions .btn-primary, .hero-actions .btn-ghost { text-align: center; }
-          .intro-points { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; margin-top: 2.2rem; align-items: start; }
+          .intro-points { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.1rem 0.75rem; margin-top: 2.2rem; align-items: start; }
           .offer-strip { padding: 1.25rem 1.2rem; grid-template-columns: 1fr; gap: 1rem; }
           .offer-strip-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
           .offer-fact { padding-left: 0.65rem; }
@@ -1562,6 +1561,11 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           .ask-card h3 { font-size:1.05rem; margin-bottom:0.35rem; }
           .ask-card p { display:none; }
           .ask-card a { font-size:0.58rem; letter-spacing:0.12em; }
+          .ask-card .ask-card-alt { margin-top:0.75rem; padding-top:0.75rem; }
+          .ask-card .ask-card-alt p { display:block; font-size:0.74rem; line-height:1.5; margin-bottom:0.5rem; }
+          .contact-section { padding: 4rem 1.5rem; }
+          .contact-layout { grid-template-columns: 1fr; gap: 2rem; }
+          .lead-card-public { padding: 1.2rem; }
           .tour-dates-card { margin-top: 1rem; padding: 0.8rem 0.62rem; border-radius: var(--radius-card); }
           .tour-dates-heading { font-size:0.52rem !important; letter-spacing:0.22em !important; margin-bottom:0.62rem !important; }
           .tour-date-list { grid-template-columns: 1fr; gap: 0.26rem; }
@@ -1578,12 +1582,12 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           .form-textarea { min-height: 88px; }
           .form-grid { grid-template-columns: 1fr; gap: 0.75rem; }
           .form-grid.compact-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-          .trust { padding: 4rem 1.5rem; }
+          .trust { padding: 4rem 1.5rem 2.5rem; }
+          .itinerary { padding-top: 3rem; }
           .trust-grid { grid-template-columns: 1fr; }
           .testimonial-grid { grid-template-columns: 1fr; }
           .testimonial-photo { height: 280px; }
           .image-button.testimonial-photo { height: 280px; }
-          .proof-strip { grid-template-columns: 1fr 1fr; }
           .itinerary-grid { grid-template-columns: 1fr; }
           .itin-tag { font-size: 0.75rem; }
           .itin-title { font-size: 2rem; }
@@ -1620,13 +1624,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           .footer-note { margin-top: 2.5rem; padding-top: 1.2rem; flex-direction: column; font-size: 0.72rem; line-height: 1.6; }
           .gallery-handoff { padding: 1.6rem 1.5rem; grid-template-columns: 1fr; gap: 1rem; text-align: left; }
           .gallery-handoff .btn-ghost { width: 100%; justify-content: center; text-align: center; }
-          .getting-there-section { padding: 3.5rem 1.5rem 4rem; }
-          .getting-there-panel { grid-template-columns: 1fr; gap: 2.2rem; padding: 2.3rem 0; }
-          .journey-lede { grid-template-columns: 1fr; gap: 1.2rem; }
-          .journey-steps { grid-template-columns: 1fr; }
-          .journey-steps::before { left: 1.28rem; right: auto; top: 1.2rem; bottom: 1.2rem; width: 1px; height: auto; background: linear-gradient(180deg, transparent, rgba(200,169,110,0.5), transparent); }
-          .journey-step { padding: 1rem 1rem 1rem 2.05rem; }
-          .journey-step::before { position: absolute; left: 0.98rem; top: 1.25rem; margin: 0; }
           .divider { padding: 0 2rem; }
           .partnership-text { padding: 4rem 2rem; }
           .partnership-inline-photo { display: block !important; margin: 2.4rem 0 2.8rem; }
@@ -1658,6 +1655,9 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           <a href="/faq" className="nav-social">FAQ</a>
           <a href="/contact" className="nav-social">Contact</a>
           <a href="#application" className="nav-cta">Reserve</a>
+        </div>
+        <div className="nav-mobile-actions">
+          <MobileNavMenu reserveHref="#application" />
         </div>
       </nav>
 
@@ -1691,8 +1691,8 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           <p className="hero-eyebrow">Mongolian Horse Trekking · Orkhon Valley &amp; Eight Lakes</p>
           <h1 className="hero-title">Ride Into the<br /><em>Endless Steppe</em></h1>
           <p className="hero-sub">
-            <span className="mobile-line">A 9-day small-group Mongolian horse trekking expedition — hosted with nomadic families and open to beginner/intermediate riders.</span>
-            <span className="desktop-line">A 9-day small-group Mongolian horse trekking expedition through the Orkhon Valley and Eight Lakes region — hosted with nomadic families, guided by local horsemen, and open to beginner/intermediate riders who want the real thing.</span>
+            <span className="mobile-line">Nine days on horseback across the vastness of the steppe, living alongside nomadic families. Small groups, beginner and intermediate riders welcome.</span>
+            <span className="desktop-line">Nine days on horseback through the vastness of the Orkhon Valley and Eight Lakes, living alongside nomadic families whose way of life is still attuned to the steppe. Small groups, local horsemen, beginner and intermediate riders welcome.</span>
           </p>
           <div className="hero-actions">
             <a href="#application" className="btn-primary">Reserve Online</a>
@@ -1723,24 +1723,24 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           <button
             type="button"
             className="image-button"
-            aria-label="View larger image: Mongolian horseman in traditional dress"
-            onClick={() => openLightbox('/images/guide.jpg', 'Mongolian horseman in traditional dress')}
+            aria-label="View larger image: Suma on horseback in a traditional deel on the Mongolian steppe"
+            onClick={() => openLightbox('/images/suma-horseback-deel.jpg', 'Suma on horseback in a traditional deel on the Mongolian steppe')}
           >
-            <Image src="/images/guide.jpg" alt="Mongolian horseman in traditional dress" fill quality={72} sizes="(max-width: 900px) 100vw, 50vw" />
+            <Image src="/images/suma-horseback-deel.jpg" alt="Suma on horseback in a traditional deel on the Mongolian steppe" fill quality={72} sizes="(max-width: 900px) 100vw, 50vw" />
           </button>
           <span style={{position:'absolute', bottom:'1rem', left:'1rem', fontSize:'0.62rem', letterSpacing:'0.2em', textTransform:'uppercase', color:'rgba(245,240,232,0.75)', background:'rgba(14,12,9,0.55)', padding:'0.35rem 0.7rem', backdropFilter:'blur(4px)', pointerEvents:'none'}}>Suma — Your Guide</span>
         </div>
         <div className="reveal reveal-delay-1">
           <span className="section-eyebrow">What This Is</span>
           <h2 className="section-title">Mongolia<br /><em>Beyond Tourism</em></h2>
-          <p className="section-body">This isn&apos;t a curated tourist experience. You&apos;ll wake up in a ger, ride across open steppe with experienced local horsemen, and camp under skies that have no end. Every meal is shared. Every kilometer is earned.</p>
-          <p className="section-body" style={{marginTop:'1.2rem'}}>8 Lakes Tours is built for people who want to be somewhere real, not just pass through it.</p>
-          <p className="section-body" style={{marginTop:'1.2rem'}}>That means some flexibility is part of the experience. Weather, horses, roads, group rhythm, and traditional host-family food can shape the day. You may be invited to step outside your comfort zone, but you are never forced to do every challenge — saying no, resting, or taking a quieter day around nomadic life is always allowed.</p>
-          <p className="section-body" style={{marginTop:'1.2rem'}}>Remote does not mean abandoned. On the steppe, uncertainty has always been part of life: travellers could lose their way between gers, so stopping at another family&apos;s home for tea, food, shelter, or directions became part of the culture. The same spirit runs through this trip — adapt to the land, accept hospitality, and let the day unfold without needing everything to go exactly to plan.</p>
+          <p className="section-body">This is a chance to step out of everyday life and into the vastness of the steppe. You&apos;ll wake up in a ger, ride open country with local horsemen, and live alongside a family whose way of life has been attuned to this land for generations.</p>
+          <p className="section-body" style={{marginTop:'1.2rem'}}>The steppe moves to her own natural rhythms. Ride, eat, rest, laugh, drink tea, look at the sky, and remember what simplicity feels like. For some people that is the whole point.</p>
+          <p className="section-body" style={{marginTop:'1.2rem'}}>Plans can change, so come open and flexible. You may be invited outside your comfort zone, but nothing is ever forced. You can always say no, rest, or spend the day closer to nomadic life, and there is always a gracious and helpful hand on the steppe.</p>
           <div className="intro-points">
             <div><span className="intro-point-value">Beginner</span><p className="intro-point-label">Riders Welcome</p></div>
-            <div><span className="intro-point-value">Small</span><p className="intro-point-label">Intimate Group</p></div>
-            <div><span className="intro-point-value">Real</span><p className="intro-point-label">Family Partnership</p></div>
+            <div><span className="intro-point-value">Max 8</span><p className="intro-point-label">Guests Per Departure</p></div>
+            <div><span className="intro-point-value">16+</span><p className="intro-point-label">With a Parent or Guardian</p></div>
+            <div><span className="intro-point-value">Direct</span><p className="intro-point-label">Family Partnership</p></div>
           </div>
         </div>
       </section>
@@ -1774,9 +1774,9 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           >
             <Image src="/images/host-family-horses-deels.jpg" alt="Robert with the host family and their horses, all in traditional deels on the Mongolian steppe" fill quality={72} sizes="100vw" />
           </button>
-          <p className="section-body">I met Ganbold while trekking solo through Mongolia. I hadn&apos;t planned to stay — but his family pulled me in with the kind of warmth that&apos;s hard to explain and impossible to forget. We rode together, shared meals, and spent evenings around the fire talking about the land, the horses, and the life they&apos;ve built here across three generations.</p>
-          <p className="section-body" style={{marginTop:'1.2rem'}}>Ganbold&apos;s son Suma grew up in this valley and has been guiding riders through it for years — he knows every trail, every animal, every shift in the weather. When I floated the idea of bringing small groups out here, both of them lit up. This trip exists because they wanted it to.</p>
-          <p className="section-body" style={{marginTop:'1.2rem'}}>You won&apos;t be staying near the family — you&apos;ll be living with them. Same meals, same gers, same daily rhythm. Every booking supports the local hosts directly. That part matters to me.</p>
+          <p className="section-body">I met Ganbold while travelling through Mongolia on horseback. I meant to pass through, but his family opened their ger to me, as nomadic families have done for travellers for generations. We didn&apos;t speak the same language, but we shared an appreciation for the steppe and the way of life out there, and it didn&apos;t take long to feel like family. We rode together, cooked, drank tea and laughed a lot.</p>
+          <p className="section-body" style={{marginTop:'1.2rem'}}>His son Suma grew up in this valley and has guided riders through it for years. He moves through the land with the ease that comes from a lifetime of paying attention to it. When the idea of sharing this with small groups came up, it felt right to all of us.</p>
+          <p className="section-body" style={{marginTop:'1.2rem'}}>Coming here means living with the family: sharing their gers, their meals and the pace of their days. The local portion of every booking goes directly to them. I want this to be good for the people who make it possible.</p>
           <p style={{marginTop:'1.4rem', fontSize:'0.75rem', letterSpacing:'0.15em', textTransform:'uppercase', color:'var(--gold)', opacity:0.7}}>— Robert, Founder</p>
         </div>
         <div className="partnership-img reveal">
@@ -1794,9 +1794,9 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
       {/* TRUST */}
       <section className="trust" id="trust">
         <div className="trust-header reveal">
-          <span className="section-eyebrow">Proof Before Promises</span>
+          <span className="section-eyebrow">From Past Guests</span>
           <h2 className="section-title">Built on<br /><em>Real Relationships</em></h2>
-          <p className="section-body" style={{margin:'0 auto'}}>Real people have already made the journey into this valley. These are early guest impressions from the same world you&apos;ll be stepping into: horses, host families, big weather, and a place that feels very far from ordinary life.</p>
+          <p className="section-body" style={{margin:'0 auto'}}>Real people have already made the journey into this valley. These are early guest impressions from the same world you&apos;ll be stepping into: the vastness and freedom of the steppe, and a nomadic way of life still attuned to it.</p>
         </div>
         <div className="testimonial-grid">
           {[
@@ -1838,13 +1838,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             </article>
           ))}
         </div>
-        <div className="proof-strip reveal">
-          <div className="proof-item"><span className="proof-value">8</span><span className="proof-label">Max guests</span></div>
-          <div className="proof-item"><span className="proof-value">16+</span><span className="proof-label">With parents</span></div>
-          <div className="proof-item"><span className="proof-value">Insurance</span><span className="proof-label">Required</span></div>
-          <div className="proof-item"><span className="proof-value">Direct</span><span className="proof-label">Family partnership</span></div>
-        </div>
-        <p className="section-body reveal" style={{textAlign:'center', margin:'2rem auto 0', maxWidth:'720px'}}>Follow the route, camp life and behind-the-scenes buildout on <a className="instagram-link" href="https://www.instagram.com/8lakestours" target="_blank" rel="noopener noreferrer"><svg className="instagram-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" /><circle cx="12" cy="12" r="4.2" /><circle cx="17.6" cy="6.4" r="1.15" fill="currentColor" stroke="none" /></svg><span className="instagram-handle">Instagram @8lakestours</span></a>.</p>
       </section>
 
       {/* ITINERARY */}
@@ -1923,45 +1916,8 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
       <section className="gallery-handoff">
         <div className="gallery-handoff-copy">
           <p>Want more photos?</p>
-          <p>The homepage stays focused on the trip decision. The fuller Mongolia photo archive lives in the gallery.</p>
         </div>
         <a href="/gallery" className="btn-ghost">View Full Gallery</a>
-      </section>
-      {/* GETTING THERE */}
-      <section className="riding-stay-section">
-        <div style={{maxWidth:'980px', margin:'0 auto', border:'1px solid rgba(200,169,110,0.24)', borderRadius:'var(--radius-card)', background:'rgba(200,169,110,0.065)', padding:'2rem'}}>
-          <h2 className="section-title">Host-Family Stay<br /><em>&amp; Daily Horse Riding</em></h2>
-          <p className="section-body" style={{maxWidth:'760px'}}>Some guests want the Mongolian horse experience without committing to the full camping trek to Eight Lakes. If you&apos;d rather stay with the host family, be looked after at the ger camp, and focus on daily riding lessons or shorter rides, email Rob and the team. We can discuss a custom hosted riding stay around your dates.</p>
-          <a className="btn-primary" href="mailto:info@8lakestours.com?subject=Custom%20host-family%20riding%20stay" style={{marginTop:'1.4rem'}}>Ask About Riding-Only Stay</a>
-        </div>
-      </section>
-
-      <section className="getting-there-section">
-        <div className="getting-there-panel">
-          <div className="reveal">
-            <span className="section-eyebrow">Getting There</span>
-            <h2 className="section-title">Your Journey<br /><em>Starts in UB</em></h2>
-          </div>
-          <div className="journey-route reveal reveal-delay-1">
-            <div className="journey-lede">
-              <p className="journey-copy">From Ulaanbaatar, take a public bus to <strong style={{color:'var(--cream)'}}>Bat-Ulzii, Uvurkhangai</strong> — about an 8-hour ride through stunning Mongolian countryside. Once you arrive, your host family meets you and brings you to the ger village.</p>
-              <p className="journey-meta">Before arrival, Rob or the tour operator coordinates timing with you and the host-family pickup from Bat-Ulzii once your bus timing is confirmed.</p>
-            </div>
-            <div className="journey-steps" aria-label="Getting to the 8 Lakes Tours host family">
-              {[
-                ['01', 'Fly into UB', 'Arrive at Chinggis Khaan International Airport in Ulaanbaatar.'],
-                ['02', 'Bus to Bat-Ulzii', 'Roughly 8 hours through open countryside.'],
-                ['03', 'Family pickup', 'Hosts meet you and bring you to the ger village.'],
-              ].map(([number, title, copy]) => (
-                <article className="journey-step" key={number}>
-                  <span className="journey-step-number">{number}</span>
-                  <h3 className="journey-step-title">{title}</h3>
-                  <p className="journey-step-copy">{copy}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </div>
       </section>
       {/* INCLUDED */}
       <section className="included">
@@ -1995,6 +1951,15 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                 <li key={item}>{item}</li>
               ))}
             </ul>
+          </details>
+          <details className="packing-details">
+            <summary className="packing-summary">Getting There</summary>
+            <ol className="getting-there-steps">
+              <li><strong>Fly into Ulaanbaatar</strong>Arrive at Chinggis Khaan International Airport.</li>
+              <li><strong>Bus to Bat-Ulzii, Uvurkhangai</strong>About 8 hours on a public bus through open countryside.</li>
+              <li><strong>Family pickup</strong>Your hosts meet you in Bat-Ulzii and bring you to the ger village.</li>
+            </ol>
+            <p className="getting-there-note">Once your bus is booked, our team coordinates the timing and pickup with you.</p>
           </details>
           <div style={{marginTop:'2rem', padding:'1.2rem', background:'rgba(200,169,110,0.06)', borderLeft:'2px solid var(--gold)', borderRadius:'var(--radius-soft)'}}>
             <p style={{fontSize:'0.8rem', color:'var(--mist)', opacity:0.8, lineHeight:1.6}}>All participants must sign a liability waiver, provide proof of travel insurance, bring their own personal medical basics, and arrive mentally prepared for simple conditions, changing plans, physical discomfort, and group life in the wild.</p>
@@ -2091,6 +2056,10 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               <h3>Not sure if this fits?</h3>
               <p>Ask before paying. We&apos;re happy to check riding level, food restrictions, route expectations, dates, or whether this is the right kind of adventure for you.</p>
               <a href="mailto:info@8lakestours.com?subject=Question%20before%20booking%208%20Lakes%20Tours">Ask a question first</a>
+              <div className="ask-card-alt">
+                <p>Prefer to stay with the host family and ride daily, without the full camping trek to Eight Lakes? We can plan a custom riding stay around your dates.</p>
+                <a href="mailto:info@8lakestours.com?subject=Custom%20host-family%20riding%20stay">Ask about a riding-only stay</a>
+              </div>
             </div>
           </div>
           <div className="tour-dates-card" id="tour-dates">
@@ -2160,10 +2129,10 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                 </div>
                 <div className="form-group">
                   <label className="form-label" htmlFor="tour_date">Preferred Tour Date</label>
-                  <select id="tour_date" className="form-select" name="tour_date" required value={selectedTourDate} onChange={e => setSelectedTourDate(e.target.value)}>
-                    <option value="">Select date</option>
-                    {tourDates.map(dateOption => (
-                      <option key={dateOption.date} value={dateOption.date}>{dateOption.date}</option>
+                  <select id="tour_date" className="form-select" name="tour_date" required value={selectedTourDate} onChange={e => { tourDateTouchedRef.current = true; setSelectedTourDate(e.target.value); }}>
+                    {!selectedTourDate && <option value="">Select date</option>}
+                    {tourDateOptions.map(dateOption => (
+                      <option key={dateOption} value={dateOption}>{dateOption}</option>
                     ))}
                   </select>
                 </div>
@@ -2382,25 +2351,69 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         </div>
       </section>
 
+      {/* FAQ */}
+      <section className="faq-section">
+        <div style={{maxWidth:'760px', margin:'0 auto'}}>
+          <div className="reveal" style={{marginBottom:'2.5rem'}}>
+            <span className="section-eyebrow">FAQ</span>
+            <h2 className="section-title">Common<br /><em>Questions</em></h2>
+          </div>
+          {HOME_FAQS.map(({q, a}, i) => {
+            const isOpen = openFaqIndex === i;
+            const panelId = `home-faq-panel-${i}`;
+            return (
+              <div key={i} className={`faq-item reveal${isOpen ? ' is-open' : ''}`}>
+                <button
+                  type="button"
+                  className="faq-question"
+                  aria-expanded={isOpen}
+                  aria-controls={panelId}
+                  onClick={() => setOpenFaqIndex(current => current === i ? null : i)}
+                >
+                  <span>{q}</span>
+                  <span className="faq-toggle" aria-hidden="true" />
+                </button>
+                <div id={panelId} className="faq-panel">
+                  <div className="faq-panel-inner">
+                    <p className="faq-answer">{a}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          <div style={{borderTop:'1px solid rgba(200,169,110,0.15)'}} />
+          <a href="/faq" className="faq-see-all">See all questions →</a>
+          <div className="faq-practical-link reveal">
+            <span>Need the full practical details?</span>
+            <p>Read the preparation guide for packing, weather, food, toilets, insurance, and cancellation terms.</p>
+            <a href="/preparation">Open preparation guide</a>
+          </div>
+        </div>
+      </section>
+
       {/* CONTACT */}
-      <section style={{background:'var(--dark)', padding:'7rem 2rem', textAlign:'center'}}>
-        <div style={{maxWidth:'560px', margin:'0 auto'}}>
-          <div className="reveal">
+      <section className="contact-section">
+        <div className="contact-layout">
+          <div className="contact-intro reveal">
             <span className="section-eyebrow">Get In Touch</span>
             <h2 className="section-title">Have a<br /><em>Question?</em></h2>
-            <p className="section-body" style={{marginTop:'1rem', marginBottom:'3rem'}}>We&apos;re happy to answer anything before you book — whether it&apos;s about the route, the horses, visa requirements, or packing. Reach out and we&apos;ll get back to you promptly.</p>
-          </div>
-          <div className="reveal" style={{display:'flex', flexDirection:'column', gap:'1rem', alignItems:'center'}}>
-            <a
-              href="mailto:info@8lakestours.com"
-              style={{display:'flex', alignItems:'center', gap:'1rem', width:'100%', maxWidth:'380px', padding:'1.2rem 1.8rem', background:'rgba(200,169,110,0.06)', border:'1px solid rgba(200,169,110,0.25)', borderRadius:'var(--radius-soft)', textDecoration:'none', transition:'border-color 0.3s', color:'inherit'}}
-            >
-              <span style={{fontSize:'1.2rem'}}>✉</span>
-              <div style={{textAlign:'left'}}>
-                <p style={{fontSize:'0.6rem', letterSpacing:'0.25em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'0.25rem'}}>Email</p>
-                <p style={{fontSize:'0.9rem', color:'var(--cream)'}}>info@8lakestours.com</p>
-              </div>
-            </a>
+            <p className="section-body">We&apos;re happy to answer anything before you book — whether it&apos;s about the route, the horses, visa requirements, or packing. Reach out and we&apos;ll get back to you promptly.</p>
+            <div className="contact-cards">
+              <a className="contact-card" href="mailto:info@8lakestours.com">
+                <span className="contact-card-icon" aria-hidden="true">✉</span>
+                <span className="contact-card-text">
+                  <span className="contact-card-label">Email</span>
+                  <span className="contact-card-value">info@8lakestours.com</span>
+                </span>
+              </a>
+              <a className="contact-card" href="https://www.instagram.com/8lakestours" target="_blank" rel="noopener noreferrer">
+                <span className="contact-card-icon"><svg className="instagram-glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5" /><circle cx="12" cy="12" r="4.2" /><circle cx="17.6" cy="6.4" r="1.15" fill="currentColor" stroke="none" /></svg></span>
+                <span className="contact-card-text">
+                  <span className="contact-card-label">Instagram</span>
+                  <span className="contact-card-value">@8lakestours</span>
+                </span>
+              </a>
+            </div>
           </div>
           <div className="lead-card-public reveal">
             <h3>Join the newsletter</h3>
@@ -2434,55 +2447,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         </div>
       </section>
 
-      {/* FAQ */}
-      <section className="faq-section">
-        <div style={{maxWidth:'760px', margin:'0 auto'}}>
-          <div className="reveal" style={{marginBottom:'4rem'}}>
-            <span className="section-eyebrow">FAQ</span>
-            <h2 className="section-title">Common<br /><em>Questions</em></h2>
-          </div>
-          {[
-            {q:'Is this trip legit?', a:"Yes. 8 Lakes Tours is organised by Robert Zaher through a direct relationship with Ganbold's family in the Orkhon Valley. Online bookings and preparation are handled by 8 Lakes Tours; the local family portion is paid directly to your hosts in Mongolia."},
-            {q:'Can I speak to someone before booking?', a:"Yes. Email info@8lakestours.com with any questions before paying. You can also check Rob's Instagram at @robzaher108 while we keep tour email communication centralised through the info@ address."},
-            {q:'What happens after I submit the form?', a:'For standard 1–2 guest bookings, you can continue to the online payment and receive confirmation once payment is complete. Scheduled groups of 1–8 pay the exact group online amount in one Stripe checkout. Private, custom, and unconfirmed dates require Rob to confirm availability before payment. Before arrival, Rob or the tour operator coordinates timing with you and the host-family pickup from Bat-Ulzii.'},
-            {q:'Do I need riding experience?', a:'No experience necessary. Beginners are welcome — our local guides will teach you everything you need to know before the trek begins.'},
-            {q:'What departure dates are available?', a:'Remaining 2026 fixed departures stay listed while bookable. 2027 small-group dates are being planned, and private 2027 departures can be requested for June through September. All 2027 options require Rob to confirm the host family, horses, guide and logistics before payment.'},
-            {q:'How does payment work?', a:'All official prices are in USD. The 2026 rate depends on group size: $1,999 per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8. Bookings of 1–2 guests on a fixed date pay the $999 per-guest online booking payment straight after the form. Groups of 1–8 book together and pay the exact group online amount in one secure Stripe checkout. Group discounts are shared evenly between 8 Lakes Tours and the host family, so the online payment runs $899–$999 per guest and the local family cash runs $900–$1,000 per guest. The family portion is paid directly in clean USD cash to the nomadic host families in Mongolia.'},
-            {q:'What airport do I fly into?', a:"Fly into Chinggis Khaan International Airport in Ulaanbaatar (UB). From there you'll take a public bus to Bat-Ulzii — about an 8-hour ride through stunning countryside."},
-            {q:'Do I need a visa?', a:'Many travellers can enter Mongolia visa-free for tourism, but the allowance depends on your passport. US and South Korean passport holders commonly receive up to 90 days; UK/EU, Australian, Canadian, Japanese, New Zealand, and many other passport holders commonly receive up to 30 days. Rules and temporary exemptions can change, so check the current Mongolian consular or e-visa guidance for your nationality before booking flights.'},
-            {q:'Is there WiFi or cell service?', a:'Remote trek days are mostly offline, with little to no cell service. The host family camp has Starlink and solar-powered charging for phones, cameras, and essentials, so you can reconnect between riding days. For simple Mongolian communication, Grok has worked best for us so far; ChatGPT also works well for translation when you have signal.'},
-            {q:'Is this trip safe?', a:'Yes. Basic first aid is available on site and experienced local guides — including Suma, who has led numerous tourist groups through this terrain — are with you throughout the journey. Ground transportation is on call for emergencies and can reach the ger village within a few hours. All participants are required to carry travel insurance with emergency evacuation coverage before departure.'},
-          ].map(({q, a}, i) => {
-            const isOpen = openFaqIndex === i;
-            const panelId = `home-faq-panel-${i}`;
-            return (
-              <div key={i} className={`faq-item reveal${isOpen ? ' is-open' : ''}`}>
-                <button
-                  type="button"
-                  className="faq-question"
-                  aria-expanded={isOpen}
-                  aria-controls={panelId}
-                  onClick={() => setOpenFaqIndex(current => current === i ? null : i)}
-                >
-                  <span>{q}</span>
-                  <span className="faq-toggle" aria-hidden="true" />
-                </button>
-                <div id={panelId} className="faq-panel">
-                  <div className="faq-panel-inner">
-                    <p className="faq-answer">{a}</p>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-          <div className="faq-practical-link reveal">
-            <span>Need the full practical details?</span>
-            <p>Read the preparation guide for packing, weather, food, toilets, insurance, and cancellation terms.</p>
-            <a href="/preparation">Open preparation guide</a>
-          </div>
-          <div style={{borderTop:'1px solid rgba(200,169,110,0.15)'}} />
-        </div>
-      </section>
+
 
       <footer>
         <div className="footer-inner">

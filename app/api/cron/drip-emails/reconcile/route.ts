@@ -57,7 +57,12 @@ export async function GET(request: Request) {
       scanIncompleteReason: provider.scanIncompleteReason,
       scanIncompleteCollection: provider.scanIncompleteCollection,
     });
-    return Response.json({ ok: true, dry_run: true, stripe: 'reachable', checked: candidates.length, scan_complete: provider.scanComplete, ...(provider.scanIncompleteReason ? { scan_incomplete_reason: provider.scanIncompleteReason } : {}), ...(provider.scanIncompleteCollection ? { scan_incomplete_collection: provider.scanIncompleteCollection } : {}), ...(provider.scanIncompleteProviderError ? { scan_incomplete_provider_error: provider.scanIncompleteProviderError } : {}), candidates }, { headers });
+    // Sanitized, authenticated diagnostic: key fields only, no PII, dry-run only.
+    const diagnostic = (provider.evidence || [])
+      .filter(item => item && typeof item.id === 'string' && (item.id.startsWith('in_') || item.id.startsWith('pi_')))
+      .map(item => ({ id: item.id, pi: item.payment_intent_id, st: item.payment_intent_status, amt: item.amount_cents, chg: item.charge_amount_cents, ref: item.charge_amount_refunded_cents, cur: item.currency }))
+      .slice(0, 40);
+    return Response.json({ ok: true, dry_run: true, stripe: 'reachable', checked: candidates.length, scan_complete: provider.scanComplete, ...(provider.scanIncompleteReason ? { scan_incomplete_reason: provider.scanIncompleteReason } : {}), ...(provider.scanIncompleteCollection ? { scan_incomplete_collection: provider.scanIncompleteCollection } : {}), ...(provider.scanIncompleteProviderError ? { scan_incomplete_provider_error: provider.scanIncompleteProviderError } : {}), diagnostic, candidates }, { headers });
   } catch {
     return Response.json({ ok: false, error: 'stripe_reconciliation_unavailable' }, { status: 503, headers });
   }

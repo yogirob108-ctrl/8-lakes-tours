@@ -151,11 +151,11 @@ export default function HorseTrekkingMongoliaPage() {
         <div className={styles.familyCopy}>
           <p className={styles.eyebrow}>Who you travel with</p>
           <h2>Robert, Suma and the<br /><em>nomadic host family.</em></h2>
-          <p>Robert handles online preparation and booking communication. Ganbold’s family hosts the journey, and Suma guides riders through the terrain he grew up in.</p>
+          <p>Robert and our team handle online preparation and booking communication. Ganbold’s family hosts the journey, and Suma guides riders through the terrain he grew up in.</p>
           <p>Every booking includes a local family portion paid directly to your hosts in Mongolia. The split is explicit before you commit.</p>
           <div className={styles.trustLinks}>
             <Link href="/about">Meet the team</Link>
-            <a href="mailto:info@8lakestours.com">Email Robert</a>
+            <a href="mailto:info@8lakestours.com">Email our team</a>
           </div>
         </div>
       </section>
@@ -193,7 +193,7 @@ export default function HorseTrekkingMongoliaPage() {
         <div>
           <p className={styles.eyebrow}>2027 Mongolia</p>
           <h2>Fixed dates are being planned.<br /><em>Private departures are open by request.</em></h2>
-          <p>Tell us your preferred window and group size. Robert will check the host family, horses, guide and route before any payment step.</p>
+          <p>Tell us your preferred window and group size. Our team will check the host family, horses, guide and route before any payment step.</p>
           <LandingCta href="/#application" label="Request 2027 availability" placement="closing" />
         </div>
       </section>

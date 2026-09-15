@@ -52,7 +52,7 @@ const sections = [
     items: [
       'Fly into Chinggis Khaan International Airport in Ulaanbaatar, Mongolia.',
       'Expect onward countryside travel toward Bat-Ulzii, the Orkhon Valley, and the Naiman Nuur / Eight Lakes region.',
-      'Before arrival, Rob or the tour operator coordinates timing with you. Once your bus to Bat-Ulzii is booked by you or your hotel, contact the operator on WhatsApp and the host family pickup is arranged from Bat-Ulzii. There is usually one bus a day, so the handoff is simple once the bus is confirmed.',
+      'Before arrival, our team coordinates timing with you. Once your bus to Bat-Ulzii is booked by you or your hotel, contact the operator on WhatsApp and the host family pickup is arranged from Bat-Ulzii. There is usually one bus a day, so the handoff is simple once the bus is confirmed.',
     ],
   },
   {

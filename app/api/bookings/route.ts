@@ -197,7 +197,7 @@ export async function POST(request: Request) {
   });
   const booking = (Array.isArray(rpcData) ? rpcData[0] : rpcData) as BookingRpcRow | null;
   if (rpcError?.message === 'submission key already belongs to a different booking payload') {
-    return jsonError('This submission was already saved with different details. Your changes have not been saved. Please contact Rob to update the existing booking; do not submit a duplicate booking.', 409);
+    return jsonError('This submission was already saved with different details. Your changes have not been saved. Please contact our team at info@8lakestours.com to update the existing booking; do not submit a duplicate booking.', 409);
   }
   if (rpcError || !booking) return jsonError('Booking could not be saved. Please try again or email info@8lakestours.com.', 500);
   const reference = booking.public_reference;

@@ -63,6 +63,24 @@ test('a paid invoice with no booking reference is verified through the binding',
   assert.equal(result.stripe_reference, 'pi_canonical');
 });
 
+test('a live invoice whose nested payment intent was not expanded by the provider is evaluated through its fully observed PaymentIntent', () => {
+  // Live shape (2026-09): stripe.invoices.list with an outdated expand prefix
+  // returns the invoice's nested payment_intent as an unexpanded id string,
+  // so the invoice observation carries no intent status or charge state. The
+  // same canonical PI is also in the PaymentIntent list with full state. The
+  // binding must resolve the transaction and evaluate the complete
+  // observation — not fail on the incomplete one.
+  const unexpandedInvoice = {
+    ...paidInvoice, payment_intent_id: 'pi_canonical', payment_intent_status: undefined,
+    charge_amount_cents: undefined, charge_amount_refunded_cents: 0,
+  };
+  const result = run([unexpandedInvoice, { ...paidInvoice, source: 'payment_intent', id: 'pi_canonical' }], [binding]);
+  assert.equal(result.status, 'verified_paid');
+  assert.equal(result.stripe_reference, 'pi_canonical');
+  // A genuinely incomplete/canceled canonical transaction still fails closed:
+  assert.equal(run([unexpandedInvoice, { ...paidInvoice, source: 'payment_intent', id: 'pi_canonical', payment_intent_status: 'canceled' }], [binding]).status, 'review_payment_not_complete');
+});
+
 test('bindings for other bookings and legacy calls keep reconciliation unchanged', () => {
   const other = { ...binding, booking_id: 'b2' };
   const conflicted = run([openCheckout, canceledCheckout('cs_x', 'pi_x'), canceledCheckout('cs_y', 'pi_y')], [other]);

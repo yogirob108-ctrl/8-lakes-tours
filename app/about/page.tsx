@@ -39,11 +39,11 @@ const storyCards = [
 const expectationCards = [
   {
     title: 'Real adventure, optional challenge',
-    body: 'The steppe moves to her own natural rhythms. Weather, animals, and distance shape each day, and group dynamics matter out in wild country. Come mentally prepared for simple living, some physical discomfort, and plans that can change. You may be invited outside your comfort zone, but nothing is ever forced. You can always say no, rest, or spend the day closer to nomadic life.',
+    body: 'Out here the weather, the animals and the distance set the pace, and the group matters. Come ready for simple living, some physical discomfort and a plan that bends. You will be invited past your comfort zone at times, but the choice is always yours: ride on, rest, or stay back and share the day with the family at camp.',
   },
   {
     title: 'Far from city life',
-    body: 'Once you leave the city, life gets simple fast. There are no regular showers, toilets are squat outhouses, and phone signal comes and goes. For some people that is the whole point. If being offline and far from comforts would weigh on you, it\'s worth sitting with before you book.',
+    body: 'Life gets simple quickly once you leave Ulaanbaatar. Showers are rare, toilets are squat outhouses, and signal comes and goes. Many guests find that is exactly what they came for. If being offline and without everyday comforts would weigh on you, it is worth thinking about before you book.',
   },
   {
     title: 'Food is part of the culture',

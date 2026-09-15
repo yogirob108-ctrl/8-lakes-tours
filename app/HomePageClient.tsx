@@ -1300,6 +1300,11 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .packing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem 1.2rem; padding: 0 1.2rem 1.2rem; border-top: 1px solid rgba(200,169,110,0.15); }
         .packing-grid li { list-style: none; position: relative; padding-left: 1rem; font-size: 0.82rem; line-height: 1.55; color: rgba(212,207,196,0.82); }
         .packing-grid li::before { content: '•'; position: absolute; left: 0; color: var(--gold); }
+        .getting-there-steps { counter-reset: step; display: grid; gap: 0.8rem; margin: 0; padding: 1rem 1.2rem 0; border-top: 1px solid rgba(200,169,110,0.15); list-style: none; }
+        .getting-there-steps li { counter-increment: step; position: relative; padding-left: 2rem; font-size: 0.82rem; line-height: 1.55; color: rgba(212,207,196,0.82); }
+        .getting-there-steps li::before { content: counter(step, decimal-leading-zero); position: absolute; left: 0; top: 0.1rem; color: var(--gold); font-size: 0.62rem; letter-spacing: 0.12em; }
+        .getting-there-steps strong { display: block; color: var(--cream); font-weight: 400; }
+        .getting-there-note { margin: 0.9rem 1.2rem 1.2rem; padding-left: 0.8rem; border-left: 2px solid var(--gold); font-size: 0.78rem; line-height: 1.55; color: rgba(212,207,196,0.7); }
 
         .booking { background: var(--dark); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6rem; align-items: start; overflow-x: clip; }
         .scarcity-pill { display:inline-flex; max-width:100%; box-sizing:border-box; align-items:center; gap:0.6rem; margin-top:1.2rem; padding:0.6rem 1.1rem; background:rgba(185,74,48,0.12); border:1px solid rgba(185,74,48,0.35); border-radius: var(--radius-soft); overflow:hidden; }
@@ -1449,25 +1454,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .gallery-handoff { background:#0f0f0d; border-top:1px solid rgba(200,169,110,0.14); border-bottom:1px solid rgba(200,169,110,0.14); padding: 1.6rem 6rem; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2rem; align-items:center; }
         .gallery-handoff-copy p:first-child { font-size:0.62rem; letter-spacing:0.26em; text-transform:uppercase; color:var(--gold); margin-bottom:0.35rem; }
         .gallery-handoff-copy p:last-child { font-size:0.88rem; color:rgba(212,207,196,0.72); line-height:1.55; max-width:640px; }
-        .getting-there-section { background: var(--ink); padding: 5.2rem 6rem 3.4rem; }
-        .getting-there-panel { border-top: 1px solid rgba(200,169,110,0.18); border-bottom: 1px solid rgba(200,169,110,0.18); padding: 3.2rem 0 2.7rem; display: grid; grid-template-columns: minmax(280px, 0.62fr) minmax(0, 1fr); gap: 5rem; align-items: start; }
-        .getting-there-section .section-title { margin-bottom: 0; }
-        .journey-route { display: grid; gap: 1.45rem; }
-        .journey-lede { display: grid; grid-template-columns: minmax(0, 1fr) minmax(220px, 0.72fr); gap: 2rem; align-items: start; padding-bottom: 1.6rem; border-bottom: 1px solid rgba(245,240,232,0.08); }
-        .journey-copy { font-size: 1rem; line-height: 1.85; color: rgba(245,240,232,0.78); max-width: 720px; }
-        .journey-meta { position: relative; border-left: 2px solid var(--gold); padding-left: 1rem; color: rgba(212,207,196,0.72); font-size: 0.82rem; line-height: 1.65; transition: color 0.25s ease, border-color 0.25s ease, transform 0.25s ease; }
-        .journey-meta:hover { color: rgba(245,240,232,0.86); border-color: var(--cream); transform: translateX(4px); }
-        .journey-steps { position: relative; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: rgba(200,169,110,0.18); border: 1px solid rgba(200,169,110,0.18); border-radius: var(--radius-card); overflow: hidden; }
-        .journey-steps::before { content: ''; position: absolute; left: 7%; right: 7%; top: 1.9rem; height: 1px; background: linear-gradient(90deg, transparent, rgba(200,169,110,0.55), transparent); opacity: 0.55; pointer-events: none; z-index: 1; }
-        .journey-step { position: relative; z-index: 2; background: linear-gradient(180deg, rgba(245,240,232,0.018), rgba(14,12,9,0.08)), var(--ink); padding: 1.35rem 1rem 1.15rem; min-width: 0; transition: background 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease; }
-        .journey-step::before { content: ''; display: block; width: 0.58rem; height: 0.58rem; border: 1px solid rgba(200,169,110,0.78); border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 4px rgba(200,169,110,0.08); margin-bottom: 0.72rem; transition: background 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease; }
-        .journey-step:hover { background: linear-gradient(180deg, rgba(200,169,110,0.105), rgba(200,169,110,0.035)), var(--ink); transform: translateY(-4px); box-shadow: 0 18px 36px rgba(0,0,0,0.22); }
-        .journey-step:hover::before { background: var(--gold); transform: scale(1.12); box-shadow: 0 0 0 7px rgba(200,169,110,0.13); }
-        .journey-step-number { display: block; color: var(--gold); font-size: 0.58rem; letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 0.65rem; }
-        .journey-step-title { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; color: var(--cream); font-size: 1.25rem; line-height: 1.15; font-weight: 300; margin-bottom: 0.35rem; transition: color 0.25s ease; }
-        .journey-step:hover .journey-step-title { color: var(--gold); }
-        .journey-step-copy { color: rgba(212,207,196,0.66); font-size: 0.78rem; line-height: 1.5; transition: color 0.25s ease; }
-        .journey-step:hover .journey-step-copy { color: rgba(245,240,232,0.82); }
         .divider { display: flex; align-items: center; gap: 1.5rem; padding: 0 6rem; }
         .divider-line { flex: 1; height: 1px; background: rgba(200,169,110,0.15); }
         .divider-ornament { color: var(--gold); font-size: 0.8rem; }
@@ -1624,13 +1610,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           .footer-note { margin-top: 2.5rem; padding-top: 1.2rem; flex-direction: column; font-size: 0.72rem; line-height: 1.6; }
           .gallery-handoff { padding: 1.6rem 1.5rem; grid-template-columns: 1fr; gap: 1rem; text-align: left; }
           .gallery-handoff .btn-ghost { width: 100%; justify-content: center; text-align: center; }
-          .getting-there-section { padding: 3.5rem 1.5rem 4rem; }
-          .getting-there-panel { grid-template-columns: 1fr; gap: 2.2rem; padding: 2.3rem 0; }
-          .journey-lede { grid-template-columns: 1fr; gap: 1.2rem; }
-          .journey-steps { grid-template-columns: 1fr; }
-          .journey-steps::before { left: 1.28rem; right: auto; top: 1.2rem; bottom: 1.2rem; width: 1px; height: auto; background: linear-gradient(180deg, transparent, rgba(200,169,110,0.5), transparent); }
-          .journey-step { padding: 1rem 1rem 1rem 2.05rem; }
-          .journey-step::before { position: absolute; left: 0.98rem; top: 1.25rem; margin: 0; }
           .divider { padding: 0 2rem; }
           .partnership-text { padding: 4rem 2rem; }
           .partnership-inline-photo { display: block !important; margin: 2.4rem 0 2.8rem; }
@@ -1928,34 +1907,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         </div>
         <a href="/gallery" className="btn-ghost">View Full Gallery</a>
       </section>
-      {/* GETTING THERE */}
-      <section className="getting-there-section">
-        <div className="getting-there-panel">
-          <div className="reveal">
-            <span className="section-eyebrow">Getting There</span>
-            <h2 className="section-title">Your Journey<br /><em>Starts in UB</em></h2>
-          </div>
-          <div className="journey-route reveal reveal-delay-1">
-            <div className="journey-lede">
-              <p className="journey-copy">From Ulaanbaatar, take a public bus to <strong style={{color:'var(--cream)'}}>Bat-Ulzii, Uvurkhangai</strong> — about an 8-hour ride through stunning Mongolian countryside. Once you arrive, your host family meets you and brings you to the ger village.</p>
-              <p className="journey-meta">Before arrival, Rob or the tour operator coordinates timing with you and the host-family pickup from Bat-Ulzii once your bus timing is confirmed.</p>
-            </div>
-            <div className="journey-steps" aria-label="Getting to the 8 Lakes Tours host family">
-              {[
-                ['01', 'Fly into UB', 'Arrive at Chinggis Khaan International Airport in Ulaanbaatar.'],
-                ['02', 'Bus to Bat-Ulzii', 'Roughly 8 hours through open countryside.'],
-                ['03', 'Family pickup', 'Hosts meet you and bring you to the ger village.'],
-              ].map(([number, title, copy]) => (
-                <article className="journey-step" key={number}>
-                  <span className="journey-step-number">{number}</span>
-                  <h3 className="journey-step-title">{title}</h3>
-                  <p className="journey-step-copy">{copy}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
       {/* INCLUDED */}
       <section className="included">
         <div className="reveal">
@@ -1988,6 +1939,15 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                 <li key={item}>{item}</li>
               ))}
             </ul>
+          </details>
+          <details className="packing-details">
+            <summary className="packing-summary">Getting There</summary>
+            <ol className="getting-there-steps">
+              <li><strong>Fly into Ulaanbaatar</strong>Arrive at Chinggis Khaan International Airport.</li>
+              <li><strong>Bus to Bat-Ulzii, Uvurkhangai</strong>About 8 hours on a public bus through open countryside.</li>
+              <li><strong>Family pickup</strong>Your hosts meet you in Bat-Ulzii and bring you to the ger village.</li>
+            </ol>
+            <p className="getting-there-note">Once your bus is booked, our team coordinates the timing and pickup with you.</p>
           </details>
           <div style={{marginTop:'2rem', padding:'1.2rem', background:'rgba(200,169,110,0.06)', borderLeft:'2px solid var(--gold)', borderRadius:'var(--radius-soft)'}}>
             <p style={{fontSize:'0.8rem', color:'var(--mist)', opacity:0.8, lineHeight:1.6}}>All participants must sign a liability waiver, provide proof of travel insurance, bring their own personal medical basics, and arrive mentally prepared for simple conditions, changing plans, physical discomfort, and group life in the wild.</p>

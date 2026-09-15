@@ -24,6 +24,14 @@ test('collector never mistakes an unexpanded Checkout Session id for its Payment
   assert.notEqual(result.evidence[0].payment_intent_id, 'cs_live_session');
 });
 
+test('collector reads the payment intent nested under a modern paid Invoice payment', async () => {
+  const empty = async () => ({ data:[], has_more:false });
+  const invoices = async () => ({ data:[{ id:'in_live_invoice', metadata:{booking_reference:'8L-ABC123'}, amount_paid:99900, currency:'usd', status:'paid', payments:{data:[{payment:{type:'payment_intent',payment_intent:'pi_live_invoice_intent'}}]} }], has_more:false });
+  const result = await collectStripeLifecycleEvidence({ stripe:{ checkout:{sessions:{list:empty}}, paymentIntents:{list:empty}, invoices:{list:invoices} } });
+  assert.equal(result.evidence[0].payment_intent_id, 'pi_live_invoice_intent');
+  assert.notEqual(result.evidence[0].payment_intent_id, 'in_live_invoice');
+});
+
 test('collector reports scan incomplete rather than silently returning no payment when its explicit page budget is exhausted', async () => {
   const endless = async () => ({ data: [{ id: 'next', amount: 99900, amount_received: 99900, currency: 'usd', status: 'succeeded', latest_charge: { amount: 99900, amount_refunded: 0 } }], has_more: true });
   const result = await collectStripeLifecycleEvidence({ stripe: { checkout: { sessions: { list: endless } }, paymentIntents: { list: endless }, invoices: { list: endless } }, pageBudget: 1 });

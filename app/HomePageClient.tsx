@@ -271,6 +271,15 @@ const MAIN_ALBUM_IMAGES = [
   { src: '/images/expedition-originals/rider-storm-valley-panorama-portrait.jpg', alt: 'Horseback point of view crossing a grassy Mongolian valley under storm clouds', orientation: 'portrait', mobileFullWidth: true, collage: 'bottom-right' },
 ];
 
+const HOME_FAQS = [
+  { q: 'What happens after I submit the form?', a: 'For standard 1–2 guest bookings, you can continue to the online payment and receive confirmation once payment is complete. Scheduled groups of 1–8 pay the exact group online amount in one Stripe checkout. Private, custom, and unconfirmed dates require our team to confirm availability before payment. Before arrival, our team coordinates timing with you and the host-family pickup from Bat-Ulzii.' },
+  { q: 'Do I need riding experience?', a: 'No experience necessary. Beginners are welcome — our local guides will teach you everything you need to know before the trek begins.' },
+  { q: 'What departure dates are available?', a: 'Remaining 2026 fixed departures stay listed while bookable. 2027 small-group dates are being planned, and private 2027 departures can be requested for June through September. All 2027 options require our team to confirm the host family, horses, guide and logistics before payment.' },
+  { q: 'How does payment work?', a: 'All official prices are in USD. The 2026 rate depends on group size: $1,999 per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8. Bookings of 1–2 guests on a fixed date pay the $999 per-guest online booking payment straight after the form. Groups of 1–8 book together and pay the exact group online amount in one secure Stripe checkout. Group discounts are shared evenly between 8 Lakes Tours and the host family, so the online payment runs $899–$999 per guest and the local family cash runs $900–$1,000 per guest. The family portion is paid directly in clean USD cash to the nomadic host families in Mongolia.' },
+  { q: 'Do I need a visa?', a: 'Many travellers can enter Mongolia visa-free for tourism, but the allowance depends on your passport. US and South Korean passport holders commonly receive up to 90 days; UK/EU, Australian, Canadian, Japanese, New Zealand, and many other passport holders commonly receive up to 30 days. Rules and temporary exemptions can change, so check the current Mongolian consular or e-visa guidance for your nationality before booking flights.' },
+  { q: 'Is there WiFi or cell service?', a: 'Remote trek days are mostly offline, with little to no cell service. The host family camp has Starlink and solar-powered charging for phones, cameras, and essentials, so you can reconnect between riding days. For simple Mongolian communication, Grok has worked best for us so far; ChatGPT also works well for translation when you have signal.' },
+];
+
 const GALLERY_IMAGES = [
   { src: '/images/guide.jpg', alt: 'Mongolian horseman in traditional dress' },
   { src: '/images/rob-family.jpg', alt: 'Robert with the host family outside a traditional ger in Mongolia' },
@@ -979,18 +988,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
       },
       {
         '@type': 'FAQPage',
-        mainEntity: [
-          { '@type': 'Question', name: 'Is this trip legit?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. 8 Lakes Tours is organised by Robert Zaher through a direct relationship with Ganbold’s family in the Orkhon Valley. Online bookings and preparation are handled by 8 Lakes Tours; the local family portion is paid directly to your hosts in Mongolia.' } },
-          { '@type': 'Question', name: 'Can I speak to someone before booking?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Email info@8lakestours.com with any questions before paying. You can also check Rob’s Instagram at @robzaher108 while tour email communication stays centralised through the info@ address.' } },
-          { '@type': 'Question', name: 'What happens after I submit the form?', acceptedAnswer: { '@type': 'Answer', text: 'For standard 1–2 guest bookings, guests can continue to online payment and receive confirmation once payment is complete. Scheduled groups of 1–8 pay the exact group online amount in one Stripe checkout. Private, custom, and unconfirmed dates require our team to confirm availability before payment. Before arrival, our team coordinates timing and host-family pickup from Bat-Ulzii.' } },
-          { '@type': 'Question', name: 'Do I need riding experience?', acceptedAnswer: { '@type': 'Answer', text: 'No experience necessary. Beginners are welcome — our local guides will teach you everything you need to know before the trek begins.' } },
-          { '@type': 'Question', name: 'What departure dates are available?', acceptedAnswer: { '@type': 'Answer', text: 'Remaining 2026 fixed departures are listed while they are still bookable. 2027 small-group dates are being planned, and private 2027 departures can be requested for June through September. All 2027 requests require personal confirmation of the host family, horses, guide and logistics before payment.' } },
-          { '@type': 'Question', name: 'How does payment work?', acceptedAnswer: { '@type': 'Answer', text: 'All official prices are in USD. The 2026 rate depends on group size: $1,999 per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8. Bookings of 1–2 guests on a fixed date pay the $999 per-guest online booking payment straight after the form. Groups of 1–8 book together and pay the exact group online amount in one secure Stripe checkout. Group discounts are shared evenly between 8 Lakes Tours and the host family, so the online payment runs $899–$999 per guest and the local family cash runs $900–$1,000 per guest. The family portion is paid directly to the nomadic host families in Mongolia.' } },
-          { '@type': 'Question', name: 'What airport do I fly into?', acceptedAnswer: { '@type': 'Answer', text: "Fly into Chinggis Khaan International Airport in Ulaanbaatar (UB). From there you'll take a public bus to Bat-Ulzii — about an 8-hour ride through stunning countryside." } },
-          { '@type': 'Question', name: 'Do I need a visa?', acceptedAnswer: { '@type': 'Answer', text: 'Many travellers can enter Mongolia visa-free for tourism, but the allowance depends on your passport. US and South Korean passport holders commonly receive up to 90 days; UK/EU, Australian, Canadian, Japanese, New Zealand, and many other passport holders commonly receive up to 30 days. Rules and temporary exemptions can change, so check the current Mongolian consular or e-visa guidance for your nationality before booking flights.' } },
-          { '@type': 'Question', name: 'Is there WiFi or cell service?', acceptedAnswer: { '@type': 'Answer', text: 'Remote trek days are mostly offline, with little to no cell service. The host family camp has Starlink and solar-powered charging for phones, cameras, and essentials, so you can reconnect between riding days. For simple Mongolian communication, Grok has worked best for us so far; ChatGPT also works well for translation when you have signal.' } },
-          { '@type': 'Question', name: 'Is this trip safe?', acceptedAnswer: { '@type': 'Answer', text: 'Yes. Basic first aid is available on site and experienced local guides are with you throughout the journey. Ground transportation is on call for emergencies. All participants are required to carry travel insurance with emergency evacuation coverage before departure.' } },
-        ],
+        mainEntity: HOME_FAQS.map(({ q, a }) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a } })),
       },
     ],
   };
@@ -1150,6 +1148,8 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .section-title em { font-style: italic; color: var(--gold); }
         .section-body { font-size: 1rem; line-height: 1.8; color: var(--mist); max-width: 560px; }
         .faq-item { border-top: 1px solid rgba(200,169,110,0.15); }
+        .faq-see-all { display: inline-block; margin-top: 1.6rem; color: var(--gold); font-size: 0.7rem; letter-spacing: 0.18em; text-transform: uppercase; text-decoration: none; border-bottom: 1px solid rgba(200,169,110,0.45); padding-bottom: 0.2rem; }
+        .faq-see-all:hover { color: var(--cream); border-color: var(--cream); }
         .faq-question { width: 100%; cursor: pointer; appearance: none; border: 0; background: transparent; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.3rem 0; text-align: left; font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 1.15rem; font-weight: 400; color: var(--cream); }
         .faq-question:focus-visible { outline: 1px solid rgba(200,169,110,0.75); outline-offset: 4px; }
         .faq-toggle { position: relative; width: 1rem; height: 1rem; flex: 0 0 auto; color: var(--gold); }
@@ -1161,7 +1161,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .faq-item.is-open .faq-panel { grid-template-rows: 1fr; }
         .faq-panel-inner { overflow: hidden; }
         .faq-answer { padding: 0 0 1.35rem; font-size: 0.875rem; color: var(--mist); line-height: 1.75; opacity: 0.8; }
-        .faq-practical-link { margin: 2rem 0 2.4rem; padding: 1.15rem; border: 1px solid rgba(200,169,110,0.2); border-radius: var(--radius-card); background: rgba(245,240,232,0.04); }
+        .faq-practical-link { margin: 1.8rem 0 0; padding: 1.15rem; border: 1px solid rgba(200,169,110,0.2); border-radius: var(--radius-card); background: rgba(245,240,232,0.04); }
         .faq-practical-link span { display: block; color: var(--cream); font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 1.15rem; margin-bottom: 0.35rem; }
         .faq-practical-link p { color: var(--mist); font-size: 0.875rem; line-height: 1.65; opacity: 0.82; margin-bottom: 0.9rem; }
         .faq-practical-link a { color: var(--gold); text-transform: uppercase; letter-spacing: 0.14em; font-size: 0.68rem; font-weight: 800; text-decoration: none; }
@@ -2352,6 +2352,46 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         </div>
       </section>
 
+      {/* FAQ */}
+      <section className="faq-section">
+        <div style={{maxWidth:'760px', margin:'0 auto'}}>
+          <div className="reveal" style={{marginBottom:'2.5rem'}}>
+            <span className="section-eyebrow">FAQ</span>
+            <h2 className="section-title">Common<br /><em>Questions</em></h2>
+          </div>
+          {HOME_FAQS.map(({q, a}, i) => {
+            const isOpen = openFaqIndex === i;
+            const panelId = `home-faq-panel-${i}`;
+            return (
+              <div key={i} className={`faq-item reveal${isOpen ? ' is-open' : ''}`}>
+                <button
+                  type="button"
+                  className="faq-question"
+                  aria-expanded={isOpen}
+                  aria-controls={panelId}
+                  onClick={() => setOpenFaqIndex(current => current === i ? null : i)}
+                >
+                  <span>{q}</span>
+                  <span className="faq-toggle" aria-hidden="true" />
+                </button>
+                <div id={panelId} className="faq-panel">
+                  <div className="faq-panel-inner">
+                    <p className="faq-answer">{a}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+          <div style={{borderTop:'1px solid rgba(200,169,110,0.15)'}} />
+          <a href="/faq" className="faq-see-all">See all questions →</a>
+          <div className="faq-practical-link reveal">
+            <span>Need the full practical details?</span>
+            <p>Read the preparation guide for packing, weather, food, toilets, insurance, and cancellation terms.</p>
+            <a href="/preparation">Open preparation guide</a>
+          </div>
+        </div>
+      </section>
+
       {/* CONTACT */}
       <section className="contact-section">
         <div className="contact-layout">
@@ -2408,55 +2448,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         </div>
       </section>
 
-      {/* FAQ */}
-      <section className="faq-section">
-        <div style={{maxWidth:'760px', margin:'0 auto'}}>
-          <div className="reveal" style={{marginBottom:'4rem'}}>
-            <span className="section-eyebrow">FAQ</span>
-            <h2 className="section-title">Common<br /><em>Questions</em></h2>
-          </div>
-          {[
-            {q:'Is this trip legit?', a:"Yes. 8 Lakes Tours is organised by Robert Zaher through a direct relationship with Ganbold's family in the Orkhon Valley. Online bookings and preparation are handled by 8 Lakes Tours; the local family portion is paid directly to your hosts in Mongolia."},
-            {q:'Can I speak to someone before booking?', a:"Yes. Email info@8lakestours.com with any questions before paying. You can also check Rob's Instagram at @robzaher108 while we keep tour email communication centralised through the info@ address."},
-            {q:'What happens after I submit the form?', a:'For standard 1–2 guest bookings, you can continue to the online payment and receive confirmation once payment is complete. Scheduled groups of 1–8 pay the exact group online amount in one Stripe checkout. Private, custom, and unconfirmed dates require our team to confirm availability before payment. Before arrival, our team coordinates timing with you and the host-family pickup from Bat-Ulzii.'},
-            {q:'Do I need riding experience?', a:'No experience necessary. Beginners are welcome — our local guides will teach you everything you need to know before the trek begins.'},
-            {q:'What departure dates are available?', a:'Remaining 2026 fixed departures stay listed while bookable. 2027 small-group dates are being planned, and private 2027 departures can be requested for June through September. All 2027 options require our team to confirm the host family, horses, guide and logistics before payment.'},
-            {q:'How does payment work?', a:'All official prices are in USD. The 2026 rate depends on group size: $1,999 per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8. Bookings of 1–2 guests on a fixed date pay the $999 per-guest online booking payment straight after the form. Groups of 1–8 book together and pay the exact group online amount in one secure Stripe checkout. Group discounts are shared evenly between 8 Lakes Tours and the host family, so the online payment runs $899–$999 per guest and the local family cash runs $900–$1,000 per guest. The family portion is paid directly in clean USD cash to the nomadic host families in Mongolia.'},
-            {q:'What airport do I fly into?', a:"Fly into Chinggis Khaan International Airport in Ulaanbaatar (UB). From there you'll take a public bus to Bat-Ulzii — about an 8-hour ride through stunning countryside."},
-            {q:'Do I need a visa?', a:'Many travellers can enter Mongolia visa-free for tourism, but the allowance depends on your passport. US and South Korean passport holders commonly receive up to 90 days; UK/EU, Australian, Canadian, Japanese, New Zealand, and many other passport holders commonly receive up to 30 days. Rules and temporary exemptions can change, so check the current Mongolian consular or e-visa guidance for your nationality before booking flights.'},
-            {q:'Is there WiFi or cell service?', a:'Remote trek days are mostly offline, with little to no cell service. The host family camp has Starlink and solar-powered charging for phones, cameras, and essentials, so you can reconnect between riding days. For simple Mongolian communication, Grok has worked best for us so far; ChatGPT also works well for translation when you have signal.'},
-            {q:'Is this trip safe?', a:'Yes. Basic first aid is available on site and experienced local guides — including Suma, who has led numerous tourist groups through this terrain — are with you throughout the journey. Ground transportation is on call for emergencies and can reach the ger village within a few hours. All participants are required to carry travel insurance with emergency evacuation coverage before departure.'},
-          ].map(({q, a}, i) => {
-            const isOpen = openFaqIndex === i;
-            const panelId = `home-faq-panel-${i}`;
-            return (
-              <div key={i} className={`faq-item reveal${isOpen ? ' is-open' : ''}`}>
-                <button
-                  type="button"
-                  className="faq-question"
-                  aria-expanded={isOpen}
-                  aria-controls={panelId}
-                  onClick={() => setOpenFaqIndex(current => current === i ? null : i)}
-                >
-                  <span>{q}</span>
-                  <span className="faq-toggle" aria-hidden="true" />
-                </button>
-                <div id={panelId} className="faq-panel">
-                  <div className="faq-panel-inner">
-                    <p className="faq-answer">{a}</p>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-          <div className="faq-practical-link reveal">
-            <span>Need the full practical details?</span>
-            <p>Read the preparation guide for packing, weather, food, toilets, insurance, and cancellation terms.</p>
-            <a href="/preparation">Open preparation guide</a>
-          </div>
-          <div style={{borderTop:'1px solid rgba(200,169,110,0.15)'}} />
-        </div>
-      </section>
+
 
       <footer>
         <div className="footer-inner">

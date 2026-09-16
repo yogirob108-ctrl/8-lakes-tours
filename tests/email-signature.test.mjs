@@ -4,12 +4,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 import { recoveryEmail } from '../lib/abandoned-checkout.mjs';
 import { draftRecoveryEmail } from '../lib/pre-submit-draft-recovery.mjs';
 
 const nodeRequire = createRequire(import.meta.url);
-const REPO = '/Users/kokos/Projects/8-lakes-public-lifecycle';
+const REPO = fileURLToPath(new URL('..', import.meta.url)).replace(/\/$/, '');
 const SIGNATURE_HTML = 'www.8lakestours.com<br>info@8lakestours.com';
 const SIGNATURE_TEXT = 'www.8lakestours.com\ninfo@8lakestours.com';
 const RULE_HTML = '<div style="border-top:1px dashed #cccccc;margin:0 0 16px"></div>';

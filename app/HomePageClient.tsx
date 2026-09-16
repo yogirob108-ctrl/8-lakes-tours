@@ -1741,8 +1741,8 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             aria-hidden="true"
             onPlaying={event => event.currentTarget.classList.add('is-playing')}
           >
-            <source src="/videos/orkhon-valley-drone-loop-mobile.mp4?v=6" type="video/mp4" media="(max-width: 900px)" />
-            <source src="/videos/orkhon-valley-drone-loop.mp4?v=6" type="video/mp4" />
+            <source src="/videos/orkhon-valley-drone-loop-mobile.mp4?v=7" type="video/mp4" media="(max-width: 900px)" />
+            <source src="/videos/orkhon-valley-drone-loop.mp4?v=7" type="video/mp4" />
           </video>
         </div>
         <div className="hero-overlay"></div>

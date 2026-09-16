@@ -86,7 +86,7 @@ export default function Page() {
 
       <section className="about-hero">
         <div className="about-hero-image" role="img" aria-label="An eagle soaring across the sky">
-          <HeroVideo className="about-hero-video" desktopSrc="/videos/eagle-soaring-loop.mp4?v=3" mobileSrc="/videos/eagle-soaring-loop-mobile.mp4?v=2" />
+          <HeroVideo className="about-hero-video" desktopSrc="/videos/eagle-soaring-loop.mp4?v=4" mobileSrc="/videos/eagle-soaring-loop-mobile.mp4?v=4" />
           <div className="about-hero-overlay" />
         </div>
         <div className="about-hero-copy">
@@ -199,12 +199,12 @@ export default function Page() {
         p { color:rgba(212,207,196,.84); line-height:1.75; }
         a { color:inherit; }
         .about-hero { min-height:92vh; position:relative; display:flex; align-items:flex-end; padding:8rem 6rem 5rem; box-sizing:border-box; }
-        .about-hero-image { position:absolute; inset:0; overflow:hidden; background:#0e0c09 url('/videos/eagle-soaring-poster.jpg?v=3') center / cover no-repeat; }
+        .about-hero-image { position:absolute; inset:0; overflow:hidden; background:#0e0c09 url('/videos/eagle-soaring-poster.jpg?v=4') center / cover no-repeat; }
         .about-hero-video.is-playing { opacity: 1; }
         .about-hero-video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:0; transform:scale(1.06); animation:about-hero-video-in 2.4s ease-out .2s forwards; }
         @keyframes about-hero-video-in { to { opacity:1; transform:scale(1); } }
         .about-hero-overlay { position:absolute; inset:0; background:radial-gradient(ellipse at 50% 40%, rgba(14,12,9,0) 35%, rgba(14,12,9,.55) 100%), linear-gradient(to top, rgba(14,12,9,1) 0%, rgba(14,12,9,.74) 40%, rgba(14,12,9,.2) 78%, rgba(14,12,9,.5) 100%); }
-        @media (max-width: 900px) { .about-hero-image { background-image: url('/videos/eagle-soaring-poster-mobile.jpg?v=2'); } }
+        @media (max-width: 900px) { .about-hero-image { background-image: url('/videos/eagle-soaring-poster-mobile.jpg?v=4'); } }
         @media (prefers-reduced-motion: reduce) { .about-hero-video { display:none; } }
         .about-hero-copy { position:relative; z-index:1; max-width:1040px; }
         .about-hero-copy > p:last-of-type { max-width:680px; font-size:1.08rem; }

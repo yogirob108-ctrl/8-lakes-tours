@@ -113,10 +113,10 @@ export default function PreparationPage() {
       <SiteNav />
       <style>{`
         .page-hero { position: relative; display: flex; align-items: flex-end; justify-content: center; min-height: 58vh; padding: 8rem 2rem 3rem; text-align: center; overflow: hidden; }
-        .page-hero-media { position: absolute; inset: 0; background: #0e0c09 url('/videos/prep-rider-poster.jpg?v=3') center / cover no-repeat; }
+        .page-hero-media { position: absolute; inset: 0; background: #0e0c09 url('/videos/prep-rider-poster.jpg?v=4') center / cover no-repeat; }
         .page-hero-video.is-playing { opacity: 1; }
         .page-hero-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 40%; opacity: 0; transition: opacity 1.6s ease; }
-        @media (max-width: 900px) { .page-hero-media { background-image: url('/videos/prep-rider-poster-mobile.jpg?v=3'); } }
+        @media (max-width: 900px) { .page-hero-media { background-image: url('/videos/prep-rider-poster-mobile.jpg?v=4'); } }
         @media (prefers-reduced-motion: reduce) { .page-hero-video { display: none; } }
         .page-hero-overlay { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 35%, rgba(14,12,9,0) 28%, rgba(14,12,9,0.5) 100%), linear-gradient(to top, rgba(14,12,9,1) 2%, rgba(14,12,9,0.76) 30%, rgba(14,12,9,0.34) 68%, rgba(14,12,9,0.66) 100%); }
         .page-hero-copy { position: relative; z-index: 1; max-width: 820px; }
@@ -127,7 +127,7 @@ export default function PreparationPage() {
       `}</style>
       <header className="page-hero">
         <div className="page-hero-media" role="img" aria-label="Rider on horseback resting a hand on the horse&apos;s head">
-          <HeroVideo className="page-hero-video" desktopSrc="/videos/prep-rider-loop.mp4?v=3" mobileSrc="/videos/prep-rider-loop-mobile.mp4?v=3" />
+          <HeroVideo className="page-hero-video" desktopSrc="/videos/prep-rider-loop.mp4?v=4" mobileSrc="/videos/prep-rider-loop-mobile.mp4?v=4" />
           <div className="page-hero-overlay" />
         </div>
         <div className="page-hero-copy">

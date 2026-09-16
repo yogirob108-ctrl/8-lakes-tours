@@ -55,7 +55,6 @@ export default function GalleryPage() {
           <div className="gallery-hero-overlay" />
         </div>
         <div className="gallery-hero-copy">
-          <p className="eyebrow">Field Notes · Mongolia</p>
           <h1>Photo Gallery</h1>
           <p>
             A deeper look at the world around the expedition: the vastness and rawness of the steppe,

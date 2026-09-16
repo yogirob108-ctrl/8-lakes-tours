@@ -1204,7 +1204,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .partnership-img::before { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(90deg, rgba(18,15,11,0.38), rgba(18,15,11,0.06) 42%, rgba(18,15,11,0.18)), linear-gradient(180deg, rgba(200,169,110,0.10), transparent 38%, rgba(14,12,9,0.30)); mix-blend-mode: multiply; }
         .partnership-img img { width: 100%; height: 100%; object-fit: cover; object-position: 52% center; filter: saturate(0.84) contrast(1.08) brightness(0.88); }
 
-        .trust { background: var(--dark); padding: 7rem 5rem 3.5rem; }
+        .trust { background: var(--dark); padding: 4.5rem 5rem 7rem; }
         .trust-header { max-width: 760px; margin: 0 auto 3rem; text-align: center; }
         .trust-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; max-width: 1120px; margin: 0 auto; }
         .trust-card { border: 1px solid rgba(200,169,110,0.2); border-radius: var(--radius-card); background: rgba(200,169,110,0.045); padding: 1.6rem; min-height: 210px; display: flex; flex-direction: column; justify-content: space-between; }
@@ -1229,7 +1229,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .contact-card-label { font-size: 0.58rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); }
         .contact-card-value { font-size: 0.85rem; color: var(--cream); overflow-wrap: anywhere; }
 
-        .itinerary { background: var(--dark); padding-top: 4.5rem; }
+        .itinerary { background: var(--dark); padding-bottom: 3.5rem; }
         .itinerary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-top: 4rem; }
         .itin-card { background: var(--ink); border-radius: var(--radius-card); padding: 3rem; position: relative; overflow: hidden; transition: background 0.3s ease; }
         .itin-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--gold); transform: scaleX(0); transform-origin: left; transition: transform 0.4s ease; }
@@ -1580,8 +1580,8 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           .form-textarea { min-height: 88px; }
           .form-grid { grid-template-columns: 1fr; gap: 0.75rem; }
           .form-grid.compact-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-          .trust { padding: 4rem 1.5rem 2.5rem; }
-          .itinerary { padding-top: 3rem; }
+          .trust { padding: 3rem 1.5rem 4rem; }
+          .itinerary { padding-bottom: 3rem; }
           .trust-grid { grid-template-columns: 1fr; }
           .testimonial-grid { grid-template-columns: 1fr; }
           .testimonial-photo { height: 280px; }
@@ -1789,6 +1789,53 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         </div>
       </section>
 
+      {/* ITINERARY */}
+      <section className="itinerary">
+        <div className="reveal">
+          <span className="section-eyebrow">The Journey</span>
+          <h2 className="section-title">Nine Days,<br /><em>One Lifetime</em></h2>
+        </div>
+        <div className="itinerary-grid">
+          <div className="itin-card reveal">
+            <span className="itin-days">1–3</span>
+            <span className="itin-tag">Days 1 – 3</span>
+            <h3 className="itin-title">Nomadic Life Immersion</h3>
+            <p className="itin-desc">Travel from the capital into the countryside and be welcomed by your host family. Settle into traditional gers and begin learning daily nomadic life.</p>
+            <ul className="itin-list">
+              <li>Traditional ger accommodation</li>
+              <li>Yak milking & daily routines</li>
+              <li>Horse handling & riding practice</li>
+              <li>Optional daily river ice baths</li>
+              <li>Cultural exchange & shared meals</li>
+              <li style={{opacity:1, color:'var(--gold)'}}>Optional: van day trip to nearby historic sites & waterfalls</li>
+            </ul>
+          </div>
+          <div className="itin-card reveal reveal-delay-1">
+            <span className="itin-days">4–7</span>
+            <span className="itin-tag">Days 4 – 7</span>
+            <h3 className="itin-title">Eight Lakes Horse Trek</h3>
+            <p className="itin-desc">Four days on horseback through Mongolia&apos;s stunning Eight Lakes region. Remote camping under open skies, guided by experienced local horsemen.</p>
+            <ul className="itin-list">
+              <li>Daily multi-hour horseback riding</li>
+              <li>Wilderness camping</li>
+              <li>Alpine lakes, rivers & cold-water plunges</li>
+              <li>Far from mass tourism</li>
+            </ul>
+          </div>
+          <div className="itin-card reveal reveal-delay-2">
+            <span className="itin-days">8–9</span>
+            <span className="itin-tag">Days 8 – 9</span>
+            <h3 className="itin-title">Village Return & Farewell</h3>
+            <p className="itin-desc">Return to the village for rest, shared meals, and reflection. Organized transportation back to Bat-Ulzii included.</p>
+            <ul className="itin-list">
+              <li>Final meals with host family</li>
+              <li>Rest & reflection</li>
+              <li>Return transport to Bat-Ulzii</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       {/* TRUST */}
       <section className="trust" id="trust">
         <div className="trust-header reveal">
@@ -1835,53 +1882,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               </div>
             </article>
           ))}
-        </div>
-      </section>
-
-      {/* ITINERARY */}
-      <section className="itinerary">
-        <div className="reveal">
-          <span className="section-eyebrow">The Journey</span>
-          <h2 className="section-title">Nine Days,<br /><em>One Lifetime</em></h2>
-        </div>
-        <div className="itinerary-grid">
-          <div className="itin-card reveal">
-            <span className="itin-days">1–3</span>
-            <span className="itin-tag">Days 1 – 3</span>
-            <h3 className="itin-title">Nomadic Life Immersion</h3>
-            <p className="itin-desc">Travel from the capital into the countryside and be welcomed by your host family. Settle into traditional gers and begin learning daily nomadic life.</p>
-            <ul className="itin-list">
-              <li>Traditional ger accommodation</li>
-              <li>Yak milking & daily routines</li>
-              <li>Horse handling & riding practice</li>
-              <li>Optional daily river ice baths</li>
-              <li>Cultural exchange & shared meals</li>
-              <li style={{opacity:1, color:'var(--gold)'}}>Optional: van day trip to nearby historic sites & waterfalls</li>
-            </ul>
-          </div>
-          <div className="itin-card reveal reveal-delay-1">
-            <span className="itin-days">4–7</span>
-            <span className="itin-tag">Days 4 – 7</span>
-            <h3 className="itin-title">Eight Lakes Horse Trek</h3>
-            <p className="itin-desc">Four days on horseback through Mongolia&apos;s stunning Eight Lakes region. Remote camping under open skies, guided by experienced local horsemen.</p>
-            <ul className="itin-list">
-              <li>Daily multi-hour horseback riding</li>
-              <li>Wilderness camping</li>
-              <li>Alpine lakes, rivers & cold-water plunges</li>
-              <li>Far from mass tourism</li>
-            </ul>
-          </div>
-          <div className="itin-card reveal reveal-delay-2">
-            <span className="itin-days">8–9</span>
-            <span className="itin-tag">Days 8 – 9</span>
-            <h3 className="itin-title">Village Return & Farewell</h3>
-            <p className="itin-desc">Return to the village for rest, shared meals, and reflection. Organized transportation back to Bat-Ulzii included.</p>
-            <ul className="itin-list">
-              <li>Final meals with host family</li>
-              <li>Rest & reflection</li>
-              <li>Return transport to Bat-Ulzii</li>
-            </ul>
-          </div>
         </div>
       </section>
 

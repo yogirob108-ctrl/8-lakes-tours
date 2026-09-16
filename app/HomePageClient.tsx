@@ -896,8 +896,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         price_per_person_usd: groupPricing.perPersonUsd,
         riding_experience: String(formData.get('riding_experience') || 'Not provided'),
         reference: payload.reference,
-        currency: 'USD',
-        value: groupPricing.onlinePaymentUsd,
       });
       setFormSubmitted(true);
       if (payload.paymentUrl) await openSecureCheckout(payload.paymentUrl);

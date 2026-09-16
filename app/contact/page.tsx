@@ -59,10 +59,10 @@ export default function Page() {
       <SiteNav />
       <style>{`
         .page-hero { position: relative; display: flex; align-items: flex-end; justify-content: center; min-height: 54vh; padding: 8rem 2rem 3rem; text-align: center; overflow: hidden; }
-        .page-hero-media { position: absolute; inset: 0; background: #0e0c09 url('/videos/contact-river-hands-poster.jpg?v=5') center 28% / cover no-repeat; }
+        .page-hero-media { position: absolute; inset: 0; background: #0e0c09 url('/videos/contact-gallop-poster.jpg?v=1') center / cover no-repeat; }
         .page-hero-video.is-playing { opacity: 1; }
-        .page-hero-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 28%; opacity: 0; transition: opacity 1.6s ease; }
-        @media (max-width: 900px) { .page-hero-media { background-image: url('/videos/contact-river-hands-poster-mobile.jpg?v=5'); } }
+        .page-hero-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 45%; opacity: 0; transition: opacity 1.6s ease; }
+        @media (max-width: 900px) { .page-hero-media { background-image: url('/videos/contact-gallop-poster-mobile.jpg?v=1'); } }
         @media (prefers-reduced-motion: reduce) { .page-hero-video { display: none; } }
         .page-hero-overlay { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 35%, rgba(14,12,9,0) 28%, rgba(14,12,9,0.52) 100%), linear-gradient(to top, rgba(14,12,9,1) 2%, rgba(14,12,9,0.78) 30%, rgba(14,12,9,0.38) 68%, rgba(14,12,9,0.66) 100%); }
         .page-hero-copy { position: relative; z-index: 1; max-width: 820px; }
@@ -72,8 +72,8 @@ export default function Page() {
         @media (max-width: 900px) { .page-hero { min-height: 46vh; padding: 6rem 1.25rem 2.25rem; } }
       `}</style>
       <header className="page-hero">
-        <div className="page-hero-media" role="img" aria-label="Hands moving through the clear water of a mountain river">
-          <HeroVideo className="page-hero-video" desktopSrc="/videos/contact-river-hands-loop.mp4?v=5" mobileSrc="/videos/contact-river-hands-loop-mobile.mp4?v=5" />
+        <div className="page-hero-media" role="img" aria-label="Guest cantering across the open steppe below the mountains">
+          <HeroVideo className="page-hero-video" desktopSrc="/videos/contact-gallop-loop.mp4?v=1" mobileSrc="/videos/contact-gallop-loop-mobile.mp4?v=1" />
           <div className="page-hero-overlay" />
         </div>
         <div className="page-hero-copy">

@@ -1203,8 +1203,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .partnership-img { position: relative; overflow: hidden; min-height: 600px; border-left: 1px solid rgba(200,169,110,0.18); background: #0f0f0d; }
         .partnership-img::before { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(90deg, rgba(18,15,11,0.38), rgba(18,15,11,0.06) 42%, rgba(18,15,11,0.18)), linear-gradient(180deg, rgba(200,169,110,0.10), transparent 38%, rgba(14,12,9,0.30)); mix-blend-mode: multiply; }
         .partnership-img img { width: 100%; height: 100%; object-fit: cover; object-position: 52% center; filter: saturate(0.84) contrast(1.08) brightness(0.88); }
-        .partnership-img .image-button.partnership-img-accent { position: absolute; left: 1.6rem; bottom: 1.6rem; z-index: 3; width: 30%; max-width: 210px; height: auto; aspect-ratio: 4 / 5; overflow: hidden; border: 4px solid var(--ink); border-radius: var(--radius-photo); box-shadow: 0 18px 40px rgba(0,0,0,0.45); }
-        .partnership-img-accent img { width: 100%; height: 100%; object-fit: cover; object-position: center 52%; filter: none; }
 
         .trust { background: var(--dark); padding: 5rem 5rem 6rem; }
         .trust-header { max-width: 760px; margin: 0 auto 3rem; text-align: center; }
@@ -1787,14 +1785,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             onClick={() => openLightbox('/images/host-family-horses-deels.jpg', 'Robert with the host family and their horses, all in traditional deels on the Mongolian steppe')}
           >
             <Image src="/images/host-family-horses-deels.jpg" alt="Robert with the host family and their horses, all in traditional deels on the Mongolian steppe" fill quality={72} sizes="(max-width: 900px) 100vw, 50vw" />
-          </button>
-          <button
-            type="button"
-            className="image-button partnership-img-accent"
-            aria-label="View larger image: Robert riding a horse across the Mongolian valley"
-            onClick={() => openLightbox('/images/rob-riding-horse.jpg', 'Robert riding a horse across the Mongolian valley')}
-          >
-            <Image src="/images/rob-riding-horse.jpg" alt="Robert riding a horse across the Mongolian valley" fill quality={70} sizes="240px" />
           </button>
         </div>
       </section>

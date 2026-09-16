@@ -293,8 +293,8 @@ test('ga4 payload carries no raw booking reference or provider session id, denie
   assert.ok(!serialized.includes('cs_test'), 'stripe session id must not be sent to GA4');
   assert.ok(!/^stripe_/.test(String(event.params.event_id || '')), 'event id must not embed the provider id');
   assert.match(String(event.params.event_id || ''), /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, 'event id must be a random non-linkable uuid');
-  assert.equal(h.fetchLog[0].body.consent?.ad_user_data, 0, 'ad_user_data must be explicitly denied');
-  assert.equal(h.fetchLog[0].body.consent?.ad_personalization, 0, 'ad_personalization must be explicitly denied');
+  assert.equal(h.fetchLog[0].body.consent?.ad_user_data, 'DENIED', 'MP requires the DENIED string for ad_user_data');
+  assert.equal(h.fetchLog[0].body.consent?.ad_personalization, 'DENIED', 'MP requires the DENIED string for ad_personalization');
   const sentRow = h.rows.booking_events.find(e => e.title === GA4_SENT);
   assert.equal(sentRow?.metadata?.ga4_event_id, event.params.event_id, 'the sent identifier must be persisted on the timeline row');
 });

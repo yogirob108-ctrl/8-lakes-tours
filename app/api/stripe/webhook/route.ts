@@ -80,7 +80,7 @@ async function sendGa4PaymentReceived(input: {
         client_id: input.clientId,
         // This server-side event is measurement-only: deny advertising signals
         // explicitly, consistent with the site's Consent Mode design.
-        consent: { ad_user_data: 0, ad_personalization: 0 },
+        consent: { ad_user_data: 'DENIED', ad_personalization: 'DENIED' },
         events: [
           {
             name: 'payment_received',

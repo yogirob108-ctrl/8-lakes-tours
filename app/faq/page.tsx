@@ -91,7 +91,7 @@ export default function Page() {
       `}</style>
       <header className="page-hero">
         <div className="page-hero-media" role="img" aria-label="Close-up of a Mongolian horse&apos;s mane and eye">
-          <HeroVideo className="page-hero-video" desktopSrc="/videos/faq-horse-mane-loop.mp4?v=4" mobileSrc="/videos/faq-horse-mane-loop-mobile.mp4?v=4" />
+          <HeroVideo className="page-hero-video" desktopSrc="/videos/faq-horse-mane-loop.mp4?v=5" mobileSrc="/videos/faq-horse-mane-loop-mobile.mp4?v=5" />
           <div className="page-hero-overlay" />
         </div>
         <div className="page-hero-copy">

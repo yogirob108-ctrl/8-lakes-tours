@@ -1203,8 +1203,10 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .partnership-img { position: relative; overflow: hidden; min-height: 600px; border-left: 1px solid rgba(200,169,110,0.18); background: #0f0f0d; }
         .partnership-img::before { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(90deg, rgba(18,15,11,0.38), rgba(18,15,11,0.06) 42%, rgba(18,15,11,0.18)), linear-gradient(180deg, rgba(200,169,110,0.10), transparent 38%, rgba(14,12,9,0.30)); mix-blend-mode: multiply; }
         .partnership-img img { width: 100%; height: 100%; object-fit: cover; object-position: 52% center; filter: saturate(0.84) contrast(1.08) brightness(0.88); }
+        .partnership-img .image-button.partnership-img-accent { position: absolute; left: 1.6rem; bottom: 1.6rem; z-index: 3; width: 30%; max-width: 210px; height: auto; aspect-ratio: 4 / 5; overflow: hidden; border: 4px solid var(--ink); border-radius: var(--radius-photo); box-shadow: 0 18px 40px rgba(0,0,0,0.45); }
+        .partnership-img-accent img { width: 100%; height: 100%; object-fit: cover; object-position: center 52%; filter: none; }
 
-        .trust { background: var(--dark); padding: 4.5rem 5rem 7rem; }
+        .trust { background: var(--dark); padding: 5rem 5rem 6rem; }
         .trust-header { max-width: 760px; margin: 0 auto 3rem; text-align: center; }
         .trust-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; max-width: 1120px; margin: 0 auto; }
         .trust-card { border: 1px solid rgba(200,169,110,0.2); border-radius: var(--radius-card); background: rgba(200,169,110,0.045); padding: 1.6rem; min-height: 210px; display: flex; flex-direction: column; justify-content: space-between; }
@@ -1229,7 +1231,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .contact-card-label { font-size: 0.58rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); }
         .contact-card-value { font-size: 0.85rem; color: var(--cream); overflow-wrap: anywhere; }
 
-        .itinerary { background: var(--dark); padding-bottom: 3.5rem; }
+        .itinerary { background: var(--dark); padding-bottom: 4rem; }
         .itinerary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-top: 4rem; }
         .itin-card { background: var(--ink); border-radius: var(--radius-card); padding: 3rem; position: relative; overflow: hidden; transition: background 0.3s ease; }
         .itin-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--gold); transform: scaleX(0); transform-origin: left; transition: transform 0.4s ease; }
@@ -1580,7 +1582,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           .form-textarea { min-height: 88px; }
           .form-grid { grid-template-columns: 1fr; gap: 0.75rem; }
           .form-grid.compact-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-          .trust { padding: 3rem 1.5rem 4rem; }
+          .trust { padding: 3.5rem 1.5rem 4rem; }
           .itinerary { padding-bottom: 3rem; }
           .trust-grid { grid-template-columns: 1fr; }
           .testimonial-grid { grid-template-columns: 1fr; }
@@ -1786,6 +1788,14 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           >
             <Image src="/images/host-family-horses-deels.jpg" alt="Robert with the host family and their horses, all in traditional deels on the Mongolian steppe" fill quality={72} sizes="(max-width: 900px) 100vw, 50vw" />
           </button>
+          <button
+            type="button"
+            className="image-button partnership-img-accent"
+            aria-label="View larger image: Robert riding a horse across the Mongolian valley"
+            onClick={() => openLightbox('/images/rob-riding-horse.jpg', 'Robert riding a horse across the Mongolian valley')}
+          >
+            <Image src="/images/rob-riding-horse.jpg" alt="Robert riding a horse across the Mongolian valley" fill quality={70} sizes="240px" />
+          </button>
         </div>
       </section>
 
@@ -1833,55 +1843,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               <li>Return transport to Bat-Ulzii</li>
             </ul>
           </div>
-        </div>
-      </section>
-
-      {/* TRUST */}
-      <section className="trust" id="trust">
-        <div className="trust-header reveal">
-          <span className="section-eyebrow">From Past Guests</span>
-          <h2 className="section-title">Built on<br /><em>Real Relationships</em></h2>
-          <p className="section-body" style={{margin:'0 auto'}}>Real people have already made the journey into this valley. These are early guest impressions from the same world you&apos;ll be stepping into: the vastness and freedom of the steppe, and a nomadic way of life still attuned to it.</p>
-        </div>
-        <div className="testimonial-grid">
-          {[
-            {
-              name: 'Irik · USA',
-              src: '/images/testimonial-irik-clawson-sunset.jpg',
-              alt: 'Robert Zaher smiling on horseback beside a river valley',
-              quote: 'Endless riding from one plain to the next, across the Steppe, by the lakes…. Magical. What more is there in life?',
-              objectPosition: 'center',
-            },
-            {
-              name: 'Milou · AU',
-              src: '/images/testimonial-milou.jpeg',
-              alt: 'Milou travelling by motorbike through the Mongolian steppe',
-              quote: 'So grateful to be able to stay with the loveliest family in Mongolia, experience life on the steppe and trek with horses through the most beautiful landscapes!',
-              objectPosition: '76% center',
-            },
-            {
-              name: 'Fin · UK',
-              src: '/images/testimonial-fin-bennet-host.jpg',
-              alt: 'Fin Bennet and his Mongolian host wearing traditional deels on the open steppe',
-              quote: 'It couldn’t be further from back home and that makes me so excited.',
-              objectPosition: 'center 42%',
-            },
-          ].map(testimonial => (
-            <article className="testimonial-card reveal" key={testimonial.name}>
-              <button
-                type="button"
-                className="image-button testimonial-photo"
-                aria-label={`View larger image: ${testimonial.alt}`}
-                onClick={() => openLightbox(testimonial.src, testimonial.alt)}
-              >
-                <Image src={testimonial.src} alt={testimonial.alt} fill quality={76} sizes="(max-width: 900px) 100vw, 33vw" style={{ objectPosition: testimonial.objectPosition ?? 'center' }} />
-              </button>
-              <div className="testimonial-body">
-                <p className="testimonial-quote">“{testimonial.quote}”</p>
-                <p className="testimonial-name">{testimonial.name}</p>
-              </div>
-            </article>
-          ))}
         </div>
       </section>
 
@@ -1965,19 +1926,52 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         </div>
       </section>
 
-      <section className="trust-conversion">
-        <div className="rob-photo reveal">
-          <Image src="/images/rob-riding-horse.jpg" alt="Robert Zaher riding a horse across the Mongolian valley" fill quality={72} sizes="(max-width: 900px) 100vw, 35vw" />
+      {/* TRUST */}
+      <section className="trust" id="trust">
+        <div className="trust-header reveal">
+          <span className="section-eyebrow">From Past Guests</span>
+          <h2 className="section-title">Built on<br /><em>Real Relationships</em></h2>
+          <p className="section-body" style={{margin:'0 auto'}}>Real people have already made the journey into this valley. These are early guest impressions from the same world you&apos;ll be stepping into: the vastness and freedom of the steppe, and a nomadic way of life still attuned to it.</p>
         </div>
-        <div className="trust-card-founder reveal reveal-delay-1">
-          <span className="section-eyebrow">Who You&apos;re Booking With</span>
-          <h2 className="section-title">Robert, the Family<br /><em>&amp; 8 Lakes Tours</em></h2>
-          <p>8 Lakes Tours is organised by Robert Zaher through a direct relationship with Ganbold&apos;s family in the Orkhon Valley. Online bookings, preparation, and payment communication are handled by 8 Lakes Tours, while the local family payment goes directly to your hosts in Mongolia.</p>
-          <p style={{marginTop:'1rem'}}>All tour enquiries go through <strong style={{color:'var(--cream)'}}>info@8lakestours.com</strong>.</p>
-          <div className="trust-actions">
-            <a className="trust-link" href="mailto:info@8lakestours.com">Email the tour team</a>
-            <a className="trust-link" href="https://www.instagram.com/robzaher108?igsh=OHdvdGp0ZW9ieHFv" target="_blank" rel="noopener noreferrer">Rob&apos;s Instagram</a>
-          </div>
+        <div className="testimonial-grid">
+          {[
+            {
+              name: 'Irik · USA',
+              src: '/images/testimonial-irik-clawson-sunset.jpg',
+              alt: 'Robert Zaher smiling on horseback beside a river valley',
+              quote: 'Endless riding from one plain to the next, across the Steppe, by the lakes…. Magical. What more is there in life?',
+              objectPosition: 'center',
+            },
+            {
+              name: 'Milou · AU',
+              src: '/images/testimonial-milou.jpeg',
+              alt: 'Milou travelling by motorbike through the Mongolian steppe',
+              quote: 'So grateful to be able to stay with the loveliest family in Mongolia, experience life on the steppe and trek with horses through the most beautiful landscapes!',
+              objectPosition: '76% center',
+            },
+            {
+              name: 'Fin · UK',
+              src: '/images/testimonial-fin-bennet-host.jpg',
+              alt: 'Fin Bennet and his Mongolian host wearing traditional deels on the open steppe',
+              quote: 'It couldn’t be further from back home and that makes me so excited.',
+              objectPosition: 'center 42%',
+            },
+          ].map(testimonial => (
+            <article className="testimonial-card reveal" key={testimonial.name}>
+              <button
+                type="button"
+                className="image-button testimonial-photo"
+                aria-label={`View larger image: ${testimonial.alt}`}
+                onClick={() => openLightbox(testimonial.src, testimonial.alt)}
+              >
+                <Image src={testimonial.src} alt={testimonial.alt} fill quality={76} sizes="(max-width: 900px) 100vw, 33vw" style={{ objectPosition: testimonial.objectPosition ?? 'center' }} />
+              </button>
+              <div className="testimonial-body">
+                <p className="testimonial-quote">“{testimonial.quote}”</p>
+                <p className="testimonial-name">{testimonial.name}</p>
+              </div>
+            </article>
+          ))}
         </div>
       </section>
 

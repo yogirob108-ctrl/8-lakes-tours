@@ -36,6 +36,7 @@ export const GALLERY_IMAGES: GalleryImage[] = [
   { src: '/images/expedition-originals/motorbike-valley-dusk-portrait.jpg', alt: 'Motorbike above the valley at dusk', width: 1080, height: 1620, orientation: 'portrait' },
   { src: '/images/expedition-originals/ger-sunrise-original.jpg', alt: 'Ger at sunrise in the valley', width: 1600, height: 1066, orientation: 'landscape' },
   { src: '/images/guide.jpg', alt: 'Suma, local horseman and guide', width: 1152, height: 2048, orientation: 'portrait' },
+  { src: '/images/rob-riding-horse.jpg', alt: 'Robert riding a horse across the Mongolian valley', width: 923, height: 1600, orientation: 'portrait' },
   { src: '/images/herder-valley-portrait.jpg', alt: 'Horseman watching over the valley and grazing herd', width: 1080, height: 1620, orientation: 'portrait' },
   { src: '/images/gallery-extra/horses-and-child-by-lake.jpg', alt: 'Child walking past horses beside the lake', width: 1080, height: 1620, orientation: 'portrait' },
   { src: '/images/lake.jpg', alt: 'Eight Lakes valley and water', width: 1200, height: 1600, orientation: 'portrait' },

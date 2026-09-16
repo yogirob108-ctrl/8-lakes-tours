@@ -49,7 +49,7 @@ export default function GalleryPage() {
 
       <header className="gallery-hero">
         <div className="gallery-hero-media" role="img" aria-label="Horses drinking at a river with clouds reflected on the water">
-          <HeroVideo className="gallery-hero-video" desktopSrc="/videos/gallery-river-horses-loop.mp4?v=3" mobileSrc="/videos/gallery-river-horses-loop-mobile.mp4?v=3" />
+          <HeroVideo className="gallery-hero-video" desktopSrc="/videos/gallery-river-horses-loop.mp4?v=4" mobileSrc="/videos/gallery-river-horses-loop-mobile.mp4?v=4" />
           <div className="gallery-hero-overlay" />
         </div>
         <div className="gallery-hero-copy">
@@ -72,10 +72,10 @@ export default function GalleryPage() {
         .gallery-page { min-height: 100vh; background: #0e0c09; color: #d4cfc4; font-family: var(--font-jost), 'Jost', sans-serif; font-weight: 300; }
         .gallery-footer a { color: #c8a96e; text-decoration: none; text-transform: uppercase; letter-spacing: 0.18em; font-size: 0.68rem; }
         .gallery-hero { position: relative; display: flex; align-items: flex-end; justify-content: center; min-height: 62vh; padding: 8rem 2rem 3.5rem; text-align: center; overflow: hidden; }
-        .gallery-hero-media { position: absolute; inset: 0; background: #0e0c09 url('/videos/gallery-river-horses-poster.jpg?v=3') center / cover no-repeat; }
+        .gallery-hero-media { position: absolute; inset: 0; background: #0e0c09 url('/videos/gallery-river-horses-poster.jpg?v=4') center / cover no-repeat; }
         .gallery-hero-video.is-playing { opacity: 1; }
         .gallery-hero-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity 1.6s ease; }
-        @media (max-width: 900px) { .gallery-hero-media { background-image: url('/videos/gallery-river-horses-poster-mobile.jpg?v=3'); } }
+        @media (max-width: 900px) { .gallery-hero-media { background-image: url('/videos/gallery-river-horses-poster-mobile.jpg?v=4'); } }
         @media (prefers-reduced-motion: reduce) { .gallery-hero-video { display: none; } }
         .gallery-hero-overlay { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 35%, rgba(14,12,9,0) 30%, rgba(14,12,9,0.5) 100%), linear-gradient(to top, rgba(14,12,9,1) 2%, rgba(14,12,9,0.72) 32%, rgba(14,12,9,0.3) 70%, rgba(14,12,9,0.62) 100%); }
         .gallery-hero-copy { position: relative; z-index: 1; max-width: 980px; }

@@ -56,8 +56,15 @@ function extractGaClientId(notes: unknown) {
   return match?.[1]?.trim() || '';
 }
 
+function extractGaSessionId(notes: unknown) {
+  if (typeof notes !== 'string') return '';
+  const match = notes.match(/^GA session ID:\s*(.+)$/im);
+  return match?.[1]?.trim() || '';
+}
+
 async function sendGa4PaymentReceived(input: {
   clientId: string;
+  sessionId: string;
   amountUsd: number;
   currency: string;
   tourDate: string;
@@ -71,6 +78,21 @@ async function sendGa4PaymentReceived(input: {
   }
 
   const endpoint = `https://www.google-analytics.com/mp/collect?measurement_id=${encodeURIComponent(ga4MeasurementId)}&api_secret=${encodeURIComponent(ga4ApiSecret)}`;
+  // Session attribution is a documented Measurement Protocol use case that
+  // requires the GA session_id event parameter, the request arriving within
+  // 24 hours of the online session's start, and — when timestamp_micros is
+  // overridden — a timestamp inside the session. This server sends promptly
+  // after payment, so the session_id is included only when the booking
+  // captured one from the consented browser; it is never defaulted or
+  // invented, and no engagement time or timestamp is fabricated.
+  const eventParams: Record<string, string | number> = {
+    event_id: input.eventId,
+    event_category: 'booking_funnel',
+    currency: input.currency,
+    value: input.amountUsd,
+    tour_date: input.tourDate || 'TBC',
+  };
+  if (input.sessionId) eventParams.session_id = input.sessionId;
   let response: Response;
   try {
     response = await fetch(endpoint, {
@@ -84,17 +106,7 @@ async function sendGa4PaymentReceived(input: {
         events: [
           {
             name: 'payment_received',
-            params: {
-              // Non-linkable random identifier, persisted on the timeline row
-              // after a confirmed send. GA4's event_id handling is best-effort
-              // and must not be relied on for de-duplication; the local
-              // booking_events record is the actual retry boundary.
-              event_id: input.eventId,
-              event_category: 'booking_funnel',
-              currency: input.currency,
-              value: input.amountUsd,
-              tour_date: input.tourDate || 'TBC',
-            },
+            params: eventParams,
           },
         ],
       }),
@@ -180,6 +192,7 @@ async function ensureGa4PaymentEvent(supabase: ReturnType<typeof createSupabaseA
   const eventId = crypto.randomUUID();
   const gaResult = await sendGa4PaymentReceived({
     clientId: extractGaClientId(input.booking.notes),
+    sessionId: extractGaSessionId(input.booking.notes),
     amountUsd: input.amountUsd,
     currency: input.currency,
     tourDate: input.booking.tour_date || 'TBC',

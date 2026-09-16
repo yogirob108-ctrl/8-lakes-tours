@@ -36,6 +36,7 @@ type AttributionPayload = {
   ttclid?: string;
   msclkid?: string;
   ga_client_id?: string;
+  ga_session_id?: string;
 };
 
 declare global {
@@ -87,6 +88,21 @@ function getGaClientIdFromGtag(): Promise<string> {
   });
 }
 
+// The GA session id arrives in the _ga_<MEASUREMENT_ID> cookie (the same
+// identifier the tag sends as ga_session_id). It is read directly from the
+// consented browser and never defaulted: without a real session id, GA4
+// Measurement Protocol session attribution cannot join the server-side
+// payment_received event to the visitor's session source.
+function getGaSessionIdFromCookie(): string {
+  if (typeof document === 'undefined') return '';
+  const rawParts = document.cookie
+    .split('; ')
+    .find(cookie => cookie.startsWith(`_ga_${GA_MEASUREMENT_ID.slice(2)}=`))
+    ?.split('=');
+  const parts = Array.isArray(rawParts) ? rawParts : [];
+  return parts.length >= 2 ? parts.slice(1).join('=') : '';
+}
+
 async function collectAttributionWithGaRetry() {
   const attribution = collectAttribution();
   if (attribution.ga_client_id) return attribution;
@@ -123,6 +139,7 @@ function collectAttribution(): AttributionPayload {
     ttclid: params.get('ttclid') || '',
     msclkid: params.get('msclkid') || '',
     ga_client_id: getGaClientId(),
+    ga_session_id: getGaSessionIdFromCookie(),
   };
 
   let first: AttributionPayload = {};
@@ -146,6 +163,10 @@ function collectAttribution(): AttributionPayload {
     ...first,
     current_url: current.current_url,
     ga_client_id: current.ga_client_id || first.ga_client_id || '',
+    // The session id is read fresh at submit time: a stored value from an
+    // earlier visit could be a different, expired session, which would point
+    // GA4 session attribution at the wrong session.
+    ga_session_id: current.ga_session_id || first.ga_session_id || '',
   };
 }
 

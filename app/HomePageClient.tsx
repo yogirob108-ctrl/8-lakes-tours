@@ -1477,7 +1477,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .footer-cta:hover { background: var(--cream); border-color: var(--cream); color: var(--dark); transform: translateY(-2px); }
         .footer-links { margin: 3rem auto 0; display: flex; flex-wrap: wrap; gap: 0.9rem 1.5rem; justify-content: center; }
         .footer-link { color: rgba(200,169,110,0.86); text-decoration: none; font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; transition: color 0.3s ease; }
-        .privacy-choices-link { appearance: none; border: 0; background: transparent; padding: 0; font: inherit; cursor: pointer; }
+        .privacy-choices-link { appearance: none; border: 0; background: transparent; padding: 0; font-family: inherit; line-height: inherit; cursor: pointer; }
         .footer-link:hover { color: var(--cream); }
         .footer-note { border-top: 1px solid rgba(200,169,110,0.14); max-width: 1120px; margin: 3.5rem auto 0; padding-top: 1.4rem; display: flex; justify-content: space-between; gap: 1rem; font-size: 0.75rem; color: rgba(212,207,196,0.68); }
 

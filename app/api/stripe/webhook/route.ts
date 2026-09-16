@@ -64,37 +64,139 @@ async function sendGa4PaymentReceived(input: {
   tourDate: string;
   eventId: string;
 }) {
-  if (!ga4ApiSecret || !ga4MeasurementId || !input.clientId) {
-    return { sent: false as const, reason: 'missing_ga4_config_or_client_id' };
+  if (!ga4ApiSecret || !ga4MeasurementId) {
+    return { sent: false as const, retryable: false as const, reason: 'missing_ga4_config' };
+  }
+  if (!input.clientId) {
+    return { sent: false as const, retryable: false as const, reason: 'missing_ga4_client_id' };
   }
 
   const endpoint = `https://www.google-analytics.com/mp/collect?measurement_id=${encodeURIComponent(ga4MeasurementId)}&api_secret=${encodeURIComponent(ga4ApiSecret)}`;
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      client_id: input.clientId,
-      events: [
-        {
-          name: 'payment_received',
-          params: {
-            event_id: input.eventId,
-            event_category: 'booking_funnel',
-            currency: input.currency,
-            value: input.amountUsd,
-            reference: input.reference,
-            tour_date: input.tourDate || 'TBC',
+  let response: Response;
+  try {
+    response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: input.clientId,
+        events: [
+          {
+            name: 'payment_received',
+            params: {
+              // event_id lets GA4 de-duplicate replays, but Measurement Protocol
+              // acceptance is asynchronous and unconfirmed. A retry with the same
+              // event_id after an accepted-but-unrecorded delivery can still
+              // double-count: this is at-least-once with GA4-side event_id
+              // de-duplication, not a local exactly-once guarantee.
+              event_id: input.eventId,
+              event_category: 'booking_funnel',
+              currency: input.currency,
+              value: input.amountUsd,
+              reference: input.reference,
+              tour_date: input.tourDate || 'TBC',
+            },
           },
-        },
-      ],
-    }),
-  });
+        ],
+      }),
+    });
+  } catch (error) {
+    console.warn('GA4 Measurement Protocol request failed', {
+      reference: input.reference,
+      reason: error instanceof Error ? error.message : 'unknown_network_error',
+    });
+    return { sent: false as const, retryable: true as const, reason: 'ga4_network_error' };
+  }
 
   if (!response.ok) {
-    return { sent: false as const, reason: `ga4_http_${response.status}` };
+    console.warn('GA4 Measurement Protocol request rejected', {
+      reference: input.reference,
+      status: response.status,
+    });
+    return { sent: false as const, retryable: true as const, reason: `ga4_http_${response.status}` };
   }
 
   return { sent: true as const };
+}
+
+const GA4_EVENT_SENT_TITLE = 'GA4 payment_received event sent';
+const GA4_EVENT_SKIPPED_TITLE = 'GA4 payment_received event skipped';
+
+/**
+ * Send the GA4 payment_received conversion exactly once per Stripe session,
+ * durably recorded on the booking timeline. A retryable GA4 failure throws so
+ * the Stripe event is retried and analytics recovery still happens after the
+ * payment itself is already recorded — a non-OK GA4 response must never write
+ * a terminal record that blocks later retries. Permanent skips (missing GA4
+ * config or a booking without a GA client id) are recorded once and do not
+ * throw, so they can never strand payment processing.
+ *
+ * With `recoveryOnly`, the helper only retries a genuine legacy terminal skip
+ * record (missing reason or a retryable reason). A completed payment with no
+ * GA4 timeline record at all is left untouched: no surprise writes or
+ * retroactive conversions for bookings that predate GA4 collection.
+ */
+async function ensureGa4PaymentEvent(supabase: ReturnType<typeof createSupabaseAdminClient>, input: {
+  booking: { id: string; public_reference: string; tour_date: string | null; notes: string | null };
+  sessionId: string;
+  amountUsd: number;
+  currency: string;
+  recoveryOnly?: boolean;
+}) {
+  const { data: existingGaEvent, error: existingGaEventError } = await supabase
+    .from('booking_events')
+    .select('id, title, metadata')
+    .eq('booking_id', input.booking.id)
+    .in('title', [GA4_EVENT_SENT_TITLE, GA4_EVENT_SKIPPED_TITLE])
+    .contains('metadata', { stripe_checkout_session_id: input.sessionId })
+    .limit(1)
+    .maybeSingle();
+  if (existingGaEventError) {
+    throw new Error(`GA4 event lookup failed: ${existingGaEventError.message}`);
+  }
+
+  if (input.recoveryOnly) {
+    if (existingGaEvent?.title !== GA4_EVENT_SKIPPED_TITLE) return;
+    const existingMetadata = (existingGaEvent.metadata ?? {}) as Record<string, unknown>;
+    const existingSkipReason = typeof existingMetadata.reason === 'string' ? existingMetadata.reason : '';
+    if (existingSkipReason === 'missing_ga4_config' || existingSkipReason === 'missing_ga4_client_id') return;
+  } else if (existingGaEvent) {
+    const existingMetadata = (existingGaEvent.metadata ?? {}) as Record<string, unknown>;
+    const existingSkipReason = typeof existingMetadata.reason === 'string' ? existingMetadata.reason : '';
+    if (existingGaEvent.title === GA4_EVENT_SENT_TITLE
+      || existingSkipReason === 'missing_ga4_config'
+      || existingSkipReason === 'missing_ga4_client_id') return;
+  }
+
+  const gaResult = await sendGa4PaymentReceived({
+    clientId: extractGaClientId(input.booking.notes),
+    reference: input.booking.public_reference,
+    amountUsd: input.amountUsd,
+    currency: input.currency,
+    tourDate: input.booking.tour_date || 'TBC',
+    eventId: `stripe_${input.sessionId}`,
+  });
+
+  if (!gaResult.sent && gaResult.retryable) {
+    // No terminal record is written: throwing keeps the Stripe event eligible
+    // for redelivery so a recovered GA4 dependency is not lost forever.
+    throw new Error(`GA4 payment event send failed (${gaResult.reason}); retry the Stripe event.`);
+  }
+
+  const { error: gaEventError } = await supabase.from('booking_events').insert({
+    booking_id: input.booking.id,
+    event_type: 'system',
+    direction: 'system',
+    title: gaResult.sent ? GA4_EVENT_SENT_TITLE : GA4_EVENT_SKIPPED_TITLE,
+    body: gaResult.sent
+      ? 'Server-side GA4 Measurement Protocol event sent for confirmed Stripe payment.'
+      : `Reason: ${gaResult.reason}. No GA4 Measurement Protocol request was made; this skip is permanent for this payment unless GA4 configuration or the booking's GA client id changes.`,
+    metadata: {
+      stripe_checkout_session_id: input.sessionId,
+      ...(gaResult.sent ? {} : { reason: gaResult.reason }),
+    },
+    created_by: 'stripe-webhook',
+  });
+  if (gaEventError) throw new Error(`GA4 event record failed: ${gaEventError.message}`);
 }
 
 const PAYMENT_PROCESSING_LEASE_MS = 10 * 60 * 1000;
@@ -348,6 +450,21 @@ async function handleCheckoutSessionPaid(session: Stripe.Checkout.Session) {
 
   if (!decision.process) {
     const matched = decision.reason !== 'invalid_payment_amount';
+    if (decision.reason === 'payment_already_recorded') {
+      // Recovery path: the payment and its ordinary side effects are already
+      // complete, but a legacy terminal GA4 skip (or a missed GA4 send) must
+      // still converge on a later Stripe replay. Idempotent per session; a
+      // retryable GA4 failure throws so recovery is never lost. Refunded
+      // payments stay skipped on purpose: a refunded purchase must not emit a
+      // fresh marketing conversion.
+      await ensureGa4PaymentEvent(supabase, {
+        booking,
+        sessionId: session.id,
+        amountUsd: amountToRecord,
+        currency,
+        recoveryOnly: true,
+      });
+    }
     console.info('Ignoring Stripe checkout payment without side effects', {
       sessionId: session.id,
       reference,
@@ -608,39 +725,15 @@ async function handleCheckoutSessionPaid(session: Stripe.Checkout.Session) {
       throw new Error(`Payment event insert failed: ${paymentEventWrite.error.message}`);
     }
 
-    const { data: existingGaEvent, error: existingGaEventError } = await supabase
-      .from('booking_events')
-      .select('id')
-      .eq('booking_id', booking.id)
-      .in('title', ['GA4 payment_received event sent', 'GA4 payment_received event skipped'])
-      .contains('metadata', { stripe_checkout_session_id: session.id })
-      .limit(1)
-      .maybeSingle();
-    if (existingGaEventError) {
-      throw new Error(`GA4 event lookup failed: ${existingGaEventError.message}`);
-    }
-
-    if (!existingGaEvent) {
-      const gaResult = await sendGa4PaymentReceived({
-        clientId: extractGaClientId(booking.notes),
-        reference: booking.public_reference,
-        amountUsd: amountToRecord,
-        currency,
-        tourDate: booking.tour_date || 'TBC',
-        eventId: `stripe_${session.id}`,
-      });
-
-      const { error: gaEventError } = await supabase.from('booking_events').insert({
-        booking_id: booking.id,
-        event_type: 'system',
-        direction: 'system',
-        title: gaResult.sent ? 'GA4 payment_received event sent' : 'GA4 payment_received event skipped',
-        body: gaResult.sent ? 'Server-side GA4 Measurement Protocol event sent for confirmed Stripe payment.' : `Reason: ${gaResult.reason}`,
-        metadata: { stripe_checkout_session_id: session.id },
-        created_by: 'stripe-webhook',
-      });
-      if (gaEventError) throw new Error(`GA4 event record failed: ${gaEventError.message}`);
-    }
+    // Durable bounded GA4 conversion: idempotent per session, retryable
+    // failures throw so Stripe redelivers and analytics recovery works even
+    // when this replay reaches payment_already_recorded.
+    await ensureGa4PaymentEvent(supabase, {
+      booking,
+      sessionId: session.id,
+      amountUsd: amountToRecord,
+      currency,
+    });
 
     if (!bookingConfirmationToken) {
       currentBookingStatus = await readBookingStatus(booking.id);

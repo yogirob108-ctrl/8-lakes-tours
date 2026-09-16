@@ -301,6 +301,30 @@ const HOME_FAQS = [
   { q: 'Is there WiFi or cell service?', a: 'Remote trek days are mostly offline, with little to no cell service. The host family camp has Starlink and solar-powered charging for phones, cameras, and essentials, so you can reconnect between riding days. For simple Mongolian communication, Grok has worked best for us so far; ChatGPT also works well for translation when you have signal.' },
 ];
 
+const TESTIMONIAL_CARDS = [
+            {
+              name: 'Irik · USA',
+              src: '/images/testimonial-irik-clawson-sunset.jpg',
+              alt: 'Robert Zaher smiling on horseback beside a river valley',
+              quote: 'Endless riding from one plain to the next, across the Steppe, by the lakes…. Magical. What more is there in life?',
+              objectPosition: 'center',
+            },
+            {
+              name: 'Milou · AU',
+              src: '/images/testimonial-milou.jpeg',
+              alt: 'Milou travelling by motorbike through the Mongolian steppe',
+              quote: 'So grateful to be able to stay with the loveliest family in Mongolia, experience life on the steppe and trek with horses through the most beautiful landscapes!',
+              objectPosition: '76% center',
+            },
+            {
+              name: 'Fin · UK',
+              src: '/images/testimonial-fin-bennet-host.jpg',
+              alt: 'Fin Bennet and his Mongolian host wearing traditional deels on the open steppe',
+              quote: 'It couldn’t be further from back home and that makes me so excited.',
+              objectPosition: 'center 42%',
+            },
+          ];
+
 const GALLERY_IMAGES = [
   { src: '/images/guide.jpg', alt: 'Mongolian horseman in traditional dress' },
   { src: '/images/rob-family.jpg', alt: 'Robert with the host family outside a traditional ger in Mongolia' },
@@ -318,6 +342,22 @@ const GALLERY_IMAGES = [
   ...STRIP_IMAGES.map(({ src, alt }) => ({ src, alt })),
   ...MAIN_ALBUM_IMAGES.map(({ src, alt }) => ({ src, alt })),
 ];
+
+// Every image that can be opened full-frame, in one list, so the lightbox always
+// shows the photo that was clicked (and arrow keys walk the whole set).
+const LIGHTBOX_IMAGES: { src: string; alt: string }[] = Array.from(
+  new Map(
+    [
+      ...GALLERY_IMAGES,
+      ...STRIP_IMAGES,
+      ...MAIN_ALBUM_IMAGES,
+      ...TESTIMONIAL_CARDS,
+      { src: '/images/suma-horseback-deel.jpg', alt: 'Suma on horseback in a traditional deel on the Mongolian steppe' },
+      { src: '/images/host-family-horses-deels.jpg', alt: 'Robert with the host family and their horses, all in traditional deels on the Mongolian steppe' },
+    ].map(image => [image.src, { src: image.src, alt: image.alt }] as const),
+  ).values(),
+);
+
 
 function WaiverModal({ onClose, onAgree }: { onClose: () => void; onAgree: () => void }) {
   const [signature, setSignature] = useState('');
@@ -488,7 +528,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
   const awaitsGroupInvoice = manualReason === GROUP_INVOICE;
   const canPay = formSubmitted && Boolean(paymentUrl) && !requiresHumanConfirmation;
   const checkoutFallbackHref = canPay ? paymentUrl : '#book';
-  const lightboxImage = lightboxIndex === null ? null : GALLERY_IMAGES[lightboxIndex];
+  const lightboxImage = lightboxIndex === null ? null : LIGHTBOX_IMAGES[lightboxIndex];
   const isLightboxOpen = lightboxIndex !== null;
   const restoreCheckoutDraft = async (ownership: { draft_id: string; credential: string }) => {
     const response = await fetch('/api/checkout-draft', {
@@ -576,12 +616,12 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
       }
     } catch { /* Private browsing can disable session storage. */ }
   }, []);
-  const openLightbox = (src: string, alt: string) => {
-    const imageIndex = GALLERY_IMAGES.findIndex(image => image.src === src && image.alt === alt);
+  const openLightbox = (src: string) => {
+    const imageIndex = LIGHTBOX_IMAGES.findIndex(image => image.src === src);
     setLightboxIndex(imageIndex >= 0 ? imageIndex : 0);
   };
-  const showPreviousImage = () => setLightboxIndex(current => current === null ? current : (current + GALLERY_IMAGES.length - 1) % GALLERY_IMAGES.length);
-  const showNextImage = () => setLightboxIndex(current => current === null ? current : (current + 1) % GALLERY_IMAGES.length);
+  const showPreviousImage = () => setLightboxIndex(current => current === null ? current : (current + LIGHTBOX_IMAGES.length - 1) % LIGHTBOX_IMAGES.length);
+  const showNextImage = () => setLightboxIndex(current => current === null ? current : (current + 1) % LIGHTBOX_IMAGES.length);
 
   const markBookingFormStarted = () => {
     if (bookingFormStartedRef.current) return;
@@ -649,13 +689,13 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
 
     const preloadIndexes = [
       lightboxIndex,
-      (lightboxIndex + 1) % GALLERY_IMAGES.length,
-      (lightboxIndex + GALLERY_IMAGES.length - 1) % GALLERY_IMAGES.length,
-      (lightboxIndex + 2) % GALLERY_IMAGES.length,
+      (lightboxIndex + 1) % LIGHTBOX_IMAGES.length,
+      (lightboxIndex + LIGHTBOX_IMAGES.length - 1) % LIGHTBOX_IMAGES.length,
+      (lightboxIndex + 2) % LIGHTBOX_IMAGES.length,
     ];
 
     preloadIndexes.forEach(index => {
-      const src = GALLERY_IMAGES[index]?.src;
+      const src = LIGHTBOX_IMAGES[index]?.src;
       if (!src) return;
       const image = new window.Image();
       image.decoding = 'async';
@@ -684,10 +724,10 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setLightboxIndex(null);
       if (event.key === 'ArrowLeft') {
-        setLightboxIndex(current => current === null ? current : (current + GALLERY_IMAGES.length - 1) % GALLERY_IMAGES.length);
+        setLightboxIndex(current => current === null ? current : (current + LIGHTBOX_IMAGES.length - 1) % LIGHTBOX_IMAGES.length);
       }
       if (event.key === 'ArrowRight') {
-        setLightboxIndex(current => current === null ? current : (current + 1) % GALLERY_IMAGES.length);
+        setLightboxIndex(current => current === null ? current : (current + 1) % LIGHTBOX_IMAGES.length);
       }
     };
 
@@ -1743,7 +1783,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             type="button"
             className="image-button"
             aria-label="View larger image: Suma on horseback in a traditional deel on the Mongolian steppe"
-            onClick={() => openLightbox('/images/suma-horseback-deel.jpg', 'Suma on horseback in a traditional deel on the Mongolian steppe')}
+            onClick={() => openLightbox('/images/suma-horseback-deel.jpg')}
           >
             <Image src="/images/suma-horseback-deel.jpg" alt="Suma on horseback in a traditional deel on the Mongolian steppe" fill quality={72} sizes="(max-width: 900px) 100vw, 50vw" />
           </button>
@@ -1772,7 +1812,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               type="button"
               className="image-button"
               aria-label={`View larger image: ${item.alt}`}
-              onClick={() => openLightbox(item.src, item.alt)}
+              onClick={() => openLightbox(item.src)}
             >
               <Image src={item.src} alt={item.alt} fill quality={70} sizes="(max-width: 900px) 20vw, 20vw" />
             </button>
@@ -1789,7 +1829,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             type="button"
             className="image-button partnership-inline-photo"
             aria-label="View larger image: Robert with the host family and their horses, all in traditional deels on the Mongolian steppe"
-            onClick={() => openLightbox('/images/host-family-horses-deels.jpg', 'Robert with the host family and their horses, all in traditional deels on the Mongolian steppe')}
+            onClick={() => openLightbox('/images/host-family-horses-deels.jpg')}
           >
             <Image src="/images/host-family-horses-deels.jpg" alt="Robert with the host family and their horses, all in traditional deels on the Mongolian steppe" fill quality={72} sizes="100vw" />
           </button>
@@ -1803,7 +1843,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             type="button"
             className="image-button"
             aria-label="View larger image: Robert with the host family and their horses, all in traditional deels on the Mongolian steppe"
-            onClick={() => openLightbox('/images/host-family-horses-deels.jpg', 'Robert with the host family and their horses, all in traditional deels on the Mongolian steppe')}
+            onClick={() => openLightbox('/images/host-family-horses-deels.jpg')}
           >
             <Image src="/images/host-family-horses-deels.jpg" alt="Robert with the host family and their horses, all in traditional deels on the Mongolian steppe" fill quality={72} sizes="(max-width: 900px) 100vw, 50vw" />
           </button>
@@ -1868,7 +1908,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               type="button"
               className="image-button"
               aria-label={`View larger image: ${item.alt}`}
-              onClick={() => openLightbox(item.src, item.alt)}
+              onClick={() => openLightbox(item.src)}
             >
               <Image
                 src={item.src}
@@ -1945,35 +1985,13 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           <p className="section-body" style={{margin:'0 auto'}}>Real people have already made the journey into this valley. These are early guest impressions from the same world you&apos;ll be stepping into: the vastness and freedom of the steppe, and a nomadic way of life still attuned to it.</p>
         </div>
         <div className="testimonial-grid">
-          {[
-            {
-              name: 'Irik · USA',
-              src: '/images/testimonial-irik-clawson-sunset.jpg',
-              alt: 'Robert Zaher smiling on horseback beside a river valley',
-              quote: 'Endless riding from one plain to the next, across the Steppe, by the lakes…. Magical. What more is there in life?',
-              objectPosition: 'center',
-            },
-            {
-              name: 'Milou · AU',
-              src: '/images/testimonial-milou.jpeg',
-              alt: 'Milou travelling by motorbike through the Mongolian steppe',
-              quote: 'So grateful to be able to stay with the loveliest family in Mongolia, experience life on the steppe and trek with horses through the most beautiful landscapes!',
-              objectPosition: '76% center',
-            },
-            {
-              name: 'Fin · UK',
-              src: '/images/testimonial-fin-bennet-host.jpg',
-              alt: 'Fin Bennet and his Mongolian host wearing traditional deels on the open steppe',
-              quote: 'It couldn’t be further from back home and that makes me so excited.',
-              objectPosition: 'center 42%',
-            },
-          ].map(testimonial => (
+          {TESTIMONIAL_CARDS.map(testimonial => (
             <article className="testimonial-card reveal" key={testimonial.name}>
               <button
                 type="button"
                 className="image-button testimonial-photo"
                 aria-label={`View larger image: ${testimonial.alt}`}
-                onClick={() => openLightbox(testimonial.src, testimonial.alt)}
+                onClick={() => openLightbox(testimonial.src)}
               >
                 <Image src={testimonial.src} alt={testimonial.alt} fill quality={76} sizes="(max-width: 900px) 100vw, 33vw" style={{ objectPosition: testimonial.objectPosition ?? 'center' }} />
               </button>

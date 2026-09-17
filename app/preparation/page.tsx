@@ -115,14 +115,12 @@ export default function PreparationPage() {
         .page-hero { position: relative; display: flex; align-items: flex-end; justify-content: center; min-height: 58vh; padding: 8rem 2rem 3rem; text-align: center; overflow: hidden; }
         .page-hero-media { position: absolute; inset: 0; background: #0e0c09 url('/videos/prep-rider-poster.jpg?v=5') center / cover no-repeat; }
         /* No entrance: the poster is the clip's first frame, so the video takes
-           over instantly and simply plays. The only effect is at the loop seam,
-           where it dissolves out over the poster and back in, hiding the jump
-           from the last frame to the first. is-armed withholds the transition
-           until playback is underway so the swap itself never fades. */
+           over instantly and simply plays. The dissolve belongs to the loop
+           seam alone and is driven per frame in HeroVideo, which sets opacity
+           inline — deliberately no CSS transition here, or it would fight the
+           per-frame ramp and reintroduce the stutter it exists to remove. */
         .page-hero-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 40%; opacity: 0; }
         .page-hero-video.is-playing { opacity: 1; }
-        .page-hero-video.is-armed { transition: opacity 0.9s ease-in-out; }
-        .page-hero-video.is-dissolving { opacity: 0; }
         @media (max-width: 900px) { .page-hero-media { background-image: url('/videos/prep-rider-poster-mobile.jpg?v=5'); } }
         @media (prefers-reduced-motion: reduce) { .page-hero-video { display: none; } }
         .page-hero-overlay { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 35%, rgba(14,12,9,0) 28%, rgba(14,12,9,0.5) 100%), linear-gradient(to top, rgba(14,12,9,1) 2%, rgba(14,12,9,0.76) 30%, rgba(14,12,9,0.34) 68%, rgba(14,12,9,0.66) 100%); }

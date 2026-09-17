@@ -37,25 +37,35 @@ export default function HeroVideo({ className, desktopSrc, mobileSrc, label, dis
     const video = videoRef.current;
     if (!video || !dissolveAtLoop) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const FADE_SECONDS = 0.9;
-    // Arm the transition only once playback has begun, so the poster-to-video
-    // swap stays instant and the fade belongs to the loop alone.
-    const arm = () => video.classList.add('is-armed');
-    const onTimeUpdate = () => {
+    const FADE_SECONDS = 1.1;
+    // `timeupdate` only fires a few times a second, so a CSS transition started
+    // from it lands late and by a different amount each lap — the seam stutters.
+    // Drive opacity per frame instead: the ramp is tied to the clip's own clock,
+    // so it reaches zero exactly on the last frame and comes back symmetrically.
+    // Smoothstep rather than a straight line, so it eases out of full opacity
+    // and into it rather than starting and stopping abruptly.
+    const smoothstep = (t: number) => t * t * (3 - 2 * t);
+    let frame = 0;
+    const tick = () => {
+      frame = requestAnimationFrame(tick);
       const { duration, currentTime } = video;
       if (!Number.isFinite(duration) || duration <= FADE_SECONDS * 2) return;
-      video.classList.toggle('is-dissolving', duration - currentTime <= FADE_SECONDS);
+      const remaining = duration - currentTime;
+      const ramp = remaining < FADE_SECONDS ? remaining / FADE_SECONDS
+        : currentTime < FADE_SECONDS ? currentTime / FADE_SECONDS
+        : 1;
+      video.style.opacity = String(smoothstep(Math.min(1, Math.max(0, ramp))));
     };
-    // A seek back to the top is the loop itself; clear the fade immediately so
-    // the clip is already on its way back in as the first frame paints.
-    const onSeeked = () => { if (video.currentTime < FADE_SECONDS) video.classList.remove('is-dissolving'); };
-    video.addEventListener('playing', arm, { once: true });
-    video.addEventListener('timeupdate', onTimeUpdate);
-    video.addEventListener('seeked', onSeeked);
+    const start = () => { if (!frame) frame = requestAnimationFrame(tick); };
+    const stop = () => { cancelAnimationFrame(frame); frame = 0; };
+    video.addEventListener('playing', start);
+    video.addEventListener('pause', stop);
+    if (!video.paused) start();
     return () => {
-      video.removeEventListener('playing', arm);
-      video.removeEventListener('timeupdate', onTimeUpdate);
-      video.removeEventListener('seeked', onSeeked);
+      stop();
+      video.removeEventListener('playing', start);
+      video.removeEventListener('pause', stop);
+      video.style.opacity = '';
     };
   }, [dissolveAtLoop]);
 

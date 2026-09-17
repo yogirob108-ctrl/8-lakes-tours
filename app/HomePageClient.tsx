@@ -1915,7 +1915,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             <li><span className="icon">✦</span> Host family accommodation (traditional gers)</li>
             <li><span className="icon">✦</span> 3 traditional Mongolian meals per day</li>
             <li><span className="icon">✦</span> Guided 4-day horseback trek</li>
-            <li><span className="icon">✦</span> Horses & local expert guides</li>
+            <li><span className="icon">✦</span> Horses, saddles &amp; tack, and local expert guides</li>
             <li><span className="icon">✦</span> Cultural immersion activities</li>
           </ul>
         </div>

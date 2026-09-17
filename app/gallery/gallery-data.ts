@@ -7,7 +7,6 @@ export type GalleryImage = {
 };
 
 export const GALLERY_IMAGES: GalleryImage[] = [
-  { src: '/images/expedition-originals/horseman-valley-lookout-portrait.jpg', alt: 'Horseman looking across the Orkhon Valley', width: 1080, height: 1620, orientation: 'portrait' },
   { src: '/images/gallery-extra/herder-with-lasso-by-river.jpg', alt: 'Herder holding a lasso on horseback beside the river below the mountains', width: 1080, height: 1620, orientation: 'portrait' },
   { src: '/images/expedition-originals/ger-sunrise-original.jpg', alt: 'Ger at sunrise in the valley', width: 1600, height: 1066, orientation: 'landscape' },
   { src: '/images/gallery-extra/yak-milking-at-sunrise.jpg', alt: 'Milking the yaks in the corral at sunrise, with gers on the ridge behind', width: 1500, height: 2000, orientation: 'portrait' },
@@ -63,7 +62,6 @@ export const GALLERY_IMAGES: GalleryImage[] = [
   { src: '/images/expedition-originals/ger-blue-hour-original.jpg', alt: 'Ger at blue hour beneath the mountains', width: 1600, height: 1066, orientation: 'landscape' },
   { src: '/images/gallery-extra/herder-leading-horse-at-corral.jpg', alt: 'A herder leading a saddled horse out of the corral', width: 1333, height: 2000, orientation: 'portrait' },
   { src: '/images/gallery-extra/horseman-with-saddled-horse-film.jpg', alt: 'Horseman in a deel and straw hat beside his saddled horse, shot on film', width: 1944, height: 1277, orientation: 'landscape' },
-  { src: '/images/gallery-extra/saddled-horse-at-corral-monochrome.jpg', alt: 'Saddled horse and herder at the corral fence in backlit morning sun', width: 1080, height: 1620, orientation: 'portrait' },
   { src: '/images/gallery-extra/guide-in-red-deel-on-the-forest-trail.jpg', alt: 'The guide in a red deel riding ahead on a forest trail', width: 2000, height: 1500, orientation: 'landscape' },
   { src: '/images/gallery-extra/ger-with-rainbow-after-rain.jpg', alt: 'A ger on the steppe with a rainbow after rain', width: 1500, height: 2000, orientation: 'portrait' },
   { src: '/images/gallery-extra/hosts-father-and-son-in-deels.jpg', alt: 'Father and son in dark deels with orange sashes on the summer steppe', width: 1333, height: 2000, orientation: 'portrait' },
@@ -81,7 +79,6 @@ export const GALLERY_IMAGES: GalleryImage[] = [
   { src: '/images/gallery-extra/rider-silhouette-at-dusk-film.jpg', alt: 'Rider silhouetted on horseback against a pale dusk sky', width: 1944, height: 1277, orientation: 'landscape' },
   { src: '/images/gallery-extra/rider-in-larch-forest-rain.jpg', alt: 'Rider wrapped against the rain on horseback in the larch forest', width: 2048, height: 1366, orientation: 'landscape' },
   { src: '/images/gallery-extra/motorbike-on-the-ridge-monochrome.jpg', alt: 'Rider pausing on a motorbike to look out across the ridgelines', width: 1333, height: 2000, orientation: 'portrait' },
-  { src: '/images/herder-valley-portrait.jpg', alt: 'Horseman watching over the valley and grazing herd', width: 1080, height: 1620, orientation: 'portrait' },
   { src: '/images/gallery-extra/orkhon-valley-sunburst-panorama.jpg', alt: 'Sunburst over the Orkhon Valley river bends after rain', width: 1800, height: 1013, orientation: 'landscape' },
   { src: '/images/gallery-extra/host-on-horseback-at-dusk.jpg', alt: 'Host in a black deel mounted on his horse as the light drops', width: 2000, height: 1333, orientation: 'landscape' },
   { src: '/images/expedition-originals/yaks-river-backlit-portrait.jpg', alt: 'Yaks grazing beside the river in backlit evening sun', width: 1080, height: 1620, orientation: 'portrait' },

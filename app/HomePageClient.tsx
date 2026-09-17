@@ -278,7 +278,9 @@ const MAIN_ALBUM_IMAGES = [
   { src: '/images/gallery-extra/packed-horses-rain-camp.jpg', alt: 'Packed horses waiting under storm clouds', orientation: 'landscape', collage: 'wide-left' },
   { src: '/images/gallery-extra/horses-in-forest-rain.jpg', alt: 'Pack horses resting in the forest rain', orientation: 'landscape', collage: 'wide-right' },
   { src: '/images/expedition-originals/ger-blue-hour-original.jpg', alt: 'Ger at blue hour beneath the mountains', orientation: 'landscape', collage: 'small-a' },
-  { src: '/images/gallery-extra/packhorses-grazing-by-stream.jpg', alt: 'Loaded pack horses grazing beside a mountain stream', orientation: 'portrait', objectPosition: 'center 45%', collage: 'small-b' },
+  // Anchored to the bottom: this tile is wider than it is tall, so a centred
+  // crop of a 2:3 portrait lands above the grazing horses and beheads them.
+  { src: '/images/gallery-extra/packhorses-grazing-by-stream.jpg', alt: 'Loaded pack horses grazing beside a mountain stream', orientation: 'portrait', objectPosition: 'center bottom', collage: 'small-b' },
   { src: '/images/eagle-portrait-original.jpg', alt: 'Close portrait of a Mongolian eagle', orientation: 'portrait', objectPosition: '72% center', collage: 'tall' },
   { src: '/images/gallery-extra/rider-rearing-horse-wide.jpg', alt: 'Rider on a rearing horse against the sky', orientation: 'landscape', collage: 'bottom-left' },
   { src: '/images/expedition-originals/suma-river-crossing-original.jpg', alt: 'Suma riding through a shallow river crossing', orientation: 'portrait', objectPosition: 'center 38%', collage: 'bottom-mid' },

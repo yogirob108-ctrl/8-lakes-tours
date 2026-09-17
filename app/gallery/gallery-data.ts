@@ -27,8 +27,6 @@ export const GALLERY_IMAGES: GalleryImage[] = [
   { src: '/images/expedition-originals/grazing-horse-river-sun-portrait.jpg', alt: 'Horse grazing beside a sunlit river', width: 1080, height: 1620, orientation: 'portrait' },
   { src: '/images/gallery-extra/horses-in-forest-rain.jpg', alt: 'Pack horses resting in the forest rain', width: 1620, height: 1080, orientation: 'landscape' },
   { src: '/images/expedition-originals/yaks-river-backlit-portrait.jpg', alt: 'Yaks grazing beside the river in backlit evening sun', width: 1080, height: 1620, orientation: 'portrait' },
-  { src: '/images/gallery-extra/ger-family-meal.jpg', alt: 'Guests sharing a meal with the host family inside a ger', width: 1152, height: 864, orientation: 'landscape' },
-  { src: '/images/gallery-extra/host-family-horse-training-valley.jpg', alt: 'Host family and guests watching a white horse in the Mongolian valley', width: 864, height: 1152, orientation: 'portrait' },
   { src: '/images/gallery-extra/ger-and-land-cruiser-rain.jpg', alt: 'Ger and Land Cruiser in the rain', width: 1080, height: 1620, orientation: 'portrait' },
   { src: '/images/family.jpg', alt: 'Host family life in the valley', width: 1140, height: 822, orientation: 'landscape' },
   { src: '/images/gallery-extra/horseman-under-larch-trees.jpg', alt: 'Horseman under larch trees', width: 1080, height: 1620, orientation: 'portrait' },
@@ -42,7 +40,6 @@ export const GALLERY_IMAGES: GalleryImage[] = [
   { src: '/images/lake.jpg', alt: 'Eight Lakes valley and water', width: 1200, height: 1600, orientation: 'portrait' },
   { src: '/images/gallery-extra/rain-jacket-valley-view.jpg', alt: 'Rain jacket view across the valley', width: 1620, height: 1080, orientation: 'landscape' },
   { src: '/images/testimonial-fin-bennet-host.jpg', alt: 'Fin and his Mongolian host in traditional deels on the steppe', width: 724, height: 1086, orientation: 'portrait' },
-  { src: '/images/ger-interior.jpg', alt: 'Inside a traditional ger', width: 2000, height: 1500, orientation: 'landscape' },
   { src: '/images/gallery-extra/heated-ger-interior.jpg', alt: 'Warm ger interior with beds and a wood stove', width: 1448, height: 1086, orientation: 'landscape' },
   { src: '/images/gallery-extra/three-generations-in-deels.jpg', alt: 'Three generations of the host family in traditional deels below the hills', width: 2000, height: 1333, orientation: 'landscape' },
   { src: '/images/gallery-extra/hosts-father-and-son-in-deels.jpg', alt: 'Father and son in dark deels with orange sashes on the summer steppe', width: 1333, height: 2000, orientation: 'portrait' },
@@ -64,5 +61,4 @@ export const GALLERY_IMAGES: GalleryImage[] = [
   { src: '/images/gallery-extra/packhorses-grazing-by-stream.jpg', alt: 'Loaded pack horses grazing beside a mountain stream under blue sky', width: 1080, height: 1620, orientation: 'portrait' },
   { src: '/images/gallery-extra/pack-train-on-forest-trail-rain.jpg', alt: 'Rider leading the pack train along a wet forest trail in the rain', width: 1080, height: 1620, orientation: 'portrait' },
   { src: '/images/gallery-extra/horses-in-rocky-larch-forest.jpg', alt: 'Horses grazing among boulders in the larch forest', width: 1080, height: 1620, orientation: 'portrait' },
-  { src: '/images/gallery-extra/ger-interior-from-the-bed.jpg', alt: 'View across a ger interior from the bed, boots up, stove and open door beyond', width: 1536, height: 2048, orientation: 'portrait' },
 ]

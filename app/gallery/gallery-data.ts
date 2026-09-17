@@ -7,6 +7,13 @@ export type GalleryImage = {
 };
 
 export const GALLERY_IMAGES: GalleryImage[] = [
+  { src: '/images/gallery-extra/yak-milking-at-sunrise.jpg', alt: 'Milking the yaks in the corral at sunrise, with gers on the ridge behind', width: 1500, height: 2000, orientation: 'portrait' },
+  { src: '/images/gallery-extra/horse-ears-above-the-clouds.jpg', alt: 'View between a horse\u2019s ears from a ridge above the clouds', width: 2000, height: 1500, orientation: 'landscape' },
+  { src: '/images/gallery-extra/clouds-below-the-ridge.jpg', alt: 'Cloud lying below the ridge over forested valleys', width: 2000, height: 1500, orientation: 'landscape' },
+  { src: '/images/gallery-extra/lichen-rocks-autumn-ridge.jpg', alt: 'Lichen-covered rocks and autumn grass on a high ridge', width: 2000, height: 1125, orientation: 'landscape' },
+  { src: '/images/gallery-extra/ger-with-rainbow-after-rain.jpg', alt: 'A ger on the steppe with a rainbow after rain', width: 1500, height: 2000, orientation: 'portrait' },
+  { src: '/images/gallery-extra/buuz-dumplings-in-the-steamer.jpg', alt: 'Hand-folded buuz dumplings in the steamer', width: 1500, height: 2000, orientation: 'portrait' },
+  { src: '/images/gallery-extra/sewing-in-the-ger.jpg', alt: 'A host sewing on a treadle machine inside the ger', width: 1500, height: 2000, orientation: 'portrait' },
   { src: '/images/gallery-extra/horseback-storm-valley-pov.jpg', alt: 'Horseback point of view riding into a stormy mountain valley', width: 1152, height: 864, orientation: 'landscape' },
   { src: '/images/guide-horse-portrait.jpg', alt: 'Suma standing with his horse on the open steppe', width: 997, height: 1496, orientation: 'portrait' },
   { src: '/images/gallery-extra/orkhon-valley-sunburst-panorama.jpg', alt: 'Sunburst over the Orkhon Valley river bends after rain', width: 1800, height: 1013, orientation: 'landscape' },

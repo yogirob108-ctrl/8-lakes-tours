@@ -1926,7 +1926,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             <li><span className="icon">✦</span> International flights</li>
             <li><span className="icon">✦</span> Travel insurance (required) — <a href="https://www.worldnomads.com" target="_blank" rel="noopener noreferrer" style={{color:'var(--gold)'}}>World Nomads</a></li>
             <li><span className="icon">✦</span> Warm sleeping bag & personal camping comfort items</li>
-            <li><span className="icon">✦</span> Riding layers, waterproof shell & sturdy boots</li>
+            <li><span className="icon">✦</span> Warm layers, waterproof shell & sturdy boots</li>
             <li><span className="icon">✦</span> Personal snacks, medication, first-aid kit, painkillers & toiletries</li>
             <li><span className="icon">✦</span> Cash for the local family payment and personal extras</li>
           </ul>

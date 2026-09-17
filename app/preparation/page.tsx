@@ -114,8 +114,13 @@ export default function PreparationPage() {
       <style>{`
         .page-hero { position: relative; display: flex; align-items: flex-end; justify-content: center; min-height: 58vh; padding: 8rem 2rem 3rem; text-align: center; overflow: hidden; }
         .page-hero-media { position: absolute; inset: 0; background: #0e0c09 url('/videos/prep-rider-poster.jpg?v=5') center / cover no-repeat; }
-        .page-hero-video.is-playing { opacity: 1; }
-        .page-hero-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 40%; opacity: 0; transition: opacity 1.6s ease; }
+        /* The About hero's settle: the clip drifts down from a slight scale as
+           it fades, which reads softer than a straight fade. Keyed to the
+           playing class so it begins with the footage rather than on a page
+           timer that can animate an unpainted frame over the poster. */
+        .page-hero-video.is-playing { animation: page-hero-video-in 2.4s ease-out forwards; }
+        @keyframes page-hero-video-in { to { opacity: 1; transform: scale(1); } }
+        .page-hero-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 40%; opacity: 0; transform: scale(1.06); }
         @media (max-width: 900px) { .page-hero-media { background-image: url('/videos/prep-rider-poster-mobile.jpg?v=5'); } }
         @media (prefers-reduced-motion: reduce) { .page-hero-video { display: none; } }
         .page-hero-overlay { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 35%, rgba(14,12,9,0) 28%, rgba(14,12,9,0.5) 100%), linear-gradient(to top, rgba(14,12,9,1) 2%, rgba(14,12,9,0.76) 30%, rgba(14,12,9,0.34) 68%, rgba(14,12,9,0.66) 100%); }

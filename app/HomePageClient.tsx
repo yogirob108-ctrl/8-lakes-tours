@@ -270,27 +270,21 @@ function getLocalizedPricing(groupPricing = getGroupPricing(1)): LocalizedPricin
   };
 }
 
-const STRIP_IMAGES = [
-  { src: '/images/expedition-originals/river-horseman-silhouette-portrait.jpg', alt: 'Horseman silhouetted beside the river' },
-  { src: '/images/expedition-originals/horseman-valley-lookout-portrait.jpg', alt: 'Horseman looking across the Orkhon Valley' },
-  { src: '/images/expedition-originals/suma-river-crossing-original.jpg', alt: 'Suma riding through a shallow river crossing' },
-  { src: '/images/expedition-originals/orkhon-valley-sunset-wide.jpg', alt: 'Sunset over the Orkhon Valley river bends' },
-  { src: '/images/expedition-originals/ger-and-van-camp-wide.jpg', alt: 'Traditional ger camp with a van and mountain backdrop' },
-  { src: '/images/expedition-originals/yaks-river-backlit-portrait.jpg', alt: 'Yaks grazing beside the river in backlit evening sun' },
+
+
+type CollageImage = { src: string; alt: string; orientation: string; collage: string; objectPosition?: string };
+
+const MAIN_ALBUM_IMAGES: CollageImage[] = [
+  { src: '/images/gallery-extra/young-horseman-in-deel.jpg', alt: 'Young horseman in a green deel astride his horse at dusk', orientation: 'portrait', objectPosition: 'center 45%', collage: 'lead' },
+  { src: '/images/gallery-extra/host-on-horseback-at-dusk.jpg', alt: 'Host in a black deel mounted on his horse as the light goes', orientation: 'landscape', objectPosition: 'center 6%', collage: 'hero' },
+  { src: '/images/gallery-extra/three-generations-in-deels.jpg', alt: 'Three generations of the host family in traditional deels', orientation: 'landscape', objectPosition: 'center 8%', collage: 'top-right' },
+  { src: '/images/gallery-extra/heated-ger-interior.jpg', alt: 'Warm ger interior with beds and a wood stove', orientation: 'landscape', collage: 'wide-left' },
+  { src: '/images/gallery-extra/pack-train-on-forest-trail-rain.jpg', alt: 'Rider leading the pack train along a wet forest trail', orientation: 'portrait', collage: 'wide-right' },
+  { src: '/images/gallery-extra/orkhon-valley-sunburst-panorama.jpg', alt: 'Sunburst over the Orkhon Valley river bends after rain', orientation: 'landscape', collage: 'right-mid' },
+  { src: '/images/gallery-extra/guests-on-horseback-in-deels.jpg', alt: 'Two guests in borrowed deels on horseback in the evening light', orientation: 'landscape', objectPosition: 'center 20%', collage: 'bottom-left' },
+  { src: '/images/gallery-extra/rider-rearing-horse-wide.jpg', alt: 'Rider on a rearing horse against the sky', orientation: 'landscape', collage: 'bottom-right' },
 ];
 
-const MAIN_ALBUM_IMAGES = [
-  { src: '/images/guide-horse-portrait.jpg', alt: 'Suma standing with his horse on the open steppe', orientation: 'portrait', collage: 'lead' },
-  { src: '/images/gallery-extra/horseback-storm-valley-pov.jpg', alt: 'Horseback point of view riding into a stormy mountain valley', orientation: 'landscape', collage: 'hero' },
-  { src: '/images/gallery-extra/packed-horses-rain-camp.jpg', alt: 'Packed horses waiting under storm clouds', orientation: 'landscape', collage: 'wide-left' },
-  { src: '/images/gallery-extra/horses-in-forest-rain.jpg', alt: 'Pack horses resting in the forest rain', orientation: 'landscape', collage: 'wide-right' },
-  { src: '/images/expedition-originals/ger-blue-hour-original.jpg', alt: 'Ger at blue hour beneath the mountains', orientation: 'landscape', collage: 'small-a' },
-  { src: '/images/gallery-extra/orkhon-valley-sunburst-panorama.jpg', alt: 'Sunburst over the Orkhon Valley river bends after rain', orientation: 'landscape', collage: 'small-b' },
-  { src: '/images/eagle-portrait-original.jpg', alt: 'Close portrait of a Mongolian eagle', orientation: 'portrait', objectPosition: '72% center', collage: 'tall' },
-  { src: '/images/gallery-extra/rider-rearing-horse-wide.jpg', alt: 'Rider on a rearing horse against the sky', orientation: 'landscape', collage: 'bottom-left' },
-  { src: '/images/gers2.jpg', alt: 'White gers spread across open grassland below the mountains', orientation: 'landscape', collage: 'bottom-mid' },
-  { src: '/images/expedition-originals/rider-storm-valley-panorama-portrait.jpg', alt: 'Horseback point of view crossing a grassy Mongolian valley under storm clouds', orientation: 'portrait', mobileFullWidth: true, collage: 'bottom-right' },
-];
 
 const HOME_FAQS = [
   { q: 'What happens after I submit the form?', a: 'For standard 1–2 guest bookings, you can continue to the online payment and receive confirmation once payment is complete. Scheduled groups of 1–8 pay the exact group online amount in one Stripe checkout. Private, custom, and unconfirmed dates require our team to confirm availability before payment. Before arrival, our team coordinates timing with you and the host-family pickup from Bat-Ulzii.' },
@@ -339,7 +333,6 @@ const GALLERY_IMAGES = [
   { src: '/images/mosaic4.jpg', alt: 'Wide sunset view across the Orkhon Valley' },
   { src: '/images/riding3.jpg', alt: 'Grazing animals beside the river' },
   { src: '/images/mosaic5.jpg', alt: 'Ger silhouette at dusk' },
-  ...STRIP_IMAGES.map(({ src, alt }) => ({ src, alt })),
   ...MAIN_ALBUM_IMAGES.map(({ src, alt }) => ({ src, alt })),
 ];
 
@@ -349,7 +342,6 @@ const LIGHTBOX_IMAGES: { src: string; alt: string }[] = Array.from(
   new Map(
     [
       ...GALLERY_IMAGES,
-      ...STRIP_IMAGES,
       ...MAIN_ALBUM_IMAGES,
       ...TESTIMONIAL_CARDS,
       { src: '/images/suma-horseback-deel.jpg', alt: 'Suma on horseback in a traditional deel on the Mongolian steppe' },
@@ -1316,14 +1308,12 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .main-album-item { position: relative; overflow: hidden; background: var(--ink); border-radius: var(--radius-photo); min-height: 0; }
         .main-album-item.collage-lead { grid-column: 1 / 4; grid-row: 1 / 7; }
         .main-album-item.collage-hero { grid-column: 4 / 9; grid-row: 1 / 4; }
-        .main-album-item.collage-tall { grid-column: 9 / 11; grid-row: 1 / 5; }
+        .main-album-item.collage-top-right { grid-column: 9 / 13; grid-row: 1 / 5; }
         .main-album-item.collage-wide-left { grid-column: 4 / 7; grid-row: 4 / 7; }
         .main-album-item.collage-wide-right { grid-column: 7 / 9; grid-row: 4 / 7; }
-        .main-album-item.collage-small-a { grid-column: 11 / 13; grid-row: 1 / 3; }
-        .main-album-item.collage-small-b { grid-column: 11 / 13; grid-row: 3 / 5; }
-        .main-album-item.collage-bottom-left { grid-column: 1 / 5; grid-row: 7 / 10; }
-        .main-album-item.collage-bottom-mid { grid-column: 5 / 9; grid-row: 7 / 10; }
-        .main-album-item.collage-bottom-right { grid-column: 9 / 13; grid-row: 5 / 10; }
+        .main-album-item.collage-right-mid { grid-column: 9 / 13; grid-row: 5 / 7; }
+        .main-album-item.collage-bottom-left { grid-column: 1 / 7; grid-row: 7 / 10; }
+        .main-album-item.collage-bottom-right { grid-column: 7 / 13; grid-row: 7 / 10; }
         .main-album-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; }
         .main-album-item:hover img { transform: scale(1.04); }
         .image-button { all: unset; display: block; width: 100%; height: 100%; position: relative; cursor: zoom-in; }
@@ -1665,16 +1655,14 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           .footer-links { margin-top: 2.5rem; gap: 1rem 1.2rem; }
           .main-album { display: block; column-count: 2; column-gap: 3px; }
           .main-album-item { display: block; width: 100%; margin: 0 0 3px; break-inside: avoid; page-break-inside: avoid; transform: translateZ(0); }
-          .main-album-item.collage-lead { aspect-ratio: 3 / 4.25; }
+          .main-album-item.collage-lead,
+          .main-album-item.collage-wide-right { aspect-ratio: 3 / 4.25; }
           .main-album-item.collage-hero,
-          .main-album-item.collage-wide-left,
-          .main-album-item.collage-wide-right,
           .main-album-item.collage-bottom-left,
-          .main-album-item.collage-bottom-mid { aspect-ratio: 4 / 3; }
-          .main-album-item.collage-tall { aspect-ratio: 3 / 4.6; }
-          .main-album-item.collage-small-a,
-          .main-album-item.collage-small-b { aspect-ratio: 1 / 1; }
-          .main-album-item.collage-bottom-right { aspect-ratio: 3 / 4.1; }
+          .main-album-item.collage-bottom-right,
+          .main-album-item.collage-right-mid { aspect-ratio: 4 / 3; }
+          .main-album-item.collage-top-right,
+          .main-album-item.collage-wide-left { aspect-ratio: 1 / 1; }
           .lightbox-nav { width: 2.7rem; height: 2.7rem; font-size: 1.6rem; }
           .lightbox-close { top: calc(0.8rem + env(safe-area-inset-top)); right: calc(0.8rem + env(safe-area-inset-right)); width: 3.4rem; height: 3.4rem; font-size: 1.5rem; background: rgba(14,12,9,0.9); border-color: rgba(245,240,232,0.5); }
           .lightbox-prev { left: 0.5rem; }
@@ -1804,22 +1792,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         </div>
       </section>
 
-      {/* PHOTO STRIP */}
-      <div className="photo-strip">
-        {STRIP_IMAGES.map((item) => (
-          <div className="strip-item" key={item.src}>
-            <button
-              type="button"
-              className="image-button"
-              aria-label={`View larger image: ${item.alt}`}
-              onClick={() => openLightbox(item.src)}
-            >
-              <Image src={item.src} alt={item.alt} fill quality={70} sizes="(max-width: 900px) 20vw, 20vw" />
-            </button>
-          </div>
-        ))}
-      </div>
-
       {/* PARTNERSHIP */}
       <section className="partnership" style={{padding:0}}>
         <div className="partnership-text reveal">
@@ -1901,7 +1873,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
       <div className="main-album" id="homepage-photos" aria-label="8 Lakes Tours homepage photo collage">
         {MAIN_ALBUM_IMAGES.map((item) => (
           <div
-            className={`main-album-item collage-${item.collage}${item.mobileFullWidth ? ' mobile-full-width' : ''}`}
+            className={`main-album-item collage-${item.collage}`}
             key={item.src}
           >
             <button

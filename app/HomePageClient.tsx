@@ -5,7 +5,7 @@ import { type FormEvent, type MouseEvent, useEffect, useMemo, useRef, useState }
 import { GROUP_INVOICE, manualPaymentReason, normalizeTourDateSelection } from '@/lib/tour-booking.mjs';
 import { getDefaultTourDate } from '@/lib/tour-dates.mjs';
 import { BASE_LOCAL_FAMILY_PAYMENT_USD, BASE_ONLINE_PAYMENT_USD, BASE_PRICE_USD, GROUP_PRICING_TIERS, MAX_GROUP_SIZE, clampGuestCount, getGroupPricing } from '@/lib/group-pricing.mjs';
-import { normalizeBookingTravellers } from '@/lib/booking-travellers.mjs';
+import { GENDERS, normalizeBookingTravellers } from '@/lib/booking-travellers.mjs';
 import { composeDateOfBirth, splitDateOfBirth } from '@/lib/date-of-birth-fields.mjs';
 import MobileNavMenu from './components/MobileNavMenu';
 
@@ -2122,7 +2122,13 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               </div>
               <div className="form-grid compact-grid">
                 <DateOfBirthFields name="date_of_birth" label="Date of Birth" isLead />
-                <div className="form-group"><label className="form-label" htmlFor="gender">Gender</label><input id="gender" className="form-input" name="gender" type="text" placeholder="e.g. Female" maxLength={40} required /></div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="gender">Gender</label>
+                  <select id="gender" className="form-select" name="gender" required>
+                    <option value="">Select gender</option>
+                    {GENDERS.map(gender => <option key={gender}>{gender}</option>)}
+                  </select>
+                </div>
               </div>
               <div className="form-group"><label className="form-label" htmlFor="dietary_restrictions">Dietary Restrictions</label><input id="dietary_restrictions" className="form-input" name="dietary_restrictions" type="text" placeholder="None, vegetarian, allergies, serious dairy/lactose issues, etc." maxLength={1000} /></div>
               <div className="form-group"><label className="form-label" htmlFor="emergency_contact">Emergency Contact (Name & Phone)</label><input id="emergency_contact" className="form-input" name="emergency_contact" type="text" placeholder="Name · Phone number" maxLength={200} /></div>
@@ -2200,7 +2206,13 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                           <option>Advanced — experienced rider</option>
                         </select>
                       </div>
-                      <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.gender`}>Gender</label><input id={`${fieldPrefix}.gender`} className="form-input" name={`travellers.${index + 1}.gender`} type="text" placeholder="e.g. Male" maxLength={40} required /></div>
+                      <div className="form-group">
+                        <label className="form-label" htmlFor={`${fieldPrefix}.gender`}>Gender</label>
+                        <select id={`${fieldPrefix}.gender`} className="form-select" name={`travellers.${index + 1}.gender`} required>
+                          <option value="">Select gender</option>
+                          {GENDERS.map(gender => <option key={gender}>{gender}</option>)}
+                        </select>
+                      </div>
                     </div>
                     <div className="form-grid compact-grid">
                       <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.email`}>Email (Optional)</label><input id={`${fieldPrefix}.email`} className="form-input" name={`travellers.${index + 1}.email`} type="email" maxLength={254} /></div>

@@ -8,6 +8,7 @@ import { BASE_LOCAL_FAMILY_PAYMENT_USD, BASE_ONLINE_PAYMENT_USD, BASE_PRICE_USD,
 import { normalizeBookingTravellers } from '@/lib/booking-travellers.mjs';
 import { composeDateOfBirth, splitDateOfBirth } from '@/lib/date-of-birth-fields.mjs';
 import MobileNavMenu from './components/MobileNavMenu';
+import HeroVideo from './components/HeroVideo';
 
 type FunnelEventProperties = Record<string, string | number | boolean>;
 
@@ -1374,6 +1375,13 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .getting-there-steps strong { display: block; color: var(--cream); font-weight: 400; }
         .getting-there-note { margin: 0.9rem 1.2rem 1.2rem; padding-left: 0.8rem; border-left: 2px solid var(--gold); font-size: 0.78rem; line-height: 1.55; color: rgba(212,207,196,0.7); }
 
+        .booking-band { position: relative; height: clamp(190px, 26vh, 300px); overflow: hidden; background: var(--ink); }
+        .booking-band-media { position: absolute; inset: 0; background: var(--ink) url('/videos/booking-band-poster.jpg?v=1') center 62% / cover no-repeat; }
+        .booking-band-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 62%; opacity: 0; transition: opacity 1.6s ease; }
+        .booking-band-video.is-playing { opacity: 1; }
+        .booking-band-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, var(--ink) 0%, rgba(14,12,9,0.35) 30%, rgba(14,12,9,0.35) 62%, var(--ink) 100%); }
+        @media (max-width: 900px) { .booking-band { height: clamp(150px, 20vh, 220px); } .booking-band-media { background-image: url('/videos/booking-band-poster-mobile.jpg?v=1'); } }
+        @media (prefers-reduced-motion: reduce) { .booking-band-video { display: none; } }
         .booking { background: var(--dark); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6rem; align-items: start; overflow-x: clip; }
         .scarcity-pill { display:inline-flex; max-width:100%; box-sizing:border-box; align-items:center; gap:0.6rem; margin-top:1.2rem; padding:0.6rem 1.1rem; background:rgba(185,74,48,0.12); border:1px solid rgba(185,74,48,0.35); border-radius: var(--radius-soft); overflow:hidden; }
         .scarcity-pill span:last-child { min-width:0; font-size:0.72rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--rust); line-height:1.45; overflow-wrap:anywhere; }
@@ -2005,6 +2013,13 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
       </section>
 
       <div className="divider"><div className="divider-line"></div><div className="divider-ornament">✦</div><div className="divider-line"></div></div>
+
+      <section className="booking-band" aria-hidden="true">
+        <div className="booking-band-media">
+          <HeroVideo className="booking-band-video" desktopSrc="/videos/booking-band-loop.mp4?v=1" mobileSrc="/videos/booking-band-loop-mobile.mp4?v=1" />
+          <div className="booking-band-overlay" />
+        </div>
+      </section>
 
       {/* BOOKING */}
       <section className="booking" id="book">

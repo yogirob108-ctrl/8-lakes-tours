@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     title: 'About 8 Lakes Tours',
     description: 'Meet the people and host-family relationship behind this Mongolian horse trekking expedition.',
     url: 'https://www.8lakestours.com/about',
-    images: [{ url: '/images/og-8-lakes-about-family-2026.jpg', width: 1200, height: 630, alt: 'Rob Zaher with his Mongolian host family and their horses in traditional deels' }],
+    images: [{ url: '/images/og-8-lakes-about-family-2026.jpg', width: 1200, height: 630, alt: 'Robert Zaher with his Mongolian host family and their horses in traditional deels' }],
   },
   twitter: {
     card: 'summary_large_image',
@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 const storyCards = [
   {
     title: 'Built from a real relationship',
-    body: 'Rob met Ganbold and the Sandagdorj family while travelling through Mongolia on horseback, then returned to shape this trip with them directly. This is not a generic route bought from a distant operator — it is a small hosted journey built around a mutual love for the steppe and all she has to offer.',
+    body: 'Robert met Ganbold and the Sandagdorj family while travelling through Mongolia on horseback, then returned to shape this trip with them directly. This is not a generic route bought from a distant operator — it is a small hosted journey built around a mutual love for the steppe and all she has to offer.',
   },
   {
     title: 'Hosted by nomadic families',
@@ -106,18 +106,18 @@ export default function Page() {
           <h2>The natural rhythms of the steppe.</h2>
         </div>
         <div className="intro-copy">
-          <p>The trip exists because Rob travelled through Mongolia, met Ganbold&apos;s family, rode with them, stayed with them, and saw that this valley could host something deeper than a standard sightseeing product.</p>
+          <p>The trip exists because Robert travelled through Mongolia, met Ganbold&apos;s family, rode with them, stayed with them, and saw that this valley could host something deeper than a standard sightseeing product.</p>
           <p>Guests do not come here to consume something polished and disconnected from the natural rhythms of the steppe. They come to live closer to generational nomadic ways of being for a short time: ride, eat, rest, laugh, drink tea, look at the sky, and remember what simplicity feels like.</p>
           <p>That includes embracing variance. In steppe life, the plan is shaped by the land, the animals, and the people you meet along the way. The ancestral customs of hospitality are still very much alive here: tea, food, shelter, and help are offered to the traveller who appears at the door of a ger. Despite the variance of weather, animals, and distance, there is always a gracious and helpful hand on the steppe.</p>
         </div>
       </section>
 
       <section className="story-section">
-        <div className="story-image portrait" role="img" aria-label="Rob Zaher, organiser of 8 Lakes Tours, with his host in the Orkhon Valley, both wearing traditional deels" />
+        <div className="story-image portrait" role="img" aria-label="Robert Zaher, organiser of 8 Lakes Tours, with his host in the Orkhon Valley, both wearing traditional deels" />
         <div className="story-copy">
           <p className="eyebrow">Who you&apos;re booking with</p>
-          <h2>Rob Zaher</h2>
-          <p>Rob leads the 8 Lakes Tours experience and customer communication. He is the bridge between international guests and the Mongolian host family relationship behind the trip.</p>
+          <h2>Robert Zaher</h2>
+          <p>Robert leads the 8 Lakes Tours experience and customer communication. He is the bridge between international guests and the Mongolian host family relationship behind the trip.</p>
           <p>His role is not to over-polish the experience into something fake. It is to make the booking, preparation, expectations, safety, and communication clear enough that guests can arrive ready for the real thing.</p>
           <div className="link-row">
             <a href="https://www.instagram.com/robzaher108" target="_blank" rel="noopener noreferrer">Rob&apos;s Instagram</a>

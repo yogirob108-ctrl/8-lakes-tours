@@ -12,4 +12,4 @@ test('recovery sends private transaction only after claim and fresh authorizatio
 test('paid or cancelled after claim suppresses send',async()=>{const h=harness({authorize:false});await h.run();assert.equal(h.sent.length,0);});
 test('duplicate claim suppresses send',async()=>{const h=harness({claim:false});await h.run();assert.equal(h.sent.length,0);});
 test('provider exception finalizes failed for bounded retry',async()=>{const h=harness({error:true});assert.equal((await h.run()).failed,1);assert.equal(h.calls.at(-1)[1].p_sent,false);});
-test('email escapes private URL and contains no marketing or traveller data',()=>{const e=recoveryEmail(row,'https://example.invalid/pay?a=1&token=<secret>');assert.match(e.html,/&amp;token=&lt;secret&gt;/);assert.match(e.text,/Rob Zaher/);});
+test('email escapes private URL and contains no marketing or traveller data',()=>{const e=recoveryEmail(row,'https://example.invalid/pay?a=1&token=<secret>');assert.match(e.html,/&amp;token=&lt;secret&gt;/);assert.match(e.text,/Robert Zaher/);});

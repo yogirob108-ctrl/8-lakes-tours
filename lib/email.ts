@@ -81,11 +81,11 @@ function p(html: string) {
 // Quiet signature block appended to every customer-facing email: plain muted
 // small text under the signoff, no logo, no wordmark banner, no footer strip.
 function signatureBlockHtml() {
-  return `    <p style="margin:12px 0 0;font-size:13px;line-height:1.6;color:#767676">Rob Zaher<br>8 Lakes Tours<br>www.8lakestours.com<br>info@8lakestours.com</p>`;
+  return `    <p style="margin:12px 0 0;font-size:13px;line-height:1.6;color:#767676">Robert Zaher<br>8 Lakes Tours<br>www.8lakestours.com<br>info@8lakestours.com</p>`;
 }
 
 function signoffHtml(withSignature = true) {
-  return `    <p style="margin:24px 0 0">Rob Zaher<br>8 Lakes Tours</p>` + (withSignature ? '\n' + signatureBlockHtml() : '');
+  return `    <p style="margin:24px 0 0">Robert Zaher<br>8 Lakes Tours</p>` + (withSignature ? '\n' + signatureBlockHtml() : '');
 }
 
 // Subtle plain-text style section rules for longer customer emails: a thin
@@ -220,15 +220,15 @@ export function bookingCustomerEmail(input: { reference: string; firstName: stri
   const resumeLine = input.paymentUrl ? `Resume your secure payment (no new booking needed): ${input.paymentUrl}` : '';
 
   const paymentIntro = needsGroupInvoice
-    ? `Since you are booking ${guestCount} guests together, Rob will email you one invoice for the ${onlinePayment} online amount so the whole group can pay in a single step. Your places are confirmed once that invoice is paid.`
+    ? `Since you are booking ${guestCount} guests together, Robert will email you one invoice for the ${onlinePayment} online amount so the whole group can pay in a single step. Your places are confirmed once that invoice is paid.`
     : input.requiresManualPaymentLink
-      ? `Since this date or group needs an availability check, Rob will personally confirm the details before you pay. If the date, group size, horses, guide, and host-family capacity all work, Rob will send you the correct payment link.`
+      ? `Since this date or group needs an availability check, Robert will personally confirm the details before you pay. If the date, group size, horses, guide, and host-family capacity all work, Robert will send you the correct payment link.`
       : `Your place is not confirmed yet. That happens once the ${onlinePayment} online booking payment is completed. You will get an automatic payment confirmation email once Stripe checkout completes.`;
 
   const steps = needsGroupInvoice
-    ? `1. Rob will email one invoice for ${onlinePayment}, covering all ${guestCount} guests.\n2. Pay that invoice to reserve the group's places.\n3. We send preparation notes before departure once the booking is confirmed.`
+    ? `1. Robert will email one invoice for ${onlinePayment}, covering all ${guestCount} guests.\n2. Pay that invoice to reserve the group's places.\n3. We send preparation notes before departure once the booking is confirmed.`
     : input.requiresManualPaymentLink
-      ? `1. Rob will check the date, group size, horses, guide, and host-family capacity.\n2. If everything is available, Rob will send the correct Stripe payment link or custom order for the online reservation amount.\n3. We send preparation notes before departure once the booking is confirmed.`
+      ? `1. Robert will check the date, group size, horses, guide, and host-family capacity.\n2. If everything is available, Robert will send the correct Stripe payment link or custom order for the online reservation amount.\n3. We send preparation notes before departure once the booking is confirmed.`
       : `1. Complete the online booking payment on the website if you have not already done so.\n2. You will receive an automatic payment confirmation email once Stripe checkout completes.\n3. Before departure we send practical prep notes: packing guidance, insurance reminders, WhatsApp coordination, Bat-Ulzii pickup timing, and cash-payment instructions.`;
 
   const text = `Hi ${name},
@@ -274,7 +274,7 @@ The preparation and arrival emails for this booking are separate from the genera
 
 If anything comes up, just reply to this email.
 
-Rob Zaher
+Robert Zaher
 8 Lakes Tours
 www.8lakestours.com
 info@8lakestours.com`;
@@ -317,9 +317,9 @@ info@8lakestours.com`;
     text,
     html: wrap(
       needsGroupInvoice
-        ? `Reference ${input.reference}. Rob will email a ${onlinePayment} invoice for your group.`
+        ? `Reference ${input.reference}. Robert will email a ${onlinePayment} invoice for your group.`
         : input.requiresManualPaymentLink
-          ? `Reference ${input.reference}. Rob will confirm availability before payment.`
+          ? `Reference ${input.reference}. Robert will confirm availability before payment.`
           : `Reference ${input.reference}. Your place is confirmed once the ${onlinePayment} online booking payment is completed.`,
       body,
     ),
@@ -374,7 +374,7 @@ Next we send preparation notes, packing guidance, insurance reminders, and arriv
 
 If anything comes up before then, just reply to this email.
 
-Rob Zaher
+Robert Zaher
 8 Lakes Tours
 www.8lakestours.com
 info@8lakestours.com`;
@@ -431,7 +431,7 @@ ${DASH_RULE_TEXT}
 
 Any last questions, just reply to this email.
 
-Rob Zaher
+Robert Zaher
 8 Lakes Tours
 www.8lakestours.com
 info@8lakestours.com`;
@@ -481,7 +481,7 @@ Also check that your passport, flights, warm layers, personal medication, first-
 
 Any last questions, just reply to this email.
 
-Rob Zaher
+Robert Zaher
 8 Lakes Tours
 www.8lakestours.com
 info@8lakestours.com`;
@@ -520,11 +520,11 @@ ${DASH_RULE_TEXT}
 
 Please reply with your Ulaanbaatar arrival details and your Bat-Ulzii bus date and time once booked, so we can coordinate the host-family pickup.
 
-The countryside bus does not run every day, so ask your Ulaanbaatar hostel or hotel to help book it. Once your bus timing is confirmed, Rob will coordinate the pickup from Bat-Ulzii. Please do not assume the pickup is final until it is confirmed in writing.
+The countryside bus does not run every day, so ask your Ulaanbaatar hostel or hotel to help book it. Once your bus timing is confirmed, Robert will coordinate the pickup from Bat-Ulzii. Please do not assume the pickup is final until it is confirmed in writing.
 
 Keep your travel insurance, passport, warm layers, and clean USD cash for the host family ready.
 
-Rob Zaher
+Robert Zaher
 8 Lakes Tours
 www.8lakestours.com
 info@8lakestours.com`;
@@ -538,7 +538,7 @@ info@8lakestours.com`;
     ]),
     sectionRuleHtml(),
     p(`Please reply with your Ulaanbaatar arrival details and your Bat-Ulzii bus date and time once booked, so we can coordinate the host-family pickup.`),
-    p(`The countryside bus does not run every day, so ask your Ulaanbaatar hostel or hotel to help book it. Once your bus timing is confirmed, Rob will coordinate the pickup from Bat-Ulzii. Please do not assume the pickup is final until it is confirmed in writing.`),
+    p(`The countryside bus does not run every day, so ask your Ulaanbaatar hostel or hotel to help book it. Once your bus timing is confirmed, Robert will coordinate the pickup from Bat-Ulzii. Please do not assume the pickup is final until it is confirmed in writing.`),
     p(`Keep your travel insurance, passport, warm layers, and clean USD cash for the host family ready.`),
     signoffHtml(),
   ].join('\n');
@@ -565,7 +565,7 @@ Passport, insurance covering riding and emergency evacuation, flights and bus, w
 
 If anything has changed, just reply.
 
-Rob Zaher
+Robert Zaher
 8 Lakes Tours
 www.8lakestours.com
 info@8lakestours.com`;

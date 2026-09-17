@@ -49,7 +49,7 @@ test('every customer-facing email carries the quiet four-line signature block', 
     assert.ok(mail.html.includes(SIGNATURE_HTML), `${name}: html missing signature block`);
     assert.ok(mail.html.includes('font-size:13px;line-height:1.6;color:#767676'), `${name}: signature block not muted small text`);
     assert.ok(mail.text.includes(SIGNATURE_TEXT), `${name}: text missing signature block`);
-    assert.ok(mail.html.includes('<p style="margin:24px 0 0">Rob Zaher<br>8 Lakes Tours</p>'), `${name}: signoff damaged`);
+    assert.ok(mail.html.includes('<p style="margin:24px 0 0">Robert Zaher<br>8 Lakes Tours</p>'), `${name}: signoff damaged`);
   }
 });
 

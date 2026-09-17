@@ -844,7 +844,11 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
     const id = target.id;
     if (id) {
       document.getElementById(`${id}-inline-error`)?.remove();
-      setValidationErrors(current => current.filter(error => error.id !== id));
+      // Keep the same array when this field has no error to clear. A fresh
+      // array on every keystroke re-renders the form, and a re-render between
+      // a select's `input` and `change` events rewrites the controlled value
+      // back to state, silently discarding the option the visitor just picked.
+      setValidationErrors(current => current.some(error => error.id === id) ? current.filter(error => error.id !== id) : current);
     }
   };
 

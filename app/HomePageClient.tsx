@@ -494,6 +494,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
   const [leadError, setLeadError] = useState('');
   const [selectedTourDate, setSelectedTourDate] = useState(() => getDefaultTourDate(tourDates));
   const tourDateTouchedRef = useRef(false);
+  const guestCountTouchedRef = useRef(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const tourDateOptions = tourDates.map(dateOption => dateOption.date);
   const groupPricing = useMemo(() => getGroupPricing(guestCount), [guestCount]);
@@ -541,13 +542,16 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
       field.dispatchEvent(new Event('change', { bubbles: true }));
     };
     assign('first_name', draft.first_name); assign('last_name', draft.last_name); assign('email', draft.email);
-    assign('phone', draft.phone); assign('tour_date', draft.tour_date); assign('guest_count', draft.guest_count); assign('notes', draft.notes);
+    // guest_count is controlled and always holds a value, so it restores through
+    // state below rather than through a direct write the assign guard would skip.
+    assign('phone', draft.phone); assign('tour_date', draft.tour_date); assign('notes', draft.notes);
     const restoreDate = (name: string, value: unknown, raw?: { date_of_birth_day?: string; date_of_birth_month?: string; date_of_birth_year?: string }) => {
       const parts = splitDateOfBirth(String(value || ''));
       assign(`${name}_day`, parts.day || raw?.date_of_birth_day); assign(`${name}_month`, parts.month || raw?.date_of_birth_month); assign(`${name}_year`, parts.year || raw?.date_of_birth_year);
     };
     restoreDate('date_of_birth', draft.date_of_birth, draft);
-    (draft.travellers || []).forEach((traveller: { first_name?: string; last_name?: string; date_of_birth?: string; date_of_birth_day?: string; date_of_birth_month?: string; date_of_birth_year?: string }, index: number) => {
+    const companions = (draft.travellers || []) as Array<{ first_name?: string; last_name?: string; date_of_birth?: string; date_of_birth_day?: string; date_of_birth_month?: string; date_of_birth_year?: string }>;
+    const restoreCompanions = () => companions.forEach((traveller, index) => {
       assign(`travellers.${index + 1}.first_name`, traveller.first_name);
       assign(`travellers.${index + 1}.last_name`, traveller.last_name);
       restoreDate(`travellers.${index + 1}.date_of_birth`, traveller.date_of_birth, traveller);
@@ -559,11 +563,18 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
     // date only lands while the visitor has not personally touched either date
     // control, and a real user edit is never overwritten.
     const currentEmail = (form.elements.namedItem('email') as HTMLInputElement | null)?.value;
-    const currentGuestCount = (form.elements.namedItem('guest_count') as HTMLSelectElement | null)?.value;
     const draftTourDate = normalizeTourDateSelection(String(draft.tour_date || ''));
     if (!currentEmail) setEmail(String(draft.email || ''));
     if (!tourDateTouchedRef.current && draftTourDate) setSelectedTourDate(draftTourDate);
-    if (!currentGuestCount) setGuestCount(Number(draft.guest_count) || 1);
+    // Companion fieldsets only exist once the guest count has rendered them, so
+    // restore the count first and fill those fields on the following frame.
+    const draftGuestCount = clampGuestCount(draft.guest_count);
+    if (!guestCountTouchedRef.current && draftGuestCount > 1) {
+      setGuestCount(draftGuestCount);
+      window.setTimeout(restoreCompanions, 0);
+      return;
+    }
+    restoreCompanions();
   };
 
   // The poster image is the LCP element; the drone loop only loads once the page is
@@ -2141,7 +2152,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               </div>
               <div className="form-group">
                 <label className="form-label" htmlFor="guest_count">Guests booking together</label>
-                <select id="guest_count" className="form-select" name="guest_count" value={guestCount} onChange={e => { const next = clampGuestCount(e.target.value); setGuestCount(next); setTravellerAnnouncement(`${next} traveller section${next === 1 ? '' : 's'} ready.`); }}>
+                <select id="guest_count" className="form-select" name="guest_count" value={guestCount} onChange={e => { guestCountTouchedRef.current = true; const next = clampGuestCount(e.target.value); setGuestCount(next); setTravellerAnnouncement(`${next} traveller section${next === 1 ? '' : 's'} ready.`); }}>
                   {Array.from({ length: MAX_GROUP_SIZE }, (_, index) => index + 1).map(count => (
                     <option key={count} value={count}>{count} guest{count === 1 ? '' : 's'}</option>
                   ))}

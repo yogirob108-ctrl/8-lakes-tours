@@ -68,7 +68,7 @@ const sections = [
     items: [
       'Once you leave the city, do not expect Western flush toilets. Countryside facilities are usually simple outhouses with squat toilets.',
       'Accommodation can still be warm, welcoming, and comfortable in a rural way, but bathroom facilities are basic and there are no regular showers in the countryside.',
-      'Bring wet wipes for cleaning hands and body between river washes. Optional daily river ice baths are part of the simple, therapeutic steppe rhythm when conditions allow.',
+      'Bring wet wipes for cleaning hands and body between river washes. Optional daily river cold plunges are part of the simple, therapeutic steppe rhythm when conditions allow.',
     ],
   },
   {

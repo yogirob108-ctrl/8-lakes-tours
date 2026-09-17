@@ -1842,7 +1842,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               <li>Traditional ger accommodation</li>
               <li>Yak milking & daily routines</li>
               <li>Horse handling & riding practice</li>
-              <li>Optional daily river ice baths</li>
+              <li>Optional daily river cold plunges</li>
               <li>Cultural exchange & shared meals</li>
               <li style={{opacity:1, color:'var(--gold)'}}>Optional: van day trip to nearby historic sites & waterfalls</li>
             </ul>

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import SiteNav from '../components/SiteNav';
+import HeroVideo from '../components/HeroVideo';
 import FaqAccordion from './FaqAccordion';
 
 export const metadata: Metadata = {
@@ -25,9 +26,6 @@ export const metadata: Metadata = {
 const pageStyle = { background: '#0e0c09', minHeight: '100vh', color: '#d4cfc4', fontFamily: "var(--font-jost), 'Jost', sans-serif", fontWeight: 300 } as const;
 const linkStyle = { fontSize: '0.7rem', letterSpacing: '0.2em', textTransform: 'uppercase', color: '#c8a96e', textDecoration: 'none' } as const;
 const wrapperStyle = { maxWidth: '760px', margin: '0 auto', padding: '5rem 2rem' } as const;
-const eyebrowStyle = { fontSize: '0.65rem', letterSpacing: '0.3em', textTransform: 'uppercase', color: '#c8a96e', marginBottom: '1rem' } as const;
-const h1Style = { fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif", fontSize: '2.8rem', fontWeight: 300, color: '#f5f0e8', marginBottom: '1rem', lineHeight: 1.1 } as const;
-const pStyle = { fontSize: '0.95rem', lineHeight: 1.85, color: '#d4cfc4', opacity: 0.86 } as const;
 const footerStyle = { borderTop: '1px solid rgba(200,169,110,0.15)', padding: '2rem 4rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' } as const;
 
 const FAQ_ITEMS = [
@@ -46,7 +44,7 @@ const FAQ_ITEMS = [
   ['Are we completely isolated in the wilderness?', 'No. The landscape is wide and remote from city life, but it is not empty or abandoned. Mongolian steppe culture is famously hospitable: neighbouring families visit each other, share food and tea, help with animals and work, and know the land around them. You should expect simple conditions, but not a survival scenario where food, people, or basic support disappear.'],
   ['What if communication or translation gets difficult?', 'The host-family setting is cross-cultural, and not every moment will happen in perfect English. Guides and organisers help with the main logistics, but Grok has worked best for simple Mongolian communication so far; ChatGPT voice mode also works well for translation. The host nomadic camp has strong Starlink and a solar-powered inverter for charging phones, cameras, and other electronics, though remote trek days can still be more offline.'],
   ['Will I be pushed outside my comfort zone?', 'Sometimes, yes — gently and with common sense. The trip is built around the idea that wild places, movement, and challenge can be good for people. You may be encouraged to try more than you expected, but participation is never forced. This trip suits people who are open-minded and mentally prepared for simple conditions, physical discomfort, changing plans, and sharing space with a group without needing everything to be polished or predictable.'],
-  ['Are there Western toilets or showers in the countryside?', 'No. Once you leave the city, countryside toilet facilities are simple outhouses with squat toilets rather than Western flush toilets, and there are no regular showers. The cabins and ger stays can still be warm, welcoming, and comfortable in a rural way, but bathroom facilities are basic. Bring wet wipes for cleaning hands and body between river washes; optional daily river ice baths can be part of the simple, therapeutic steppe rhythm when conditions allow.'],
+  ['Are there Western toilets or showers in the countryside?', 'No. Once you leave the city, countryside toilet facilities are simple outhouses with squat toilets rather than Western flush toilets, and there are no regular showers. The cabins and ger stays can still be warm, welcoming, and comfortable in a rural way, but bathroom facilities are basic. Bring wet wipes for cleaning hands and body between river washes; optional daily river cold plunges can be part of the simple, therapeutic steppe rhythm when conditions allow.'],
   ['What medical supplies should I bring?', 'Bring a small personal first-aid kit, blister care, any prescription medication, basic toiletries, and any painkillers or anti-inflammatory medicine you normally use and can safely take. Guides carry basic first aid, but they are not medical professionals and cannot replace your own personal medical supplies.'],
   ['What is included?', 'The trip includes accommodation, meals, horses, local guiding, ger stays, and the hosted horse trekking experience described on the site. Flights, visas, travel insurance, and personal expenses are not included.'],
   ['Can you support vegan, lactose-free, or strict dietary requirements?', 'This trip is not a good fit for strict vegan travellers, and it may be unsuitable for anyone with serious dairy or lactose intolerance. In rural Mongolia, daily host-family food is traditionally meat- and dairy-heavy: milk tea, yoghurt, cheese, meat, and animal products are normal parts of the diet and hospitality. The dairy is also one of the highest-quality parts of the experience: families always produce their own milk from yaks or cows and serve it fresh in traditional foods. Vegetarian guests may be possible with advance notice, but remote families cannot reliably provide fully separate vegan or dairy-free meals. Please contact us before booking if diet is a major health, allergy, or ethical requirement.'],
@@ -77,10 +75,32 @@ export default function Page() {
     <main style={pageStyle}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <SiteNav />
-      <div style={wrapperStyle}>
-        <p style={eyebrowStyle}>FAQ</p>
-        <h1 style={h1Style}>Common Questions</h1>
-        <p style={{...pStyle, fontSize: '1.05rem'}}>Clear answers for travellers comparing Mongolian horse trekking trips, checking payment structure, or asking an AI assistant to explain 8 Lakes Tours.</p>
+      <style>{`
+        .page-hero { position: relative; display: flex; align-items: flex-end; justify-content: center; min-height: 58vh; padding: 8rem 2rem 3rem; text-align: center; overflow: hidden; }
+        .page-hero-media { position: absolute; inset: 0; background: #0e0c09 url('/videos/faq-horse-mane-poster.jpg?v=4') center / cover no-repeat; }
+        .page-hero-video.is-playing { opacity: 1; }
+        .page-hero-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 45%; opacity: 0; transition: opacity 1.6s ease; }
+        @media (max-width: 900px) { .page-hero-media { background-image: url('/videos/faq-horse-mane-poster-mobile.jpg?v=4'); } }
+        @media (prefers-reduced-motion: reduce) { .page-hero-video { display: none; } }
+        .page-hero-overlay { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 35%, rgba(14,12,9,0) 28%, rgba(14,12,9,0.5) 100%), linear-gradient(to top, rgba(14,12,9,1) 2%, rgba(14,12,9,0.76) 30%, rgba(14,12,9,0.34) 68%, rgba(14,12,9,0.66) 100%); }
+        .page-hero-copy { position: relative; z-index: 1; max-width: 820px; }
+        .page-hero-copy .page-hero-eyebrow { font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: #c8a96e; margin: 0 0 1rem; }
+        .page-hero-copy h1 { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: clamp(2.8rem, 8vw, 5rem); font-weight: 300; line-height: 0.98; color: #f5f0e8; margin: 0; }
+        .page-hero-copy .page-hero-intro { margin: 1.4rem auto 0; max-width: 660px; font-size: 1rem; line-height: 1.8; color: rgba(212,207,196,0.86); }
+        @media (max-width: 900px) { .page-hero { min-height: 48vh; padding: 6rem 1.25rem 2.25rem; } }
+      `}</style>
+      <header className="page-hero">
+        <div className="page-hero-media" role="img" aria-label="Close-up of a Mongolian horse&apos;s mane and eye">
+          <HeroVideo className="page-hero-video" desktopSrc="/videos/faq-horse-mane-loop.mp4?v=5" mobileSrc="/videos/faq-horse-mane-loop-mobile.mp4?v=5" />
+          <div className="page-hero-overlay" />
+        </div>
+        <div className="page-hero-copy">
+          <p className="page-hero-eyebrow">FAQ</p>
+          <h1>Common Questions</h1>
+          <p className="page-hero-intro">Clear answers for travellers comparing Mongolian horse trekking trips, checking payment structure, or asking an AI assistant to explain 8 Lakes Tours.</p>
+        </div>
+      </header>
+      <div style={{...wrapperStyle, paddingTop: '3.5rem'}}>
         <FaqAccordion items={FAQ_ITEMS} />
       </div>
       <footer style={footerStyle}>

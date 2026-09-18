@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-import { normalizeBookingTravellers } from '../lib/booking-travellers.mjs';
+import { GENDERS, normalizeBookingTravellers } from '../lib/booking-travellers.mjs';
 import { normalizePublicBookingPayload } from '../lib/public-booking.mjs';
 
 const RIDING_LEVELS = [
@@ -210,4 +210,15 @@ test('privacy policy discloses traveller manifest details including dates of bir
   assert.match(privacy, /date of birth/i);
   assert.match(privacy, /permission to provide (?:their|these) details/i);
   assert.match(privacy, /lead booker[^.]+waiver/i);
+});
+
+test('gender must be one of the offered options', () => {
+  const invalid = normalizeBookingTravellers(1, [validTraveller({ gender: 'unspecified' })]);
+  assert.equal(invalid.ok, false);
+  assert.match(invalid.error, /Traveller 1 gender is invalid/);
+  for (const gender of GENDERS) {
+    const result = normalizeBookingTravellers(1, [validTraveller({ gender })]);
+    assert.equal(result.ok, true);
+    assert.equal(result.travellers[0].gender, gender);
+  }
 });

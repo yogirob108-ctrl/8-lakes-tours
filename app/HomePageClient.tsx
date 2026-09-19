@@ -7,6 +7,7 @@ import { getDefaultTourDate } from '@/lib/tour-dates.mjs';
 import { BASE_LOCAL_FAMILY_PAYMENT_USD, BASE_ONLINE_PAYMENT_USD, BASE_PRICE_USD, GROUP_PRICING_TIERS, MAX_GROUP_SIZE, clampGuestCount, getGroupPricing } from '@/lib/group-pricing.mjs';
 import { GENDERS, normalizeBookingTravellers } from '@/lib/booking-travellers.mjs';
 import { composeDateOfBirth, splitDateOfBirth } from '@/lib/date-of-birth-fields.mjs';
+import { CONSENT_STORAGE_KEY, normalizeConsentChoice } from '@/lib/google-consent.mjs';
 import MobileNavMenu from './components/MobileNavMenu';
 
 type FunnelEventProperties = Record<string, string | number | boolean>;
@@ -60,63 +61,73 @@ function trackFunnelEvent(name: string, properties: FunnelEventProperties = {}) 
 
 const ATTRIBUTION_STORAGE_KEY = 'eight_lakes_first_attribution';
 
-function getGaClientId() {
-  if (typeof document === 'undefined') return '';
-  const gaCookie = document.cookie
-    .split('; ')
-    .find(cookie => cookie.startsWith('_ga='))
-    ?.split('=')[1];
-
-  if (!gaCookie) return '';
-  const parts = gaCookie.split('.');
-  return parts.length >= 4 ? `${parts[2]}.${parts[3]}` : gaCookie;
+function hasMeasurementConsent() {
+  if (typeof window === 'undefined') return false;
+  try {
+    return normalizeConsentChoice(window.localStorage.getItem(CONSENT_STORAGE_KEY)) === 'measurement';
+  } catch {
+    return false;
+  }
 }
 
-function getGaClientIdFromGtag(): Promise<string> {
-  if (typeof window === 'undefined' || typeof window.gtag !== 'function') return Promise.resolve('');
+function validGaClientId(value: unknown) {
+  return typeof value === 'string' && /^\d{1,20}\.\d{1,20}$/.test(value) ? value : '';
+}
 
+function validGaSessionId(value: unknown) {
+  return typeof value === 'string' && /^\d{1,20}$/.test(value) ? value : '';
+}
+
+function getGaClientId() {
+  if (typeof document === 'undefined' || !hasMeasurementConsent()) return '';
+  const raw = document.cookie.split('; ').find(cookie => cookie.startsWith('_ga='))?.slice(4);
+  try {
+    const parts = raw ? decodeURIComponent(raw).split('.') : [];
+    return parts.length >= 4 ? validGaClientId(`${parts[2]}.${parts[3]}`) : '';
+  } catch {
+    return '';
+  }
+}
+
+function getGtagValue(field: 'client_id' | 'session_id'): Promise<string> {
+  if (typeof window === 'undefined' || !hasMeasurementConsent() || typeof window.gtag !== 'function') return Promise.resolve('');
   return new Promise((resolve) => {
     let settled = false;
     const finish = (value: unknown) => {
       if (settled) return;
       settled = true;
-      resolve(typeof value === 'string' ? value : '');
+      resolve(field === 'client_id' ? validGaClientId(value) : validGaSessionId(value));
     };
-
     window.setTimeout(() => finish(''), 700);
-    window.gtag?.('get', GA_MEASUREMENT_ID, 'client_id', finish);
+    window.gtag?.('get', GA_MEASUREMENT_ID, field, finish);
   });
 }
 
-// The GA session id arrives in the _ga_<MEASUREMENT_ID> cookie (the same
-// identifier the tag sends as ga_session_id). It is read directly from the
-// consented browser and never defaulted: without a real session id, GA4
-// Measurement Protocol session attribution cannot join the server-side
-// payment_received event to the visitor's session source.
 function getGaSessionIdFromCookie(): string {
-  if (typeof document === 'undefined') return '';
-  const rawParts = document.cookie
-    .split('; ')
-    .find(cookie => cookie.startsWith(`_ga_${GA_MEASUREMENT_ID.slice(2)}=`))
-    ?.split('=');
-  const parts = Array.isArray(rawParts) ? rawParts : [];
-  return parts.length >= 2 ? parts.slice(1).join('=') : '';
+  if (typeof document === 'undefined' || !hasMeasurementConsent()) return '';
+  const raw = document.cookie.split('; ').find(cookie => cookie.startsWith(`_ga_${GA_MEASUREMENT_ID.slice(2)}=`))?.split('=').slice(1).join('=');
+  if (!raw) return '';
+  let value = '';
+  try { value = decodeURIComponent(raw); } catch { return ''; }
+  // GS1's third dot-separated field and GS2's s<id> field carry the numeric
+  // session id. Cookie formats are only a bounded fallback when gtag get is
+  // unavailable; never send the raw cookie value as an MP session_id.
+  const gs1 = value.match(/^GS1\.\d+\.(\d{1,20})(?:\.|$)/);
+  const gs2 = value.match(/^GS2\.\d+\.s(\d{1,20})(?:\$|$)/);
+  return validGaSessionId(gs1?.[1] || gs2?.[1] || '');
 }
 
 async function collectAttributionWithGaRetry() {
   const attribution = collectAttribution();
-  if (attribution.ga_client_id) return attribution;
-
-  const clientId = await getGaClientIdFromGtag();
-  if (!clientId) return attribution;
-
-  const next = { ...attribution, ga_client_id: clientId };
+  if (!hasMeasurementConsent()) return attribution;
+  const [clientId, sessionId] = await Promise.all([getGtagValue('client_id'), getGtagValue('session_id')]);
+  const next = { ...attribution, ga_client_id: clientId || attribution.ga_client_id || '', ga_session_id: sessionId || attribution.ga_session_id || '' };
   try {
     const stored = window.localStorage.getItem(ATTRIBUTION_STORAGE_KEY);
     const first = stored ? JSON.parse(stored) as AttributionPayload : {};
-    window.localStorage.setItem(ATTRIBUTION_STORAGE_KEY, JSON.stringify({ ...first, ga_client_id: first.ga_client_id || clientId }));
+    window.localStorage.setItem(ATTRIBUTION_STORAGE_KEY, JSON.stringify({ ...first, ga_client_id: first.ga_client_id || next.ga_client_id, ga_session_id: first.ga_session_id || next.ga_session_id }));
   } catch {
-    // Storage can be blocked; the current submit payload still carries the client id.
+    // Storage can be blocked; the current submit payload still carries current identifiers.
   }
   return next;
 }
@@ -159,14 +170,15 @@ function collectAttribution(): AttributionPayload {
     }
   }
 
+  const measurementAllowed = hasMeasurementConsent();
   return {
     ...first,
     current_url: current.current_url,
-    ga_client_id: current.ga_client_id || first.ga_client_id || '',
-    // The session id is read fresh at submit time: a stored value from an
-    // earlier visit could be a different, expired session, which would point
-    // GA4 session attribution at the wrong session.
-    ga_session_id: current.ga_session_id || first.ga_session_id || '',
+    // Never resurrect a stored GA identifier after consent was declined or
+    // withdrawn. Session identifiers are current-visit-only to avoid joining a
+    // paid event to an earlier visitor session.
+    ga_client_id: measurementAllowed ? current.ga_client_id || first.ga_client_id || '' : '',
+    ga_session_id: measurementAllowed ? current.ga_session_id : '',
   };
 }
 

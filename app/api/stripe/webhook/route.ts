@@ -59,7 +59,8 @@ function extractGaClientId(notes: unknown) {
 function extractGaSessionId(notes: unknown) {
   if (typeof notes !== 'string') return '';
   const match = notes.match(/^GA session ID:\s*(.+)$/im);
-  return match?.[1]?.trim() || '';
+  const sessionId = match?.[1]?.trim() || '';
+  return /^\d{1,20}$/.test(sessionId) ? sessionId : '';
 }
 
 async function sendGa4PaymentReceived(input: {

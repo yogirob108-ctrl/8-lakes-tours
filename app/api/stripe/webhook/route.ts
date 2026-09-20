@@ -21,7 +21,8 @@ export const maxDuration = 60;
 const stripeWebhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 const ga4MeasurementId = process.env.GA4_MEASUREMENT_ID || 'G-E9PW7T08LZ';
 const ga4ApiSecret = process.env.GA4_MEASUREMENT_API_SECRET;
-const stripe = new Stripe('sk_tes...only');
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const stripe = new Stripe(stripeSecretKey || 'sk_test_unconfigured');
 
 function jsonError(message: string, status = 400) {
   return NextResponse.json({ ok: false, error: message }, { status });
@@ -1092,7 +1093,7 @@ async function handleStripeRefund(event: Stripe.Event) {
 }
 
 export async function POST(request: Request) {
-  if (!stripeWebhookSecret) {
+  if (!stripeWebhookSecret || !stripeSecretKey) {
     return jsonError('Stripe webhook is not configured.', 503);
   }
 

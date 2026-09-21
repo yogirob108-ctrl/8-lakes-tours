@@ -10,7 +10,7 @@ import { createSupabaseAdminClient } from '@/lib/supabase-admin';
 
 const LIFECYCLE_KEYS = ['payment_confirmed', 'preparation_packing', 'insurance_final_check', 'arrival_coordination', 'final_checklist'];
 type TemplateKey = typeof LIFECYCLE_KEYS[number];
-type BookingRow = { id:string; public_reference:string; customer_id:string|null; tour_date:string|null; status:string; online_due_usd:number|null; online_paid_usd:number|null; customer?: {first_name?:string|null;email?:string|null}|{first_name?:string|null;email?:string|null}[]|null };
+type BookingRow = { id:string; public_reference:string; customer_id:string|null; tour_date:string|null; status:string; online_due_usd:number|null; online_paid_usd:number|null; family_cash_due_usd:number|null; customer?: {first_name?:string|null;email?:string|null}|{first_name?:string|null;email?:string|null}[]|null };
 type DispatchClaim = { should_send:boolean; event_id?:string; idempotency_key?:string; reason?:string };
 
 export const runtime = 'nodejs';
@@ -24,7 +24,7 @@ function isAuthorized(request: Request) {
 }
 function customer(booking: BookingRow) { const row = Array.isArray(booking.customer) ? booking.customer[0] : booking.customer; return { firstName: row?.first_name || 'there', email: row?.email || '' }; }
 function message(template: TemplateKey, booking: BookingRow) {
-  const input = { reference: booking.public_reference, firstName: customer(booking).firstName, tourDate: booking.tour_date || 'TBC' };
+  const input = { reference: booking.public_reference, firstName: customer(booking).firstName, tourDate: booking.tour_date || 'TBC', familyCashDueUsd: booking.family_cash_due_usd };
   if (template === 'payment_confirmed') return paymentConfirmedCustomerEmail({ ...input, amountUsd: booking.online_paid_usd || 0 });
   if (template === 'preparation_packing') return preparationCustomerEmail(input);
   if (template === 'insurance_final_check') return insuranceReminderCustomerEmail(input);
@@ -55,7 +55,7 @@ export async function GET(request: Request) {
   }
   try {
     const db = createSupabaseAdminClient();
-    let bookingQuery = db.from('bookings').select('id, public_reference, customer_id, tour_date, status, online_due_usd, online_paid_usd, customer:customers(first_name, email)').in('status',['awaiting_payment','confirmed','prep_sent','ready_for_departure']);
+    let bookingQuery = db.from('bookings').select('id, public_reference, customer_id, tour_date, status, online_due_usd, online_paid_usd, family_cash_due_usd, customer:customers(first_name, email)').in('status',['awaiting_payment','confirmed','prep_sent','ready_for_departure']);
     if (targetedReference) bookingQuery = bookingQuery.eq('public_reference', targetedReference);
     const { data: bookings, error } = await bookingQuery.limit(200);
     if (error) throw error;

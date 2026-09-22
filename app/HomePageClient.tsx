@@ -291,9 +291,7 @@ const MAIN_ALBUM_IMAGES = [
   { src: '/images/gallery-extra/guest-in-a-red-scarf-on-the-summer-steppe.jpg', alt: 'A guest in a red neck scarf riding across the green summer steppe', orientation: 'landscape', collage: 'wide-left' },
   { src: '/images/gallery-extra/guest-looking-back-mid-river-crossing.jpg', alt: 'A guest looking back from the saddle while her horse stands in the river', orientation: 'portrait', collage: 'wide-right' },
   { src: '/images/expedition-originals/ger-and-van-camp-wide.jpg', alt: 'Ger and van camp beneath the mountains', orientation: 'landscape', collage: 'small-a' },
-  // Anchored to the bottom: this tile is wider than it is tall, so a centred
-  // crop of a 2:3 portrait lands above the grazing horses and beheads them.
-  { src: '/images/gallery-extra/packhorses-grazing-by-stream.jpg', alt: 'Loaded pack horses grazing beside a mountain stream', orientation: 'portrait', objectPosition: 'center bottom', collage: 'small-b' },
+  { src: '/images/gallery-extra/the-lake-and-its-islands-from-the-ridge.jpg', alt: 'One of the Eight Lakes and its wooded islands seen from the ridge above', orientation: 'landscape', collage: 'small-b' },
   { src: '/images/eagle-portrait-original.jpg', alt: 'Close portrait of a Mongolian eagle', orientation: 'portrait', objectPosition: '72% center', collage: 'tall' },
   { src: '/images/gallery-extra/rider-rearing-horse-wide.jpg', alt: 'Rider on a rearing horse against the sky', orientation: 'landscape', collage: 'bottom-left' },
   { src: '/images/gallery-extra/herder-on-a-motorbike-above-the-valleys.jpg', alt: 'A herder on a motorbike pausing on a ridge above the green valleys', orientation: 'landscape', collage: 'bottom-mid' },

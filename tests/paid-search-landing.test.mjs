@@ -5,7 +5,7 @@ import { readFile } from 'node:fs/promises';
 const pageUrl = new URL('../app/horse-trekking-mongolia/page.tsx', import.meta.url);
 const sitemapUrl = new URL('../app/sitemap.ts', import.meta.url);
 
-test('paid-search landing page states the exact offer and bookable 2027 inventory', async () => {
+test('paid-search landing page states the exact offer and request-only 2027 inventory', async () => {
   const source = await readFile(pageUrl, 'utf8');
 
   assert.match(source, /9-day/i);
@@ -14,12 +14,8 @@ test('paid-search landing page states the exact offer and bookable 2027 inventor
   assert.match(source, /\$1,799–\$1,999/);
   assert.match(source, /\$899–\$999 pp/);
   assert.match(source, /\$900–\$1,000 pp/);
-  // 2027 is published inventory now: say it is bookable, and never imply an
-  // availability request stands between the visitor and payment.
-  assert.match(source, /2027 season is published/i);
-  assert.match(source, /bookable and payable online/i);
-  assert.match(source, /founding rate/i);
-  assert.doesNotMatch(source, /2027[^.]*by request/i);
+  assert.match(source, /2027 small-group dates are being planned/i);
+  assert.match(source, /private 2027 departures.*request/i);
   assert.doesNotMatch(source, /2027-\d{2}-\d{2}/);
 });
 

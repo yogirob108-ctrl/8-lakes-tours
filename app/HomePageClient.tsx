@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { track } from '@vercel/analytics';
 import { type FormEvent, type MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { GROUP_INVOICE, manualPaymentReason, normalizeTourDateSelection } from '@/lib/tour-booking.mjs';
-import { FOUNDING_RATE_NOTE, getDefaultTourDate, getSeasonYear } from '@/lib/tour-dates.mjs';
+import { getDefaultTourDate } from '@/lib/tour-dates.mjs';
 import { BASE_LOCAL_FAMILY_PAYMENT_USD, BASE_ONLINE_PAYMENT_USD, BASE_PRICE_USD, GROUP_PRICING_TIERS, MAX_GROUP_SIZE, clampGuestCount, getGroupPricing } from '@/lib/group-pricing.mjs';
 import { GENDERS, normalizeBookingTravellers } from '@/lib/booking-travellers.mjs';
 import { composeDateOfBirth, splitDateOfBirth } from '@/lib/date-of-birth-fields.mjs';
@@ -303,7 +303,7 @@ const MAIN_ALBUM_IMAGES = [
 const HOME_FAQS = [
   { q: 'What happens after I submit the form?', a: 'For standard 1–2 guest bookings, you can continue to the online payment and receive confirmation once payment is complete. Scheduled groups of 1–8 pay the exact group online amount in one Stripe checkout. Private, custom, and unconfirmed dates require our team to confirm availability before payment. Before arrival, our team coordinates timing with you and the host-family pickup from Bat-Ulzii.' },
   { q: 'Do I need riding experience?', a: 'No experience necessary. Beginners are welcome — our local guides will teach you everything you need to know before the trek begins.' },
-  { q: 'What departure dates are available?', a: 'Remaining 2026 fixed departures stay listed while bookable, and the full 2027 season is published: fortnightly departures from early May to late October. Both seasons book and pay online the same way, with no availability request in between. Book a 2027 departure while the 2026 season is still running and you keep the founding rate. Only a private date of your own choosing is confirmed by our team before payment.' },
+  { q: 'What departure dates are available?', a: 'Remaining 2026 fixed departures stay listed while bookable. 2027 small-group dates are being planned, and private 2027 departures can be requested for June through September. All 2027 options require our team to confirm the host family, horses, guide and logistics before payment.' },
   { q: 'How does payment work?', a: 'All official prices are in USD. The 2026 rate depends on group size: $1,999 per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8. Bookings of 1–2 guests on a fixed date pay the $999 per-guest online booking payment straight after the form. Groups of 1–8 book together and pay the exact group online amount in one secure Stripe checkout. Group discounts are shared evenly between 8 Lakes Tours and the host family, so the online payment runs $899–$999 per guest and the local family cash runs $900–$1,000 per guest. The family portion is paid directly in clean USD cash to the nomadic host families in Mongolia.' },
   { q: 'Do I need a visa?', a: 'Many travellers can enter Mongolia visa-free for tourism, but the allowance depends on your passport. US and South Korean passport holders commonly receive up to 90 days; UK/EU, Australian, Canadian, Japanese, New Zealand, and many other passport holders commonly receive up to 30 days. Rules and temporary exemptions can change, so check the current Mongolian consular or e-visa guidance for your nationality before booking flights.' },
   { q: 'Is there WiFi or cell service?', a: 'Remote trek days are mostly offline, with little to no cell service. The host family camp has Starlink and solar-powered charging for phones, cameras, and essentials, so you can reconnect between riding days. For simple Mongolian communication, Grok has worked best for us so far; ChatGPT also works well for translation when you have signal.' },
@@ -487,24 +487,8 @@ function DateOfBirthFields({ name, label, isLead = false }: { name: string; labe
   );
 }
 
-const SEASONS = [
-  { year: '2026', label: 'This season' },
-  { year: '2027', label: 'Next season' },
-] as const;
-
 export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
   const lateSeasonDepartures = tourDates.filter(option => option.startDate && option.startDate >= '2026-09-01');
-  // Scheduled departures split by season for the two pickers; the request-only
-  // option has no startDate and is offered separately beneath them.
-  const seasonDepartures = useMemo(() => {
-    const grouped: Record<string, TourDateOption[]> = { 2026: [], 2027: [] };
-    for (const option of tourDates) {
-      if (!option.startDate || option.requiresConfirmation) continue;
-      grouped[getSeasonYear(option)]?.push(option);
-    }
-    return grouped;
-  }, [tourDates]);
-  const requestOnlyOption = tourDates.find(option => option.requiresConfirmation);
   const [showWaiver, setShowWaiver] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [waiverExpanded, setWaiverExpanded] = useState(false);
@@ -1074,7 +1058,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
       {
         '@type': 'ItemList',
         '@id': 'https://www.8lakestours.com/#departure-options',
-        name: '8 Lakes Tours 2026 and 2027 departure dates',
+        name: '8 Lakes Tours departure dates and 2027 request options',
         itemListElement: tourDates.map((tourDate, index) => ({
           '@type': 'ListItem',
           position: index + 1,
@@ -1461,22 +1445,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .tour-date-row.muted .tour-date-detail { opacity: 0.5; }
         .tour-date-status { font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); background: rgba(200,169,110,0.12); border: 1px solid rgba(200,169,110,0.3); padding: 0.3rem 0.7rem; border-radius: var(--radius-soft); white-space: nowrap; }
         .tour-date-row.selected .tour-date-status { background: var(--gold); color: var(--dark); border-color: var(--gold); }
-        /* Two season pickers, sized to carry the section rather than sit in it. */
-        .season-picker-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
-        .season-picker { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; padding: 1rem; background: rgba(200,169,110,0.06); border: 1px solid rgba(200,169,110,0.28); border-radius: var(--radius-soft); }
-        .season-picker.is-chosen { border-color: var(--gold); background: rgba(200,169,110,0.13); }
-        .season-picker-year { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 1.6rem; line-height: 1; color: var(--cream); font-weight: 400; }
-        .season-picker-label { font-size: 0.58rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--gold); }
-        .season-picker select { appearance: none; width: 100%; min-width: 0; padding: 0.85rem 2.2rem 0.85rem 0.9rem; font: inherit; font-size: 0.95rem; color: var(--cream); background-color: rgba(14,12,9,0.55); background-image: linear-gradient(45deg, transparent 50%, rgba(200,169,110,0.85) 50%), linear-gradient(135deg, rgba(200,169,110,0.85) 50%, transparent 50%); background-position: calc(100% - 1.15rem) 55%, calc(100% - 0.8rem) 55%; background-size: 0.36rem 0.36rem, 0.36rem 0.36rem; background-repeat: no-repeat; border: 1px solid rgba(200,169,110,0.42); border-radius: var(--radius-soft); cursor: pointer; }
-        .season-picker select:hover { border-color: rgba(200,169,110,0.7); }
-        .season-picker select:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-        .season-picker-note { font-size: 0.66rem; line-height: 1.5; color: var(--mist); opacity: 0.78; }
-        .season-picker-sold-out { font-size: 0.66rem; line-height: 1.5; color: var(--mist); opacity: 0.6; }
-        .founding-rate-note { margin-top: 0.9rem; padding: 0.7rem 0.85rem; font-size: 0.7rem; line-height: 1.55; color: var(--cream); background: rgba(200,169,110,0.1); border: 1px solid rgba(200,169,110,0.32); border-radius: var(--radius-soft); }
-        .founding-rate-note strong { color: var(--gold); }
-        .custom-date-line { margin-top: 0.8rem; font-size: 0.68rem; color: var(--mist); opacity: 0.75; }
-        .custom-date-line button { appearance: none; background: none; border: none; padding: 0; font: inherit; color: var(--gold); text-decoration: underline; cursor: pointer; }
-        @media (max-width: 720px) { .season-picker-grid { grid-template-columns: minmax(0, 1fr); } }
         .tour-date-row.muted .tour-date-status { color: var(--mist); background: transparent; border-color: transparent; opacity: 0.5; }
         #application, #tour-dates { scroll-margin-top: 6rem; }
         .booking-form { display: flex; flex-direction: column; gap: 1rem; }
@@ -1816,8 +1784,8 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
       {lateSeasonDepartures.length > 0 && <section className="offer-strip" aria-label="Late-season 2026 expedition availability and price summary">
         <div>
           <p className="offer-strip-kicker">Still hoping to ride this season?</p>
-          <h2 className="offer-strip-title">Book September–October 2026</h2>
-          <p className="offer-strip-note">Late-season places are open now, and the 2027 season is already booking at the founding rate.</p>
+          <h2 className="offer-strip-title">Book September–November 2026</h2>
+          <p className="offer-strip-note">Late-season places are open now — choose your date and reserve online.</p>
         </div>
         <div className="offer-strip-facts">
           <div className="offer-fact"><strong>{pricing.tourPrice}</strong><span>Total per person</span><small className="offer-fact-note">Group rates apply</small></div>
@@ -2049,16 +2017,16 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         <div className="reveal">
           <span className="section-eyebrow">Reserve Your Spot</span>
           <h2 className="section-title">Choose 2026<br /><em>or Plan 2027</em></h2>
-          <p className="section-body">Remaining 2026 departures stay visible while bookable, and the 2027 season runs fortnightly from May to October. Pick either year and pay online straight away — no availability request in between. The trip is $1,999 per person, and group rates apply for 3–8 guests. Book 2027 while the 2026 season is still running and you keep the founding rate.</p>
+          <p className="section-body">Remaining 2026 departures stay visible while bookable, and you can select one and pay online straight away. 2027 small-group dates are being planned, and private June–September 2027 departures are open by request. The trip is $1,999 per person, and group rates apply for 3–8 guests. Our team confirms 2027 requests before payment.</p>
           <div className="scarcity-pill">
             <span style={{width:'7px', height:'7px', borderRadius:'50%', background:'var(--rust)', display:'inline-block', flexShrink:0}}></span>
             <span>Small groups only — each departure capped at 8 guests</span>
           </div>
           <div className="price-card" style={{marginTop:'2.5rem'}}>
-            <span className="price-badge">2026 &amp; 2027 Departures — Limited Availability</span>
+            <span className="price-badge">2026 Trips &amp; 2027 Requests — Limited Availability</span>
             <div className="price-amount">${BASE_PRICE_USD.toLocaleString('en-US')}</div>
             <div className="price-per">Per Person · 9 Days / 8 Nights · Group rates apply for 3–8 guests</div>
-            <div className="price-note">All official prices are in USD. Every currently available 2026 and 2027 departure can be booked and paid online for 1–8 guests. Groups of 1–8 book together and pay the exact group amount in one secure Stripe checkout. Only a private date of your own choosing is personally confirmed before payment.</div>
+            <div className="price-note">All official prices are in USD. Every currently available fixed 2026 departure can be booked and paid online for 1–8 guests. Groups of 1–8 book together and pay the exact group amount in one secure Stripe checkout. 2027 request options are personally confirmed before payment.</div>
             <div className="payment-split" aria-label="How the 8 Lakes Tours payment is split">
               <div className="payment-split-card">
                 <span className="payment-split-label">Pay online</span>
@@ -2092,7 +2060,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             <details className="payment-details">
               <summary className="payment-summary">How payment works</summary>
               <div className="payment-detail-body">
-                <p><strong>Online:</strong> reserves your place with 8 Lakes Tours. Every scheduled 2026 and 2027 departure is paid in one Stripe checkout for your whole group (1–8 guests); only a private custom date is confirmed before payment.</p>
+                <p><strong>Online:</strong> reserves your place with 8 Lakes Tours. 2026 departures are paid in one Stripe checkout for your whole group (1–8 guests); our team confirms 2027 requests before payment.</p>
                 <p><strong>Locally:</strong> clean USD cash paid directly to your host family, who can&apos;t reliably receive online transfers. Group discounts are split evenly between both payments.</p>
               </div>
             </details>
@@ -2122,53 +2090,32 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             </div>
           </div>
           <div className="tour-dates-card" id="tour-dates">
-            <p className="tour-dates-heading" style={{fontSize:'0.6rem', letterSpacing:'0.3em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'1rem'}}>Choose Your Departure</p>
-            <div className="season-picker-grid">
-              {SEASONS.map(season => {
-                const departures = seasonDepartures[season.year];
-                const chosen = departures.some(option => option.date === selectedTourDate);
-                const selectId = `season_${season.year}`;
-                return (
-                  <div className={`season-picker${chosen ? ' is-chosen' : ''}`} key={season.year}>
-                    <span className="season-picker-label">{season.label}</span>
-                    <span className="season-picker-year">{season.year}</span>
-                    {departures.length > 0 ? (
-                      <>
-                        <label className="sr-only" htmlFor={selectId}>{`Choose a ${season.year} departure`}</label>
-                        <select
-                          id={selectId}
-                          value={chosen ? selectedTourDate : ''}
-                          onChange={event => { if (event.target.value) chooseTourDate(event.target.value); }}
-                        >
-                          <option value="">{`Select a ${season.year} date`}</option>
-                          {departures.map(option => <option key={option.date} value={option.date}>{option.date}</option>)}
-                        </select>
-                        <p className="season-picker-note">{`${departures.length} departure${departures.length === 1 ? '' : 's'} · 9 days · 8 nights · max 8 guests · book and pay online`}</p>
-                      </>
-                    ) : (
-                      <p className="season-picker-sold-out">This season has finished. Ask us about a custom date.</p>
-                    )}
+            <p className="tour-dates-heading" style={{fontSize:'0.6rem', letterSpacing:'0.3em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'1rem'}}>Available Trips &amp; 2027 Interest</p>
+            <div className="tour-date-list">
+              {tourDates.map(dateOption => (
+                <button
+                  type="button"
+                  className={`tour-date-row${dateOption.muted ? ' muted' : ''}${selectedTourDate === dateOption.date ? ' selected' : ''}`}
+                  key={dateOption.date}
+                  aria-pressed={selectedTourDate === dateOption.date}
+                  aria-label={`Select ${dateOption.date} and continue to the booking form`}
+                  onClick={() => chooseTourDate(dateOption.date)}
+                >
+                  <div>
+                    <p className="tour-date-title">{dateOption.date}</p>
+                    <p className="tour-date-detail">{dateOption.detail}</p>
                   </div>
-                );
-              })}
+                  <span className="tour-date-status">{dateOption.status}</span>
+                </button>
+              ))}
             </div>
-            {seasonDepartures['2027'].length > 0 && (
-              <p className="founding-rate-note"><strong>Founding rate held for 2027.</strong> {FOUNDING_RATE_NOTE}</p>
-            )}
-            {requestOnlyOption && (
-              <p className="custom-date-line">
-                Want dates of your own?{' '}
-                <button type="button" onClick={() => chooseTourDate(requestOnlyOption.date)}>Request a private group date</button>
-                {' '}— confirmed before payment.
-              </p>
-            )}
           </div>
         </div>
 
         <div className="reveal reveal-delay-1" id="application">
           <span className="section-eyebrow">Booking Details</span>
           <h2 className="section-title" style={{fontSize:'2rem', marginBottom:'1rem'}}>Secure<br /><em>Your Place</em></h2>
-          <p className="section-body" style={{fontSize:'0.9rem', marginBottom:'2rem'}}>Choose a 2026 or 2027 departure and tell us who&apos;s coming. Every scheduled date books and pays the same way: groups of 1–8 pay the exact group amount in one checkout after submitting. {FOUNDING_RATE_NOTE} Only private, custom dates are confirmed before payment.</p>
+          <p className="section-body" style={{fontSize:'0.9rem', marginBottom:'2rem'}}>Choose a fixed date or a 2027 request option and tell us who&apos;s coming. Bookings of 1–2 guests on a fixed date continue straight to payment after submitting. Scheduled groups of 1–8 pay the exact group amount in one checkout; private, custom, and 2027 requests are confirmed before payment.</p>
           <form ref={bookingFormRef} noValidate className="booking-form" onFocusCapture={markBookingFormStarted} onInput={event => { clearFieldValidation(event.target); scheduleDraftSave(event.currentTarget); }} onSubmit={async e => { e.preventDefault(); await submitBooking(e.currentTarget); }}>
             {validationErrors.length > 0 && <div className="booking-error-summary" role="alert" aria-labelledby="booking-error-summary-title"><strong id="booking-error-summary-title">Check the highlighted fields</strong><ul>{validationErrors.map(error => <li key={`${error.id}-${error.message}`}><button type="button" onClick={() => { const field = document.getElementById(error.id); field?.focus({ preventScroll: true }); field?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' }); }}>{error.message}</button></li>)}</ul></div>}
             <input type="hidden" name="display_currency" value={pricing.currency} />

@@ -216,6 +216,7 @@ const PACKING_LIST = [
   'Rain jacket or waterproof shell for sudden weather changes',
   'Warm base layer, fleece/down layer, hat and gloves for cold mornings and evenings',
   'Riding gloves or lightweight outdoor gloves',
+  'Sports bras if you wear them — the trotting is a lot on long riding days',
   'Sun hat or cap',
   'Sunglasses with secure strap',
   'Swimsuit for daily river baths, lakes or hot springs',

@@ -43,6 +43,8 @@ const sections = [
       'Pack for all seasons, even in summer. The Mongolian steppe can swing from warm sun to cold wind, rain, and freezing-feeling nights quickly.',
       'Bring more warm layers than you think you need: base layers, fleece or down, warm socks, hat, gloves, and a proper waterproof shell.',
       'Comfortable riding trousers, waterproof outer layer, sun protection, and sturdy shoes or boots suitable for camp life.',
+      'If you wear a bra, bring sports bras. Riding days involve a lot of trotting and everyday underwear is not comfortable over that distance.',
+      'A power bank and a universal adapter plug. The host camp has Starlink and a solar-powered inverter for charging, but remote trek days are off-grid and you will not always reach a socket.',
       'A personal first-aid kit, blister care, prescriptions, painkillers or anti-inflammatory medication you normally use and can safely take, toiletries, and any personal medical essentials.',
     ],
   },

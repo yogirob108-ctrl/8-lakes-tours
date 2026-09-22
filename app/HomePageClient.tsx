@@ -2464,7 +2464,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
       <section className="faq-section">
         <div style={{maxWidth:'760px', margin:'0 auto'}}>
           <div className="reveal" style={{marginBottom:'2.5rem'}}>
-            <span className="section-eyebrow">FAQ</span>
             <h2 className="section-title">Common<br /><em>Questions</em></h2>
           </div>
           {HOME_FAQS.map(({q, a}, i) => {

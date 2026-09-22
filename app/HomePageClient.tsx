@@ -2579,7 +2579,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         </div>
         <div className="footer-note">
           <span>© 2026 8 Lakes Tours. All rights reserved.</span>
-          <span>Built for direct local family partnership in Mongolia.</span>
         </div>
       </footer>
 

@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { track } from '@vercel/analytics';
 import { type FormEvent, type MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { GROUP_INVOICE, manualPaymentReason, normalizeTourDateSelection } from '@/lib/tour-booking.mjs';
-import { FOUNDING_RATE_NOTE, getDefaultTourDate, getSeasonYear } from '@/lib/tour-dates.mjs';
+import { FOUNDING_RATE_CLOSER, FOUNDING_RATE_HEADING, FOUNDING_RATE_NOTE, getDefaultTourDate, getSeasonYear } from '@/lib/tour-dates.mjs';
 import { BASE_LOCAL_FAMILY_PAYMENT_USD, BASE_ONLINE_PAYMENT_USD, BASE_PRICE_USD, GROUP_PRICING_TIERS, MAX_GROUP_SIZE, clampGuestCount, getGroupPricing } from '@/lib/group-pricing.mjs';
 import { GENDERS, normalizeBookingTravellers } from '@/lib/booking-travellers.mjs';
 import { composeDateOfBirth, splitDateOfBirth } from '@/lib/date-of-birth-fields.mjs';
@@ -678,7 +678,12 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
     tourDateTouchedRef.current = true;
     setSelectedTourDate(date);
     window.setTimeout(() => {
-      document.getElementById('application')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Land on Trip details, not the section heading: this is where the choice
+      // shows up. The date field, the guest count and the group price all sit
+      // here, so the visitor sees what the click did instead of a paragraph of
+      // intro copy with the evidence still below the fold.
+      (document.getElementById('trip-details') ?? document.getElementById('application'))
+        ?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
       window.setTimeout(() => document.getElementById('tour_date')?.focus({ preventScroll: true }), 520);
     }, 40);
   };
@@ -1472,13 +1477,19 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .season-picker select:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
         .season-picker-note { font-size: 0.66rem; line-height: 1.5; color: var(--mist); opacity: 0.78; }
         .season-picker-sold-out { font-size: 0.66rem; line-height: 1.5; color: var(--mist); opacity: 0.6; }
-        .founding-rate-note { margin-top: 0.9rem; padding: 0.7rem 0.85rem; font-size: 0.7rem; line-height: 1.55; color: var(--cream); background: rgba(200,169,110,0.1); border: 1px solid rgba(200,169,110,0.32); border-radius: var(--radius-soft); }
-        .founding-rate-note strong { color: var(--gold); }
+        /* The gold edge and the heading carry the urgency; the body stays quiet
+           so the banner reads as an open window rather than a sale. */
+        .founding-rate-note { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.9rem; padding: 0.85rem 0.95rem; font-size: 0.72rem; line-height: 1.6; color: var(--cream); background: linear-gradient(90deg, rgba(200,169,110,0.16), rgba(200,169,110,0.06)); border: 1px solid rgba(200,169,110,0.4); border-left: 3px solid var(--gold); border-radius: var(--radius-soft); }
+        .founding-rate-heading { font-size: 0.6rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); }
+        .founding-rate-note em { font-style: normal; color: var(--gold); }
         .custom-date-line { margin-top: 0.8rem; font-size: 0.68rem; color: var(--mist); opacity: 0.75; }
         .custom-date-line button { appearance: none; background: none; border: none; padding: 0; font: inherit; color: var(--gold); text-decoration: underline; cursor: pointer; }
         @media (max-width: 720px) { .season-picker-grid { grid-template-columns: minmax(0, 1fr); } }
         .tour-date-row.muted .tour-date-status { color: var(--mist); background: transparent; border-color: transparent; opacity: 0.5; }
         #application, #tour-dates { scroll-margin-top: 6rem; }
+        /* Deeper offset: picking a date lands here, and leaving the section
+           above partly in view keeps it obvious the form starts further up. */
+        #trip-details { scroll-margin-top: 9rem; }
         .booking-form { display: flex; flex-direction: column; gap: 1rem; }
         .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
         .form-section { border: 1px solid rgba(200,169,110,0.16); border-radius: var(--radius-card); background: rgba(245,240,232,0.025); padding: 1.2rem; display: flex; flex-direction: column; gap: 1rem; }
@@ -2153,7 +2164,10 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               })}
             </div>
             {seasonDepartures['2027'].length > 0 && (
-              <p className="founding-rate-note"><strong>Founding rate held for 2027.</strong> {FOUNDING_RATE_NOTE}</p>
+              <p className="founding-rate-note">
+                <strong className="founding-rate-heading">{FOUNDING_RATE_HEADING}</strong>
+                <span>{FOUNDING_RATE_NOTE} <em>{FOUNDING_RATE_CLOSER}</em></span>
+              </p>
             )}
             {requestOnlyOption && (
               <p className="custom-date-line">
@@ -2201,7 +2215,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               <div className="form-group"><label className="form-label" htmlFor="emergency_contact">Emergency Contact (Name & Phone)</label><input id="emergency_contact" className="form-input" name="emergency_contact" type="text" placeholder="Name · Phone number" maxLength={200} /></div>
             </div>
 
-            <div className="form-section">
+            <div className="form-section" id="trip-details">
               <p className="form-section-title">Trip details</p>
               <div className="form-grid compact-grid">
                 <div className="form-group">

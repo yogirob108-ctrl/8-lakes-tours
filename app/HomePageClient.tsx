@@ -1963,12 +1963,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                 src={item.src}
                 alt={item.alt}
                 fill
-                // AVIF at 70 visibly lifts saturation and contrast on the wide
-                // skies and green valleys here, so the collage stopped matching
-                // the graded files on disk. 85 keeps the grade the photos were
-                // given; these tiles are small enough that the extra weight is
-                // worth it.
-                quality={85}
+                quality={70}
                 sizes="(max-width: 900px) 50vw, 33vw"
                 style={item.objectPosition ? { objectPosition: item.objectPosition } : undefined}
               />

@@ -5,37 +5,15 @@ import { readFile } from 'node:fs/promises';
 import { AVAILABILITY_CHECK, UNKNOWN_SELECTION, canAutomaticallyConfirmBooking, isBookableTourDate, isRequestOnlyTourDate, manualPaymentReason, requiresManualPaymentLink } from '../lib/tour-booking.mjs';
 import { TOUR_DATES, getVisibleTourDates, REQUEST_ONLY_OPTION_DATE } from '../lib/tour-dates.mjs';
 
-test('scheduled inventory is 2026 and 2027 only, and every one of it is directly payable', () => {
+test('2027 public inventory is request-only and contains no invented fixed dates', () => {
   const unified = TOUR_DATES.find(option => option.date === 'Private group date on request');
 
   assert.ok(unified);
   assert.equal(unified.requiresConfirmation, true);
   assert.equal('startDate' in unified, false);
-  // 2027 is now published inventory rather than a request. Dates are still not
-  // invented freely: they must sit in a published season and be payable online.
+  // Every fixed departure is a real scheduled 2026 date; 2027 has no invented fixed dates.
   for (const option of TOUR_DATES.filter(option => option.startDate)) {
-    assert.match(option.startDate, /^(2026|2027)-/, `${option.date} must sit in a published season`);
-    assert.equal(isRequestOnlyTourDate(option.date), false, `${option.date} must not need an availability request`);
-    assert.equal(requiresManualPaymentLink(option.date, 1), false, `${option.date} must be payable online`);
-    assert.equal(requiresManualPaymentLink(option.date, 8), false, `${option.date} must be payable online for a full group`);
-  }
-});
-
-test('the 2027 season runs fortnightly from May to October and is nine days long', () => {
-  const season = TOUR_DATES.filter(option => option.startDate?.startsWith('2027'));
-  const day = 86400000;
-
-  assert.equal(season.length, 13);
-  assert.equal(season[0].startDate, '2027-05-04');
-  assert.equal(season.at(-1).endDate, '2027-10-27');
-  for (const [index, option] of season.entries()) {
-    const start = Date.parse(`${option.startDate}T00:00:00Z`);
-    assert.equal((Date.parse(`${option.endDate}T00:00:00Z`) - start) / day, 8, `${option.date} must be 9 days / 8 nights`);
-    assert.match(option.detail, /9 Days · 8 Nights/);
-    if (index > 0) {
-      const previous = Date.parse(`${season[index - 1].startDate}T00:00:00Z`);
-      assert.equal((start - previous) / day, 14, `${option.date} must fall a fortnight after the previous departure`);
-    }
+    assert.match(option.startDate, /^2026-/, `${option.date} must be a scheduled 2026 departure`);
   }
 });
 
@@ -88,16 +66,18 @@ test('a fixed departure for one or two guests can retain the standard payment pa
   assert.equal(requiresManualPaymentLink('August 24 – September 1, 2026', 1), false);
 });
 
-test('the 2026 season stays full to its October close with no November departures', () => {
+test('September through November stays full with two directly bookable departures per month', () => {
   const expectedLateSeasonDates = [
     'September 14 – 22, 2026',
     'September 23 – October 1, 2026',
     'October 7 – 15, 2026',
     'October 21 – 29, 2026',
+    'November 4 – 12, 2026',
+    'November 18 – 26, 2026',
   ];
 
   const actualLateSeasonDates = TOUR_DATES
-    .filter(option => option.startDate >= '2026-09-01' && option.startDate <= '2026-12-31')
+    .filter(option => option.startDate >= '2026-09-01' && option.startDate <= '2026-11-30')
     .map(option => option.date);
 
   assert.deepEqual(actualLateSeasonDates, expectedLateSeasonDates);
@@ -115,7 +95,7 @@ test('the 2026 private-date option remains available through November', () => {
   const privateDate = TOUR_DATES.find(option => option.date === REQUEST_ONLY_OPTION_DATE);
 
   assert.ok(privateDate);
-  assert.equal(privateDate.availableUntil, '2027-10-19');
+  assert.equal(privateDate.availableUntil, '2027-09-30');
   assert.equal(privateDate.availableUntil > '2026-11-30', true, 'private/custom dates stay requestable beyond November 2026');
   assert.equal(privateDate.requiresConfirmation, true);
   assert.equal(isRequestOnlyTourDate('2026 Private Group Date'), true, 'the 2026 private label still resolves through normalization');

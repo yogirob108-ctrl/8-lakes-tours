@@ -9,7 +9,7 @@ const canonical = 'https://www.8lakestours.com/horse-trekking-mongolia';
 
 export const metadata: Metadata = {
   title: 'Mongolia Horse Trekking | 9-Day Eight Lakes Expedition',
-  description: 'Ride Mongolia’s Orkhon Valley and Naiman Nuur on a 9-day small-group horse trek with local horsemen and a nomadic host family. Beginners welcome. 2026 and 2027 departures bookable online.',
+  description: 'Ride Mongolia’s Orkhon Valley and Naiman Nuur on a 9-day small-group horse trek with local horsemen and a nomadic host family. Beginners welcome. 2027 interest and private departures open by request.',
   alternates: { canonical },
   // Paid-search landing page: live for Google Ads, kept out of the organic index so it
   // does not compete with the homepage for "Mongolian horse trekking".
@@ -104,10 +104,10 @@ export default function HorseTrekkingMongoliaPage() {
           <h1>Mongolia horse trekking,<br /><em>beyond the usual tour.</em></h1>
           <p className={styles.lede}>Ride into the Eight Lakes with local horsemen, live with a nomadic host family and travel in a group small enough to remain part of the landscape.</p>
           <div className={styles.heroActions}>
-            <LandingCta href="/#application" label="Book 2027 dates" placement="hero" />
+            <LandingCta href="/#application" label="Request 2027 dates" placement="hero" />
             <a href="#route" className={styles.textLink}>See the route</a>
           </div>
-          <p className={styles.heroNote}>The 2027 season is published: fortnightly departures from May to October, bookable and payable online. Book now while the 2026 season is still running and you keep the founding rate.</p>
+          <p className={styles.heroNote}>2027 small-group dates are being planned. Private 2027 departures are available by request and confirmed personally before payment.</p>
         </div>
       </section>
 
@@ -164,7 +164,7 @@ export default function HorseTrekkingMongoliaPage() {
         <div className={styles.priceLead}>
           <p className={styles.eyebrow}>Transparent pricing</p>
           <h2>$1,799–$1,999<br /><em>per person.</em></h2>
-          <p>Price depends on the number of guests booking together, and the group discount is shared evenly between 8 Lakes Tours and your host family. Every scheduled 2026 and 2027 departure can be booked and paid online; no automatic payment is taken for a private date of your own choosing.</p>
+          <p>Price depends on the number of guests booking together, and the group discount is shared evenly between 8 Lakes Tours and your host family. Fixed 2026 departures can be booked and paid online; no automatic payment is taken for 2027 interest or private-date requests.</p>
         </div>
         <div className={styles.paymentCard}>
           <div><span>Online booking payment</span><strong>$899–$999 pp</strong><p>Paid online for fixed 2026 dates; confirmed first for request-only dates.</p></div>

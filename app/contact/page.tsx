@@ -92,9 +92,14 @@ export default function Page() {
           <p style={pStyle}><a href="https://www.instagram.com/8lakestours" target="_blank" rel="noopener noreferrer" style={{ color: '#c8a96e' }}>@8lakestours</a></p>
           <p style={{...pStyle, marginTop: '0.8rem'}}>Robert Zaher: <a href="https://www.instagram.com/robzaher108?igsh=OHdvdGp0ZW9ieHFv" target="_blank" rel="noopener noreferrer" style={{ color: '#c8a96e' }}>@robzaher108</a></p>
         </section>
+        <section style={{ marginTop: '2.5rem' }} id="private-group-dates">
+          <h2 style={h2Style}>Private group dates</h2>
+          <p style={pStyle}>Want to ride on dates of your own rather than a scheduled departure? Email us with the rough window you have in mind and how many are coming. Private dates depend on the host family, horses and guides being free, so we confirm availability with Mongolia first and only then send you the payment details — nothing is charged before that.</p>
+          <p style={{...pStyle, marginTop: '1rem'}}><a href="mailto:info@8lakestours.com?subject=Private%20group%20date%20enquiry" style={{ color: '#c8a96e' }}>Email us about a private date →</a></p>
+        </section>
         <section style={{ marginTop: '2.5rem' }}>
-          <h2 style={h2Style}>Booking enquiries</h2>
-          <p style={pStyle}>The fastest way to start is the booking form on the homepage. It asks for your preferred date, riding experience, dietary restrictions, emergency contact, and any special notes so the team can prepare properly and check fit if anything needs review.</p>
+          <h2 style={h2Style}>Booking a scheduled departure</h2>
+          <p style={pStyle}>For any published 2026 or 2027 date, the fastest way to start is the booking form on the homepage. It asks for your preferred date, riding experience, dietary restrictions, emergency contact, and any special notes so the team can prepare properly and check fit if anything needs review. Scheduled dates are booked and paid online without waiting on us.</p>
           <p style={{...pStyle, marginTop: '1rem'}}><Link href="/#application" style={{ color: '#c8a96e' }}>Go to booking form →</Link></p>
         </section>
       </div>

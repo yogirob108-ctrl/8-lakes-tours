@@ -1483,7 +1483,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .founding-rate-heading { font-size: 0.6rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); }
         .founding-rate-note em { font-style: normal; color: var(--gold); }
         .custom-date-line { margin-top: 0.8rem; font-size: 0.68rem; color: var(--mist); opacity: 0.75; }
-        .custom-date-line button { appearance: none; background: none; border: none; padding: 0; font: inherit; color: var(--gold); text-decoration: underline; cursor: pointer; }
+        .custom-date-line a { color: var(--gold); text-decoration: underline; }
         @media (max-width: 720px) { .season-picker-grid { grid-template-columns: minmax(0, 1fr); } }
         .tour-date-row.muted .tour-date-status { color: var(--mist); background: transparent; border-color: transparent; opacity: 0.5; }
         #application, #tour-dates { scroll-margin-top: 6rem; }
@@ -2172,8 +2172,11 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             {requestOnlyOption && (
               <p className="custom-date-line">
                 Want dates of your own?{' '}
-                <button type="button" onClick={() => chooseTourDate(requestOnlyOption.date)}>Request a private group date</button>
-                {' '}— confirmed before payment.
+                {/* A private date is a conversation, not an intake form: it needs
+                    the team to check the host family, horses and guide first, so
+                    send it to contact rather than preselecting a date to pay for. */}
+                <a href="/contact#private-group-dates">Talk to us about a private group date</a>
+                {' '}— we&apos;ll confirm availability before any payment.
               </p>
             )}
           </div>

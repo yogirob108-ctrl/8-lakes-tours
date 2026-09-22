@@ -286,10 +286,10 @@ function getLocalizedPricing(groupPricing = getGroupPricing(1)): LocalizedPricin
 
 
 const MAIN_ALBUM_IMAGES = [
-  { src: '/images/guide-horse-portrait.jpg', alt: 'Suma standing with his horse on the open steppe', orientation: 'portrait', collage: 'lead' },
+  { src: '/images/gallery-extra/horseman-on-his-dark-horse-monochrome.jpg', alt: 'A horseman in a deel and hat mounted on his dark horse, in black and white', orientation: 'portrait', collage: 'lead' },
   { src: '/images/gallery-extra/horseback-storm-valley-pov.jpg', alt: 'Horseback point of view riding into a stormy mountain valley', orientation: 'landscape', collage: 'hero' },
   { src: '/images/gallery-extra/packed-horses-rain-camp.jpg', alt: 'Packed horses waiting under storm clouds', orientation: 'landscape', collage: 'wide-left' },
-  { src: '/images/gallery-extra/horses-in-forest-rain.jpg', alt: 'Pack horses resting in the forest rain', orientation: 'landscape', collage: 'wide-right' },
+  { src: '/images/gallery-extra/guest-looking-back-mid-river-crossing.jpg', alt: 'A guest looking back from the saddle while her horse stands in the river', orientation: 'portrait', collage: 'wide-right' },
   { src: '/images/expedition-originals/ger-blue-hour-original.jpg', alt: 'Ger at blue hour beneath the mountains', orientation: 'landscape', collage: 'small-a' },
   // Anchored to the bottom: this tile is wider than it is tall, so a centred
   // crop of a 2:3 portrait lands above the grazing horses and beheads them.

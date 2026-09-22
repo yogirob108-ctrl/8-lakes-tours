@@ -288,7 +288,7 @@ function getLocalizedPricing(groupPricing = getGroupPricing(1)): LocalizedPricin
 const MAIN_ALBUM_IMAGES = [
   { src: '/images/gallery-extra/horseman-on-his-dark-horse-monochrome.jpg', alt: 'A horseman in a deel and hat mounted on his dark horse, in black and white', orientation: 'portrait', collage: 'lead' },
   { src: '/images/gallery-extra/horseback-storm-valley-pov.jpg', alt: 'Horseback point of view riding into a stormy mountain valley', orientation: 'landscape', collage: 'hero' },
-  { src: '/images/gallery-extra/packed-horses-rain-camp.jpg', alt: 'Packed horses waiting under storm clouds', orientation: 'landscape', collage: 'wide-left' },
+  { src: '/images/gallery-extra/guest-in-a-red-scarf-on-the-summer-steppe.jpg', alt: 'A guest in a red neck scarf riding across the green summer steppe', orientation: 'landscape', collage: 'wide-left' },
   { src: '/images/gallery-extra/guest-looking-back-mid-river-crossing.jpg', alt: 'A guest looking back from the saddle while her horse stands in the river', orientation: 'portrait', collage: 'wide-right' },
   { src: '/images/expedition-originals/ger-blue-hour-original.jpg', alt: 'Ger at blue hour beneath the mountains', orientation: 'landscape', collage: 'small-a' },
   // Anchored to the bottom: this tile is wider than it is tall, so a centred
@@ -1963,7 +1963,12 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                 src={item.src}
                 alt={item.alt}
                 fill
-                quality={70}
+                // AVIF at 70 visibly lifts saturation and contrast on the wide
+                // skies and green valleys here, so the collage stopped matching
+                // the graded files on disk. 85 keeps the grade the photos were
+                // given; these tiles are small enough that the extra weight is
+                // worth it.
+                quality={85}
                 sizes="(max-width: 900px) 50vw, 33vw"
                 style={item.objectPosition ? { objectPosition: item.objectPosition } : undefined}
               />

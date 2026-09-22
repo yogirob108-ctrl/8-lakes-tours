@@ -296,7 +296,7 @@ const MAIN_ALBUM_IMAGES = [
   { src: '/images/gallery-extra/packhorses-grazing-by-stream.jpg', alt: 'Loaded pack horses grazing beside a mountain stream', orientation: 'portrait', objectPosition: 'center bottom', collage: 'small-b' },
   { src: '/images/eagle-portrait-original.jpg', alt: 'Close portrait of a Mongolian eagle', orientation: 'portrait', objectPosition: '72% center', collage: 'tall' },
   { src: '/images/gallery-extra/rider-rearing-horse-wide.jpg', alt: 'Rider on a rearing horse against the sky', orientation: 'landscape', collage: 'bottom-left' },
-  { src: '/images/expedition-originals/suma-river-crossing-original.jpg', alt: 'Suma riding through a shallow river crossing', orientation: 'portrait', objectPosition: 'center 38%', collage: 'bottom-mid' },
+  { src: '/images/gallery-extra/herder-on-a-motorbike-above-the-valleys.jpg', alt: 'A herder on a motorbike pausing on a ridge above the green valleys', orientation: 'landscape', collage: 'bottom-mid' },
   { src: '/images/gallery-extra/leading-the-pack-horse-below-the-cliffs.jpg', alt: 'A rider leading a loaded pack horse along the valley track below the cliffs', orientation: 'landscape', mobileFullWidth: true, collage: 'bottom-right' },
 ];
 

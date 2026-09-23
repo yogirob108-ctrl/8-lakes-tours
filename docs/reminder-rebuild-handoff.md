@@ -2,75 +2,78 @@
 
 ## Scope and safety state
 
-This repair is **not activated**. It makes post-submit reminder enrollment forward-only and preserves both customer-send controls as false unless an operator explicitly sets them. It does not alter GA4, cash-due logic, pre-submit draft behavior, production data, provider state, environment variables, scheduler configuration, or Vercel plan.
+This repair is **not activated**. The migration makes post-submit reminder enrollment forward-only. It does not send customer email, modify production data, configure a scheduler, alter provider state, or change any environment value.
 
-The database migration adds a durable activation watermark. Before that watermark, newly inserted bookings do not receive `abandoned_checkout_recovery` rows and cannot be admitted later by turning on the gate. After a single explicit forward activation, only bookings inserted after it are atomically enrolled with:
+An explicit first activation records one durable watermark. Only bookings inserted while the rollout is `forward` are enrolled with their recovery row, booking-specific activation record, and stage-2 binding. Existing recovery rows remain untouched and remain excluded from automatic forward enrollment. Stage 2 requires all three matching durable records.
 
-- their recovery row;
-- a booking-specific activation-log binding; and
-- the matching stage-2 cohort binding.
-
-Stage 2 requires the same booking and activation reference in all three durable records. Existing recovery/legacy-email history is retained but cannot enter the forward cohort.
+**Important operational boundary:** this is a continuing forward cohort, not an SQL-enforced count-limited cohort. While `mode = forward`, eligible newly inserted checkouts continue to enroll. The queue itself has a maximum batch of 20 per invocation, which is not a customer-cohort limit. For a small first cohort, the owner must define a time window or observed count and pause the rollout/scheduler after it; no code here performs that operational pause automatically.
 
 ## Required release order
 
-1. Merge the reviewed commit and deploy it with both environment flags unset or `false`:
-   - `ABANDONED_CHECKOUT_RECOVERY_ENABLED=false`
-   - `PRE_SUBMIT_DRAFT_RECOVERY_ENABLED=false`
-2. Apply `supabase/migrations/20260919110000_abandoned_checkout_forward_enrollment.sql` using the normal production migration role. Read back:
+1. Apply `supabase/migrations/20260919110000_abandoned_checkout_forward_enrollment.sql` first, while the existing customer-send controls remain in their current safe state. This is compatible with the already-deployed legacy route because the durable database gate stays `off`; it prevents the old trigger from creating new recovery rows before the new web build arrives. Read back:
 
    ```sql
    select mode, activation_ref, activation_watermark
    from public.abandoned_cadence_rollout where one_row;
    ```
 
-   Required result before any cohort decision: `mode = off`, `activation_ref IS NULL`, and `activation_watermark IS NULL`.
-3. Run the authenticated production **dry run only** (no customer sends):
+   Required pre-activation result: `mode = off`, `activation_ref IS NULL`, and `activation_watermark IS NULL`.
+2. Deploy the reviewed application/scripts. Keep `ABANDONED_CHECKOUT_RECOVERY_ENABLED=false` until the owner approves activation. **Do not change `PRE_SUBMIT_DRAFT_RECOVERY_ENABLED`**: it is a separate existing control, and this repair neither enables nor disables it.
+3. Run the authenticated production **dry run only** (no customer sends), supplying the secret via stdin config rather than a curl argument:
 
    ```bash
-   curl --fail --silent --show-error \
-     -H "Authorization: Bearer $CRON_SECRET" \
-     'https://www.8lakestours.com/api/cron/abandoned-checkouts?dry_run=1'
+   curl --fail --silent --show-error --proto '=https' --tlsv1.2 --max-time 55 --config - <<EOF
+   header = "Authorization: Bearer ${CRON_SECRET}"
+   header = "Accept: application/json"
+   url = "https://www.8lakestours.com/api/cron/abandoned-checkouts?dry_run=1"
+   EOF
    ```
 
    Confirm `sent: 0`; inspect both `draft_recovery` and post-submit suppression/eligibility output. Do not use an unscoped or non-dry run at this step.
-4. Arrange the external scheduler below, initially paused. Vercel currently declares this route only once daily (`15 8 * * *`); that cadence cannot reliably produce a one-hour reminder. Do not change a Vercel plan or assume subdaily cron availability.
-5. After owner approval of a bounded fresh-booking cohort, set `ABANDONED_CHECKOUT_RECOVERY_ENABLED=true` in the deployed site **and read it back through the authenticated non-dry endpoint**. This does not enable pre-submit drafts.
-6. Immediately before accepting the first fresh checkout, call the service-role RPC once with a unique audited reference:
+4. Parent/owner: replace or deliberately account for the existing daily Vercel invocation before enabling a second scheduler. The current Vercel declaration is daily (`15 8 * * *`) and cannot meet the roughly-one-hour target. No scheduler was configured by this change.
+5. Configure an external managed scheduler, initially paused, to run the wrapper every **5 minutes**. The database eligibility anchor remains one hour after checkout; the 5-minute polling window targets approximately 60–65 minutes rather than up to nearly two hours. Enforce one concurrent invocation across every scheduler source, retain no request headers in logs, and retain a pause control.
+6. After owner approval, set `ABANDONED_CHECKOUT_RECOVERY_ENABLED=true` on the deployed site and read it back using the authenticated non-dry endpoint. This does not imply any pre-submit-draft change.
+7. Immediately before the agreed first fresh-checkout window, call the service-role activation RPC with a unique audited reference:
 
    ```sql
    select public.abandoned_cadence_activate_forward('8L-REMINDER-ROLLOUT-<change-id>');
    ```
 
-   This is irreversible by design without an explicit migration/rollback decision. Then read back its returned timestamp and the rollout row. Do not call it before the customer-send gate, dry-run evidence, and scheduler are ready: bookings inserted afterwards are the only enrolled cohort.
-7. Enable the external scheduler. Observe only a bounded first cohort, then verify each provider-accepted send against `email_events`, `public_booking_notifications`, recovery `stages`, and the exact booking reference before expanding operations.
+   The same reference is idempotent while already forward. If operations pause by setting the rollout mode to `off`, resume only the recorded boundary:
+
+   ```sql
+   select public.abandoned_cadence_resume_forward('8L-REMINDER-ROLLOUT-<same-change-id>');
+   ```
+
+   A different reference, or a fresh activation after a watermark exists, is refused. Read back the rollout row after every activation/resume. Do not activate until the send gate, dry-run evidence, and scheduler replacement are ready.
+8. Enable the scheduler and observe the agreed bounded operational window. Verify each provider-accepted send against `email_events`, `public_booking_notifications`, recovery `stages`, and the exact booking reference before continuing.
 
 ## External scheduler contract
 
-Use a managed scheduler that can inject secrets (for example GitHub Actions environment secrets, Cloud Scheduler secret-backed job, or an ops-controlled runner). Configure it to execute this repository script **hourly**, with no secrets in the command, source, logs, or URL:
+`./scripts/run-abandoned-checkout-reminder.sh` pins the only permitted endpoint, requires `CRON_SECRET`, rejects newline-bearing secrets, and passes the Authorization header to curl through stdin configuration. The secret is not present in curl's argv or URL. The wrapper is not a scheduler.
+
+Use a managed scheduler secret store to inject only `CRON_SECRET`, and execute:
 
 ```bash
-REMINDER_CRON_URL='https://www.8lakestours.com/api/cron/abandoned-checkouts' \
-CRON_SECRET="$INJECTED_SECRET" \
 bash scripts/run-abandoned-checkout-reminder.sh
 ```
 
-The scheduler must enforce: HTTPS destination only; `CRON_SECRET` from its secret store; 55-second request timeout; non-2xx exits treated as failed/retried; one concurrent invocation maximum; logs retained without request headers; and a pause switch. The endpoint itself validates the bearer token and retains SQL claim/authorization/idempotency/provider-evidence guards. No Hermes cron was created.
+Use a 5-minute cadence, 55-second request timeout, HTTPS-only endpoint (already pinned by the wrapper), non-2xx retry handling, a global single-concurrency policy, header-free logs, and a pause switch. No Hermes cron was created.
 
-## Behavioral verification completed locally
+## Verified locally
 
-- Node behavior tests prove post-submit and pre-submit flags are independent, and a credentialed dry run can observe both while both send gates are false.
-- SQL migration rehearsal from a clean PostgreSQL cluster proves: default-off pre-watermark booking gets no recovery row; explicit forward activation creates a watermark; a post-watermark booking receives recovery, activation, and stage-2 bindings in one transaction; the old booking remains excluded.
-- Existing runtime suites pass for stage-1 delay, stage-2 >=24 hours after durable stage-1 completion, maximum two sends, dry-run zero claims/sends, exact provider-session evidence, paid/cancelled suppression, request-only date exclusion, provider-block/unknown-outcome handling, and legacy-history fencing.
+- Wrapper test uses a mock `curl`; it asserts no request occurs, no fake secret is in curl argv, stdin config contains the Authorization header, and the pinned endpoint is used.
+- Clean isolated PostgreSQL rehearsal proves pre-activation bookings receive no recovery row; post-activation bookings get recovery and all matching bindings atomically; same-ref activation is idempotent; pause/resume preserves the original watermark; changing the reference is refused.
+- Existing SQL suites pass for the one-hour eligibility gate, stage 2 at least 24 hours after durable stage-1 completion, maximum two sends, dry-run zero claims/sends, paid/cancelled suppression, request-only exclusion, provider-block/unknown-outcome handling, and legacy-history fencing.
 
 Commands run:
 
 ```bash
-npm test
+bash tests/run-abandoned-checkout-reminder.test.sh
 bash tests/rebuild-8l-test.sh
-psql -X -v ON_ERROR_STOP=1 -d 8l_test -f tests/abandoned-checkout-forward-enrollment-runtime.sql
-psql -X -v ON_ERROR_STOP=1 -d 8l_test -f tests/abandoned-checkout-runtime.sql
-psql -X -v ON_ERROR_STOP=1 -d 8l_test -f tests/abandoned-cadence-gates-runtime.sql
+psql -X -U postgres -v ON_ERROR_STOP=1 -d 8l_test -f tests/abandoned-checkout-forward-enrollment-runtime.sql
+psql -X -U postgres -v ON_ERROR_STOP=1 -d 8l_test -f tests/abandoned-checkout-runtime.sql
+psql -X -U postgres -v ON_ERROR_STOP=1 -d 8l_test -f tests/abandoned-cadence-gates-runtime.sql
 ```
 
-The PostgreSQL rehearsal used a disposable local cluster and every runtime suite rolls back its fixtures.
+The PostgreSQL rehearsal used a disposable local PostgreSQL 17 cluster on port 55432. It was not production-connected; runtime suites roll back their fixtures.

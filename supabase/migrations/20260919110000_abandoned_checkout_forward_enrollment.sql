@@ -13,18 +13,32 @@ alter table public.abandoned_cadence_rollout
 -- rather than silently broadening a customer cohort.
 create or replace function public.abandoned_cadence_activate_forward(p_activation_ref text)
 returns timestamptz language plpgsql security definer set search_path='' as $$
-declare activated_at timestamptz;
+declare rollout public.abandoned_cadence_rollout; activated_at timestamptz;
 begin
   perform public.checkout_service_role();
   if coalesce(btrim(p_activation_ref),'')='' then
     raise exception 'activation_ref is required';
   end if;
 
-  perform 1 from public.abandoned_cadence_rollout where one_row for update;
+  select * into rollout from public.abandoned_cadence_rollout where one_row for update;
   if not found then
     raise exception 'abandoned cadence rollout row is missing';
   end if;
-  if (select mode from public.abandoned_cadence_rollout where one_row) <> 'off' then
+  -- The first activation is the only operation allowed to create a boundary.
+  -- A retry with its exact reference is idempotent; neither a pause nor a
+  -- different reference can silently move that boundary and enroll more rows.
+  if rollout.activation_ref is not null or rollout.activation_watermark is not null then
+    if rollout.mode='forward' and rollout.activation_ref=p_activation_ref
+       and rollout.activation_watermark is not null then
+      return rollout.activation_watermark;
+    end if;
+    if rollout.mode='off' and rollout.activation_ref=p_activation_ref
+       and rollout.activation_watermark is not null then
+      raise exception 'forward activation is paused; resume it with its existing activation_ref';
+    end if;
+    raise exception 'forward activation already exists and cannot be replaced';
+  end if;
+  if rollout.mode <> 'off' then
     raise exception 'abandoned cadence rollout is not off';
   end if;
 
@@ -34,6 +48,37 @@ begin
          activation_watermark=activated_at, updated_at=activated_at
    where one_row;
   return activated_at;
+end $$;
+
+-- Pause/resume is deliberately separate from activation. It can only reopen the
+-- same durable cohort boundary, and is idempotent if the forward mode is already
+-- active. It never creates a new watermark or changes the activation reference.
+create or replace function public.abandoned_cadence_resume_forward(p_activation_ref text)
+returns timestamptz language plpgsql security definer set search_path='' as $$
+declare rollout public.abandoned_cadence_rollout;
+begin
+  perform public.checkout_service_role();
+  if coalesce(btrim(p_activation_ref),'')='' then
+    raise exception 'activation_ref is required';
+  end if;
+  select * into rollout from public.abandoned_cadence_rollout where one_row for update;
+  if not found then
+    raise exception 'abandoned cadence rollout row is missing';
+  end if;
+  if rollout.activation_ref is distinct from p_activation_ref
+     or rollout.activation_watermark is null then
+    raise exception 'no matching forward activation exists';
+  end if;
+  if rollout.mode='forward' then
+    return rollout.activation_watermark;
+  end if;
+  if rollout.mode <> 'off' then
+    raise exception 'abandoned cadence rollout is not paused';
+  end if;
+  update public.abandoned_cadence_rollout
+     set mode='forward', updated_at=clock_timestamp()
+   where one_row;
+  return rollout.activation_watermark;
 end $$;
 
 -- Enrollment is intentionally owned by the booking INSERT trigger rather than a
@@ -90,8 +135,8 @@ returns boolean language sql stable security definer set search_path='' as $$
   );
 $$;
 
-revoke all on function public.abandoned_cadence_activate_forward(text) from public,anon,authenticated;
-grant execute on function public.abandoned_cadence_activate_forward(text) to service_role;
+revoke all on function public.abandoned_cadence_activate_forward(text),public.abandoned_cadence_resume_forward(text) from public,anon,authenticated;
+grant execute on function public.abandoned_cadence_activate_forward(text),public.abandoned_cadence_resume_forward(text) to service_role;
 revoke all on function public.enroll_abandoned_checkout() from public,anon,authenticated;
 grant execute on function public.enroll_abandoned_checkout() to service_role;
 revoke all on function public.abandoned_cadence_stage2_allowed(uuid) from public,anon,authenticated;

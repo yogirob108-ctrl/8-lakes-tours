@@ -20,6 +20,39 @@ begin
   if watermark is null or public.abandoned_cadence_gate_current() <> 'forward' then
     raise exception 'FORWARD-ACTIVATION: forward mode/watermark missing';
   end if;
+  -- A retry of the same activation is safe: it must keep the original cohort
+  -- boundary rather than move the watermark forward.
+  if public.abandoned_cadence_activate_forward(v_activation_ref) is distinct from watermark then
+    raise exception 'FORWARD-IDEMPOTENT: repeated activation moved the watermark';
+  end if;
+  -- A pause may be resumed only with the same audited reference and must retain
+  -- that exact original watermark. A new activation cannot silently reopen a
+  -- different cohort after pause.
+  update public.abandoned_cadence_rollout set mode='off' where one_row;
+  begin
+    perform public.abandoned_cadence_activate_forward('FORWARD-DIFFERENT-REF');
+    raise exception 'FORWARD-REACTIVATE: changed reference was accepted';
+  exception when others then
+    if sqlerrm like 'FORWARD-REACTIVATE:%' then raise; end if;
+  end;
+  if (select activation_ref from public.abandoned_cadence_rollout where one_row) <> v_activation_ref
+     or (select activation_watermark from public.abandoned_cadence_rollout where one_row) is distinct from watermark then
+    raise exception 'FORWARD-REACTIVATE: existing activation evidence changed';
+  end if;
+  if public.abandoned_cadence_resume_forward(v_activation_ref) is distinct from watermark then
+    raise exception 'FORWARD-RESUME: resume moved the watermark';
+  end if;
+  -- A different reference remains forbidden even after resume.
+  begin
+    perform public.abandoned_cadence_activate_forward('FORWARD-DIFFERENT-REF');
+    raise exception 'FORWARD-REACTIVATE: changed reference was accepted';
+  exception when others then
+    if sqlerrm like 'FORWARD-REACTIVATE:%' then raise; end if;
+  end;
+  if (select activation_ref from public.abandoned_cadence_rollout where one_row) <> v_activation_ref
+     or (select activation_watermark from public.abandoned_cadence_rollout where one_row) is distinct from watermark then
+    raise exception 'FORWARD-REACTIVATE: existing activation evidence changed';
+  end if;
 
   insert into public.bookings(customer_id,project_id,public_reference,tour_date,status,submission_key,guest_count,online_due_usd,online_paid_usd)
   values(c,p,'FORWARD-AFTER','Scheduled fixture','awaiting_payment',gen_random_uuid(),1,999,0) returning id into after_id;

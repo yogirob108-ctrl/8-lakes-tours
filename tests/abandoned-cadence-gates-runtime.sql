@@ -8,19 +8,28 @@ do $$
 declare b uuid;c uuid;p uuid;a jsonb;r jsonb;n uuid;
 begin
  select id into strict p from tour_projects where slug='8-lakes-tours';
+ -- A fresh booking is enrolled only after an explicit forward activation. Turn
+ -- the mode back off before the claim to prove the durable gate refuses it.
+ if public.abandoned_cadence_gate_current() is distinct from 'off' then raise exception 'GATE-DEFAULT: fresh application must read mode=off'; end if;
+ perform public.abandoned_cadence_activate_forward('8L-GATE-FORWARD-FIXTURE');
  insert into customers(first_name,last_name,email) values('Gate','Fixture','gate-fixture@example.invalid') returning id into c;
  insert into bookings(customer_id,project_id,public_reference,tour_date,status,submission_key,guest_count,online_due_usd,online_paid_usd) values(c,p,'GATE-TEST','Scheduled fixture','awaiting_payment',gen_random_uuid(),1,999,0) returning id into b;
  update abandoned_checkout_recovery set eligible_at=now()-interval '1 minute' where booking_id=b;
  insert into booking_checkout_ownership(booking_id,spec,expected,session_id) values(b,'{"line_items":[{"price_data":{"unit_amount":99900}}]}','{}','cs_gate');
  insert into payments(booking_id,provider,stripe_checkout_session_id,amount_usd,status) values(b,'stripe','cs_gate',999,'pending');
+ update abandoned_cadence_rollout set mode='off';
 
  -- ===== B1: gate default OFF and durable =====
- if public.abandoned_cadence_gate_current() is distinct from 'off' then raise exception 'GATE-DEFAULT: fresh application must read mode=off'; end if;
  -- env-style override outside an approved activation must NOT enable: claim refuses while OFF.
  a:=claim_abandoned_checkout(b,array['Scheduled fixture'],'{"to":"gate-fixture@example.invalid","subject":"x","text":"x"}');
  if (a->>'should_send')::boolean then raise exception 'GATE-OFF: claim succeeded while rollout mode=off'; end if;
  if due_abandoned_checkout_stage(b) is distinct from 'abandoned_checkout_1' then raise exception 'GATE-ORDER: stage clock runs before gate'; end if;
  update abandoned_cadence_rollout set mode='test_allowlist';
+ -- Remove the fixture's forward binding to exercise an empty allowlist. Production
+ -- never uses this path to enroll old rows; the forward-enrollment suite covers it.
+ delete from abandoned_cadence_stage2_cohort where booking_id=b;
+ delete from abandoned_cadence_booking_activation where booking_id=b;
+ delete from abandoned_cadence_activation_log where booking_id=b;
  -- even with mode on, the allowlist default contains nothing and a NON activation_ref is refused
  a:=claim_abandoned_checkout(b,array['Scheduled fixture'],'{"to":"gate-fixture@example.invalid","subject":"x","text":"x"}');
  if (a->>'should_send')::boolean then raise exception 'GATE-ALLOWLIST: non-cohort claim admitted without activation_ref'; end if;
@@ -63,6 +72,9 @@ begin
  -- ===== B2: legacy sent ledger seeds stage 1 (dedupe), ambiguity fences, cohort fence =====
  -- Fresh booking with a historical LEGACY sent reminder (deployed template key).
  insert into bookings(customer_id,project_id,public_reference,tour_date,status,submission_key,guest_count,online_due_usd,online_paid_usd) values(c,p,'GATE-TEST-3','Scheduled fixture','awaiting_payment',gen_random_uuid(),1,999,0) returning id into b;
+ -- Historical recovery state can exist from the original migration, but is not
+ -- forward-enrolled by this repair. Seed it explicitly for legacy-ledger dedupe.
+ insert into abandoned_checkout_recovery(booking_id,tour_date,eligible_at,expires_at) values(b,'Scheduled fixture',now()-interval '1 minute',now()+interval '1 day');
  update abandoned_checkout_recovery set eligible_at=now()-interval '1 minute' where booking_id=b;
  insert into booking_checkout_ownership(booking_id,spec,expected,session_id) values(b,'{"line_items":[{"price_data":{"unit_amount":99900}}]}','{}','cs_gate3');
  insert into payments(booking_id,provider,stripe_checkout_session_id,amount_usd,status) values(b,'stripe','cs_gate3',999,'pending');
@@ -78,6 +90,7 @@ begin
  -- B2-stage2-fence: cohort fence is explicit and default empty.
  if exists(select 1 from abandoned_cadence_stage2_cohort) then raise exception 'B2-COHORT-DEFAULT: stage-2 cohort must start empty'; end if;
  if public.abandoned_cadence_stage2_allowed(b) then raise exception 'B2-COHORT: stage 2 admitted without explicit cohort membership'; end if;
+ perform public.abandoned_cadence_activate_booking(b,'8L-COHORT-B2');
  insert into abandoned_cadence_stage2_cohort(booking_id,activation_ref) values(b,'8L-COHORT-B2');
  if not public.abandoned_cadence_stage2_allowed(b) then raise exception 'B2-COHORT-EXPLICIT: explicitly added cohort member refused'; end if;
  update abandoned_cadence_rollout set mode='test_allowlist';

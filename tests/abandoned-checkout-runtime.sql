@@ -5,6 +5,9 @@ do $$
 declare c uuid;b uuid;p uuid;a jsonb;r jsonb;s1 timestamptz;allowed text[]:=array['Scheduled fixture'];
 begin
  select id into strict p from tour_projects where slug='8-lakes-tours';
+ -- This suite exercises a post-activation fresh booking. A separate forward-
+ -- enrollment suite proves that pre-watermark bookings stay out of the cohort.
+ perform public.abandoned_cadence_activate_forward('8L-RECOVERY-FORWARD-FIXTURE');
  insert into customers(first_name,last_name,email) values('Recovery','Test','recovery@example.invalid') returning id into c;
  insert into bookings(customer_id,project_id,public_reference,tour_date,status,submission_key,guest_count,online_due_usd,online_paid_usd) values(c,p,'RECOVERY-TEST','Scheduled fixture','awaiting_payment',gen_random_uuid(),1,999,0) returning id into b;
  if not exists(select 1 from abandoned_checkout_recovery where booking_id=b) then raise exception 'new intake not enrolled'; end if;
@@ -41,7 +44,7 @@ begin
  -- cohort membership for the later stage-2 probes in this fixture.
  update abandoned_cadence_rollout set mode='test_allowlist';
  perform public.abandoned_cadence_activate_booking(b,'8L-RECOVERY-PROBE');
- insert into abandoned_cadence_stage2_cohort(booking_id,activation_ref) values(b,'8L-RECOVERY-PROBE');
+ insert into abandoned_cadence_stage2_cohort(booking_id,activation_ref) values(b,'8L-RECOVERY-PROBE') on conflict (booking_id) do nothing;
  a:=claim_abandoned_checkout(b,allowed,'{"to":"recovery@example.invalid","subject":"Original","text":"private","html":"private"}');
  if not (a->>'should_send')::boolean or a#>>'{payload,stage}'<>'abandoned_checkout_1' then raise exception 'stage 1 claim missing stage key'; end if;
  if a#>>'{payload,subject}'<>'Original' then raise exception 'retry request changed'; end if;

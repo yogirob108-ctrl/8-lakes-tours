@@ -2009,7 +2009,11 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             <p className="getting-there-note">Once your bus is booked, our team coordinates the timing and pickup with you.</p>
           </div>
           <div style={{marginTop:'2rem', padding:'1.2rem', background:'rgba(200,169,110,0.06)', borderLeft:'2px solid var(--gold)', borderRadius:'var(--radius-soft)'}}>
-            <p style={{fontSize:'0.8rem', color:'var(--mist)', opacity:0.8, lineHeight:1.6}}>All participants must sign a liability waiver, provide proof of travel insurance, bring their own personal medical basics, and arrive mentally prepared for simple conditions, changing plans, physical discomfort, and group life in the wild.</p>
+            {/* The waiver, the insurance and the medical kit are all in the list
+                directly above, so this says the one thing nothing else on the
+                page says: what the trip asks of you. Framed as appetite rather
+                than warning — it filters the same people either way. */}
+            <p style={{fontSize:'0.8rem', color:'var(--cream)', lineHeight:1.6}}><strong style={{fontWeight:400, color:'var(--gold)'}}>This is a real expedition.</strong> Plans shift with the weather, the horses and the land. Guests who love it come ready for simple conditions, long days and shared space — and leave with something no itinerary could promise.</p>
           </div>
         </div>
       </section>

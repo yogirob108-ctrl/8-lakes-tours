@@ -1397,7 +1397,9 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .packing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem 1.2rem; padding: 0 1.2rem 1.2rem; border-top: 1px solid rgba(200,169,110,0.15); }
         .packing-grid li { list-style: none; position: relative; padding-left: 1rem; font-size: 0.82rem; line-height: 1.55; color: rgba(212,207,196,0.82); }
         .packing-grid li::before { content: '•'; position: absolute; left: 0; color: var(--gold); }
-        .getting-there-steps { counter-reset: step; display: grid; gap: 0.8rem; margin: 0; padding: 1rem 1.2rem 0; border-top: 1px solid rgba(200,169,110,0.15); list-style: none; }
+        .getting-there { margin-top: 1.5rem; border: 1px solid rgba(200,169,110,0.22); border-radius: var(--radius-card); background: rgba(200,169,110,0.045); }
+        .getting-there-heading { padding: 0.95rem 1.2rem 0; font-size: 0.68rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--gold); }
+        .getting-there-steps { counter-reset: step; display: grid; gap: 0.8rem; margin: 0; padding: 0.9rem 1.2rem 0; list-style: none; }
         .getting-there-steps li { counter-increment: step; position: relative; padding-left: 2rem; font-size: 0.82rem; line-height: 1.55; color: rgba(212,207,196,0.82); }
         .getting-there-steps li::before { content: counter(step, decimal-leading-zero); position: absolute; left: 0; top: 0.1rem; color: var(--gold); font-size: 0.62rem; letter-spacing: 0.12em; }
         .getting-there-steps strong { display: block; color: var(--cream); font-weight: 400; }
@@ -1995,15 +1997,17 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               ))}
             </ul>
           </details>
-          <details className="packing-details">
-            <summary className="packing-summary">Getting There</summary>
+          {/* Not an accordion: "can I actually get there?" is a question people
+              ask before booking, and an answer nobody opens cannot reassure. */}
+          <div className="getting-there">
+            <p className="getting-there-heading">Getting there</p>
             <ol className="getting-there-steps">
               <li><strong>Fly into Ulaanbaatar</strong>Arrive at Chinggis Khaan International Airport.</li>
               <li><strong>Bus to Bat-Ulzii, Uvurkhangai</strong>About 8 hours on a public bus through open countryside.</li>
               <li><strong>Family pickup</strong>Your hosts meet you in Bat-Ulzii and bring you to the ger village.</li>
             </ol>
             <p className="getting-there-note">Once your bus is booked, our team coordinates the timing and pickup with you.</p>
-          </details>
+          </div>
           <div style={{marginTop:'2rem', padding:'1.2rem', background:'rgba(200,169,110,0.06)', borderLeft:'2px solid var(--gold)', borderRadius:'var(--radius-soft)'}}>
             <p style={{fontSize:'0.8rem', color:'var(--mist)', opacity:0.8, lineHeight:1.6}}>All participants must sign a liability waiver, provide proof of travel insurance, bring their own personal medical basics, and arrive mentally prepared for simple conditions, changing plans, physical discomfort, and group life in the wild.</p>
           </div>

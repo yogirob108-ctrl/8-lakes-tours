@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { track } from '@vercel/analytics';
 import { type FormEvent, type MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { GROUP_INVOICE, manualPaymentReason, normalizeTourDateSelection } from '@/lib/tour-booking.mjs';
-import { FOUNDING_RATE_CLOSER, FOUNDING_RATE_HEADING, FOUNDING_RATE_NOTE, getDefaultTourDate, getSeasonYear } from '@/lib/tour-dates.mjs';
+import { FOUNDING_RATE_NOTE, getDefaultTourDate, getSeasonYear } from '@/lib/tour-dates.mjs';
 import { BASE_LOCAL_FAMILY_PAYMENT_USD, BASE_ONLINE_PAYMENT_USD, BASE_PRICE_USD, GROUP_PRICING_TIERS, MAX_GROUP_SIZE, clampGuestCount, getGroupPricing } from '@/lib/group-pricing.mjs';
 import { GENDERS, normalizeBookingTravellers } from '@/lib/booking-travellers.mjs';
 import { composeDateOfBirth, splitDateOfBirth } from '@/lib/date-of-birth-fields.mjs';
@@ -670,27 +670,12 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
     });
   };
 
-  const chooseTourDate = (date: string) => {
-    if (formSubmitted || formSubmitting) return;
-    trackFunnelEvent('date_selected', { tour_date: date });
-    tourDateTouchedRef.current = true;
-    setSelectedTourDate(date);
-    window.setTimeout(() => {
-      // Land on Trip details, not the section heading: this is where the choice
-      // shows up. The date field, the guest count and the group price all sit
-      // here, so the visitor sees what the click did instead of a paragraph of
-      // intro copy with the evidence still below the fold.
-      (document.getElementById('trip-details') ?? document.getElementById('application'))
-        ?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
-      window.setTimeout(() => document.getElementById('tour_date')?.focus({ preventScroll: true }), 520);
-    }, 40);
-  };
 
   const scrollToTourDates = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
-    const target = document.getElementById('tour-dates');
+    const target = document.getElementById('trip-details');
     if (!target) return;
-    history.pushState(null, '', '#tour-dates');
+    history.pushState(null, '', '#trip-details');
     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
@@ -910,11 +895,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         invalid.push({ element, message });
       }
     });
-    const chosenDate = form.querySelector<HTMLInputElement>('input[name="tour_date"]');
-    if (chosenDate && !chosenDate.value) {
-      const changeLink = form.ownerDocument.getElementById('tour_date_change');
-      if (changeLink) invalid.push({ element: changeLink, message: 'Choose a tour date before continuing.' });
-    }
     form.querySelectorAll<HTMLInputElement>('input[data-date-of-birth-canonical="true"]').forEach(element => {
       if (!element.value) {
         const firstPart = form.querySelector<HTMLInputElement>(`#${CSS.escape(element.name)}-day`);
@@ -1423,11 +1403,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         /* The departure pickers introduce the whole booking block, so they span
            both columns and sit above the price card and the form. */
         .booking-lead { grid-column: 1 / -1; }
-        .booking-lead .tour-dates-card { margin-top: 2rem; }
-        .chosen-departure { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:0.85rem 0.95rem; background:rgba(200,169,110,0.08); border:1px solid rgba(200,169,110,0.32); border-radius:var(--radius-soft); }
-        .chosen-departure-label { display:block; font-size:0.58rem; letter-spacing:0.22em; text-transform:uppercase; color:var(--gold); margin-bottom:0.25rem; }
-        .chosen-departure strong { color:var(--cream); font-family:var(--font-cormorant), 'Cormorant Garamond', serif; font-size:1.1rem; font-weight:400; line-height:1.1; }
-        .chosen-departure-change { flex-shrink:0; font-size:0.68rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--gold); text-decoration:underline; }
         .scarcity-pill { display:inline-flex; max-width:100%; box-sizing:border-box; align-items:center; gap:0.6rem; margin-top:1.2rem; padding:0.6rem 1.1rem; background:rgba(185,74,48,0.12); border:1px solid rgba(185,74,48,0.35); border-radius: var(--radius-soft); overflow:hidden; }
         .scarcity-pill span:last-child { min-width:0; font-size:0.72rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--rust); line-height:1.45; overflow-wrap:anywhere; }
         .price-card { max-width:100%; box-sizing:border-box; overflow:hidden; background: var(--ink); border: 1px solid rgba(200,169,110,0.25); border-radius: var(--radius-card); padding: 3rem; }
@@ -1465,7 +1440,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .price-spec-row { display:flex; justify-content:space-between; gap:1rem; min-width:0; font-size:0.8rem; color:var(--mist); padding:0.6rem 0; border-bottom:1px solid rgba(245,240,232,0.07); }
         .price-spec-row span { min-width:0; overflow-wrap:anywhere; }
         .price-spec-row span:last-child { color:var(--cream); text-align:right; }
-        .tour-dates-card { margin-top: 1.5rem; padding: 1.25rem; background: rgba(200,169,110,0.08); border: 1px solid rgba(200,169,110,0.35); border-radius: var(--radius-card); }
         .tour-date-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem; }
         .tour-date-row { appearance: none; width: 100%; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.72rem 0.78rem; background: rgba(200,169,110,0.07); border: 1px solid rgba(200,169,110,0.2); border-radius: var(--radius-soft); font: inherit; text-align: left; color: inherit; cursor: pointer; transition: background 0.24s ease, border-color 0.24s ease, transform 0.24s ease, box-shadow 0.24s ease; }
         .tour-date-row:hover, .tour-date-row:focus-visible { background: rgba(200,169,110,0.12); border-color: rgba(200,169,110,0.52); transform: translateY(-1px); outline: none; }
@@ -1478,29 +1452,16 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .tour-date-status { font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); background: rgba(200,169,110,0.12); border: 1px solid rgba(200,169,110,0.3); padding: 0.3rem 0.7rem; border-radius: var(--radius-soft); white-space: nowrap; }
         .tour-date-row.selected .tour-date-status { background: var(--gold); color: var(--dark); border-color: var(--gold); }
         /* Two season pickers, sized to carry the section rather than sit in it. */
-        .season-picker-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
-        .season-picker { display: flex; flex-direction: column; gap: 0.5rem; min-width: 0; padding: 1rem; background: rgba(200,169,110,0.06); border: 1px solid rgba(200,169,110,0.28); border-radius: var(--radius-soft); }
         .season-picker.is-chosen { border-color: var(--gold); background: rgba(200,169,110,0.13); }
-        .season-picker-year { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 1.6rem; line-height: 1; color: var(--cream); font-weight: 400; }
-        .season-picker-label { font-size: 0.58rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--gold); }
-        .season-picker select { appearance: none; width: 100%; min-width: 0; padding: 0.85rem 2.2rem 0.85rem 0.9rem; font: inherit; font-size: 0.95rem; color: var(--cream); background-color: rgba(14,12,9,0.55); background-image: linear-gradient(45deg, transparent 50%, rgba(200,169,110,0.85) 50%), linear-gradient(135deg, rgba(200,169,110,0.85) 50%, transparent 50%); background-position: calc(100% - 1.15rem) 55%, calc(100% - 0.8rem) 55%; background-size: 0.36rem 0.36rem, 0.36rem 0.36rem; background-repeat: no-repeat; border: 1px solid rgba(200,169,110,0.42); border-radius: var(--radius-soft); cursor: pointer; }
-        .season-picker select:hover { border-color: rgba(200,169,110,0.7); }
-        .season-picker select:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
-        .season-picker-head { display:flex; align-items:center; justify-content:space-between; gap:0.5rem; }
-        .season-picker-tag { flex-shrink:0; font-size:0.5rem; letter-spacing:0.16em; text-transform:uppercase; color:var(--dark); background:var(--gold); padding:0.22rem 0.42rem; border-radius:3px; }
         .season-picker.is-founding { border-color:rgba(200,169,110,0.5); }
-        .season-picker-note { font-size: 0.66rem; line-height: 1.5; color: var(--mist); opacity: 0.78; }
-        .season-picker-sold-out { font-size: 0.66rem; line-height: 1.5; color: var(--mist); opacity: 0.6; }
         /* The gold edge and the heading carry the urgency; the body stays quiet
            so the banner reads as an open window rather than a sale. */
-        .founding-rate-note { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.9rem; padding: 0.85rem 0.95rem; font-size: 0.72rem; line-height: 1.6; color: var(--cream); background: linear-gradient(90deg, rgba(200,169,110,0.16), rgba(200,169,110,0.06)); border: 1px solid rgba(200,169,110,0.4); border-left: 3px solid var(--gold); border-radius: var(--radius-soft); }
-        .founding-rate-heading { font-size: 0.6rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); }
-        .founding-rate-note em { font-style: normal; color: var(--gold); }
+        .founding-rate-line { font-size: 0.7rem; line-height: 1.55; color: var(--mist); opacity: 0.8; }
+        .founding-rate-line strong { color: var(--gold); }
         .custom-date-line { margin-top: 0.8rem; font-size: 0.68rem; color: var(--mist); opacity: 0.75; }
         .custom-date-line a { color: var(--gold); text-decoration: underline; }
-        @media (max-width: 720px) { .season-picker-grid { grid-template-columns: minmax(0, 1fr); } }
         .tour-date-row.muted .tour-date-status { color: var(--mist); background: transparent; border-color: transparent; opacity: 0.5; }
-        #application, #tour-dates { scroll-margin-top: 6rem; }
+        #application { scroll-margin-top: 6rem; }
         /* Deeper offset: picking a date lands here, and leaving the section
            above partly in view keeps it obvious the form starts further up. */
         #trip-details { scroll-margin-top: 9rem; }
@@ -1712,8 +1673,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           .contact-section { padding: 4rem 1.5rem; }
           .contact-layout { grid-template-columns: 1fr; gap: 2rem; }
           .lead-card-public { padding: 1.2rem; }
-          .tour-dates-card { margin-top: 1rem; padding: 0.8rem 0.62rem; border-radius: var(--radius-card); }
-          .tour-dates-heading { font-size:0.52rem !important; letter-spacing:0.22em !important; margin-bottom:0.62rem !important; }
           .tour-date-list { grid-template-columns: 1fr; gap: 0.26rem; }
           .tour-date-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.38rem; padding: 0.48rem 0.54rem; min-height: 3.08rem; align-items: center; border-radius: var(--radius-soft); }
           .tour-date-title { font-size: clamp(0.78rem, 4.7vw, 0.9rem); line-height:1.08; margin: 0; }
@@ -1859,7 +1818,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           <div className="offer-fact"><strong>Beginner friendly</strong><span>Local horsemen guide</span></div>
           <div className="offer-fact"><strong>Max 8</strong><span>Guests per departure</span></div>
         </div>
-        <a className="offer-strip-cta" href="#tour-dates" onClick={scrollToTourDates}>See dates &amp; book</a>
+        <a className="offer-strip-cta" href="#trip-details" onClick={scrollToTourDates}>See dates &amp; book</a>
       </section>}
 
 
@@ -2088,57 +2047,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             <span style={{width:'7px', height:'7px', borderRadius:'50%', background:'var(--rust)', display:'inline-block', flexShrink:0}}></span>
             <span>Small groups only — each departure capped at 8 guests</span>
           </div>
-          <div className="tour-dates-card" id="tour-dates">
-            <p className="tour-dates-heading" style={{fontSize:'0.6rem', letterSpacing:'0.3em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'1rem'}}>Choose Your Departure</p>
-            <div className="season-picker-grid">
-              {SEASONS.map(season => {
-                const departures = seasonDepartures[season.year];
-                const chosen = departures.some(option => option.date === selectedTourDate);
-                const selectId = `season_${season.year}`;
-                return (
-                  <div className={`season-picker${chosen ? ' is-chosen' : ''}${season.year === '2027' ? ' is-founding' : ''}`} key={season.year}>
-                    <div className="season-picker-head">
-                      <span className="season-picker-label">{season.label}</span>
-                      {season.year === '2027' && departures.length > 0 && <span className="season-picker-tag">Founding rate</span>}
-                    </div>
-                    <span className="season-picker-year">{season.year}</span>
-                    {departures.length > 0 ? (
-                      <>
-                        <label className="sr-only" htmlFor={selectId}>{`Choose a ${season.year} departure`}</label>
-                        <select
-                          id={selectId}
-                          value={chosen ? selectedTourDate : ''}
-                          onChange={event => { if (event.target.value) chooseTourDate(event.target.value); }}
-                        >
-                          <option value="">{`Select a ${season.year} date`}</option>
-                          {departures.map(option => <option key={option.date} value={option.date}>{option.date}</option>)}
-                        </select>
-                        <p className="season-picker-note">{`${departures.length} departure${departures.length === 1 ? '' : 's'} · 9 days · 8 nights · max 8 guests · book and pay online`}</p>
-                      </>
-                    ) : (
-                      <p className="season-picker-sold-out">This season has finished. Ask us about a custom date.</p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            {seasonDepartures['2027'].length > 0 && (
-              <p className="founding-rate-note">
-                <strong className="founding-rate-heading">{FOUNDING_RATE_HEADING}</strong>
-                <span>{FOUNDING_RATE_NOTE} <em>{FOUNDING_RATE_CLOSER}</em></span>
-              </p>
-            )}
-            {requestOnlyOption && (
-              <p className="custom-date-line">
-                Want dates of your own?{' '}
-                {/* A private date is a conversation, not an intake form: it needs
-                    the team to check the host family, horses and guide first, so
-                    send it to contact rather than preselecting a date to pay for. */}
-                <a href="/contact#private-group-dates">Talk to us about a private group date</a>
-                {' '}— we&apos;ll confirm availability before any payment.
-              </p>
-            )}
-          </div>
         </div>
 
         <div className="reveal">
@@ -2224,18 +2132,37 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             <fieldset className="form-fields" disabled={formSubmitted || formSubmitting}>
             <div className="form-section" id="trip-details">
               <p className="form-section-title">Your departure</p>
-              {/* The date is chosen once, in the pickers above. Repeating the
-                  control here asked the same question twice and let the two
-                  answers drift; this confirms the choice and sends people back
-                  up to change it. */}
-              <div className="chosen-departure">
-                <div>
-                  <span className="chosen-departure-label">Your departure</span>
-                  <strong>{selectedTourDate || 'No date chosen yet'}</strong>
-                </div>
-                <a id="tour_date_change" className="chosen-departure-change" href="#tour-dates" onClick={scrollToTourDates}>{selectedTourDate ? 'Change' : 'Choose a date'}</a>
+              {/* One control for the whole decision. The seasons are groups
+                  inside it rather than two cards above the form, so the year
+                  is still obvious without a band of furniture around it. */}
+              <div className="form-group">
+                <label className="form-label" htmlFor="tour_date">Preferred Tour Date</label>
+                <select id="tour_date" className="form-select" name="tour_date" required value={selectedTourDate} onChange={e => { tourDateTouchedRef.current = true; setSelectedTourDate(e.target.value); }}>
+                  {!selectedTourDate && <option value="">Select date</option>}
+                  {SEASONS.map(season => {
+                    const departures = seasonDepartures[season.year];
+                    if (!departures.length) return null;
+                    return (
+                      <optgroup key={season.year} label={season.year === '2027' ? `${season.year} season — founding rate` : `${season.year} season`}>
+                        {departures.map(option => <option key={option.date} value={option.date}>{option.date}</option>)}
+                      </optgroup>
+                    );
+                  })}
+                </select>
               </div>
-              <input type="hidden" name="tour_date" value={selectedTourDate} />
+              {seasonDepartures['2027'].length > 0 && (
+                <p className="founding-rate-line"><strong>Founding rate:</strong> {FOUNDING_RATE_NOTE}</p>
+              )}
+              {requestOnlyOption && (
+              <p className="custom-date-line">
+                Want dates of your own?{' '}
+                {/* A private date is a conversation, not an intake form: it needs
+                    the team to check the host family, horses and guide first, so
+                    send it to contact rather than preselecting a date to pay for. */}
+                <a href="/contact#private-group-dates">Talk to us about a private group date</a>
+                {' '}— we&apos;ll confirm availability before any payment.
+              </p>
+            )}
               <div className="form-group">
                 <label className="form-label" htmlFor="guest_count">Guests booking together</label>
                 <select id="guest_count" className="form-select" name="guest_count" value={guestCount} onChange={e => { guestCountTouchedRef.current = true; const next = clampGuestCount(e.target.value); setGuestCount(next); setTravellerAnnouncement(`${next} traveller section${next === 1 ? '' : 's'} ready.`); }}>

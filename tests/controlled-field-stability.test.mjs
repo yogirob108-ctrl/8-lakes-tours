@@ -51,8 +51,12 @@ test('the form clears validation from input rather than from a per-keystroke ren
 test('every guest-facing dropdown is driven by a value the form controls', () => {
   // Controlled selects are the ones exposed to this failure mode. Naming them
   // keeps the browser regression test honest about what it has to cover.
-  assert.match(client, /id="guest_count"[^>]*value=\{/, 'guest_count is expected to stay a controlled select');
-  // The season pickers build their id from the year, so match that shape.
-  assert.match(client, /id=\{selectId\}[\s\S]{0,200}value=\{chosen \? selectedTourDate : ''\}/, 'the season pickers are expected to stay controlled');
+  for (const id of ['guest_count', 'tour_date']) {
+    assert.match(
+      client,
+      new RegExp(`id="${id}"[^>]*value=\\{`),
+      `${id} is expected to stay a controlled select`,
+    );
+  }
   assert.match(client, /value=\{parts\[part\]\}/, 'date-of-birth parts are expected to stay controlled');
 });

@@ -1547,7 +1547,9 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .stripe-buy-button-frame stripe-buy-button { display:block; max-width:100%; overflow:hidden; }
         .stripe-buy-button-frame.locked { pointer-events: none; }
         .stripe-link-fallback { display: inline-flex; justify-content: center; margin-top: 0.75rem; color: rgba(245,240,232,0.58); font-size: 0.68rem; text-decoration: underline; text-underline-offset: 3px; }
-        .checkout-locked-note { padding: 1rem; font-size: 0.66rem; letter-spacing: 0.1em; line-height: 1.5; text-transform: uppercase; color: rgba(10,37,64,0.6); text-align: center; }
+        /* This sits on the dark card, not on the white Stripe panel, so it takes
+           the card's own gold rather than the panel's navy. */
+        .checkout-locked-note { display: block; padding: 0.7rem 0.9rem; font-size: 0.66rem; letter-spacing: 0.1em; line-height: 1.5; text-transform: uppercase; color: var(--gold); background: rgba(200,169,110,0.08); border: 1px solid rgba(200,169,110,0.3); border-radius: var(--radius-soft); text-align: center; }
         .checkout-error { margin-top: 0.75rem; color: #ffb4a6; font-size: 0.72rem; line-height: 1.5; text-align: center; }
         .group-request-next-step { display:flex; flex-direction:column; gap:0.35rem; border:1px solid rgba(200,169,110,0.28); background:rgba(200,169,110,0.08); border-radius:var(--radius-card); padding:0.9rem; text-align:left; }
         .group-request-next-step strong { color:var(--cream); font-size:0.86rem; }

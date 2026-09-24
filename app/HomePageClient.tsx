@@ -1202,8 +1202,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .hero-sub { font-size: 1.05rem; line-height: 1.7; color: var(--mist); max-width: 680px; margin-bottom: 1.5rem; }
         .hero-sub .mobile-line { display: none; }
         .hero-sub .desktop-line { display: inline; }
-        .hero-price { margin-top: 1.4rem; font-size: 0.8rem; letter-spacing: 0.06em; color: rgba(245,240,232,0.78); }
-        .hero-price strong { color: var(--gold); font-weight: 500; }
         .hero-actions { display: flex; gap: 1rem; align-items: center; }
         .btn-primary {
           display: inline-block; background: var(--gold); color: var(--dark);
@@ -1644,8 +1642,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           .hero-sub { margin-bottom: 1.2rem; }
           .hero-sub .mobile-line { display: inline; }
           .hero-sub .desktop-line { display: none; }
-          .hero-price { margin-top: 1.4rem; font-size: 0.8rem; letter-spacing: 0.06em; color: rgba(245,240,232,0.78); }
-        .hero-price strong { color: var(--gold); font-weight: 500; }
         .hero-actions { flex-direction: column; align-items: stretch; gap: 0.8rem; }
           .hero-actions .btn-primary, .hero-actions .btn-ghost { text-align: center; }
           .intro-points { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.1rem 0.75rem; margin-top: 2.2rem; align-items: start; }
@@ -1825,9 +1821,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             <span className="mobile-line">Nine days on horseback across the vastness of the steppe, living alongside nomadic families. Small groups, beginner and intermediate riders welcome.</span>
             <span className="desktop-line">Nine days on horseback through the vastness of the Orkhon Valley and Eight Lakes, living alongside nomadic families whose way of life is still attuned to the steppe. Small groups, local horsemen, beginner and intermediate riders welcome.</span>
           </p>
-          {/* The price was first stated below the fold. For an unusual split
-              payment, saying it up front reads as confidence, not a catch. */}
-          <p className="hero-price">From <strong>${BASE_PRICE_USD.toLocaleString('en-US')}</strong> per person · 9 days · 8 nights · max 8 guests</p>
           <div className="hero-actions">
             <a href="#application" className="btn-primary">Reserve Online</a>
             <a href="#experience" className="btn-ghost">Explore the Journey</a>

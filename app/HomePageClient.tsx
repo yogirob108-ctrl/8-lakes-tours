@@ -1306,10 +1306,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .midpage-cta { grid-column: 1 / -1; display: flex; justify-content: center; margin-top: 3rem; }
         .midpage-cta a { display: inline-block; padding: 0.95rem 2.4rem; border: 1px solid var(--gold); border-radius: var(--radius-soft); color: var(--gold); font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; text-decoration: none; transition: background 0.25s ease, color 0.25s ease; }
         .midpage-cta a:hover { background: var(--gold); color: var(--dark); }
-        .testimonial-cta { margin: 3rem auto 0; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; text-align: center; }
-        .testimonial-cta a { display: inline-block; padding: 1rem 2.6rem; background: var(--gold); color: var(--dark); border-radius: var(--radius-soft); font-size: 0.74rem; letter-spacing: 0.2em; text-transform: uppercase; text-decoration: none; transition: background 0.25s ease; }
-        .testimonial-cta a:hover { background: #d8bc82; }
-        .testimonial-cta span { font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mist); opacity: 0.6; }
         .testimonial-grid { max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
         .testimonial-card { background: rgba(245,240,232,0.04); border: 1px solid rgba(200,169,110,0.18); border-radius: var(--radius-card); overflow: hidden; }
         .testimonial-photo { position: relative; height: 360px; overflow: hidden; display: block; width: 100%; }
@@ -1710,10 +1706,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           .midpage-cta { grid-column: 1 / -1; display: flex; justify-content: center; margin-top: 3rem; }
         .midpage-cta a { display: inline-block; padding: 0.95rem 2.4rem; border: 1px solid var(--gold); border-radius: var(--radius-soft); color: var(--gold); font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; text-decoration: none; transition: background 0.25s ease, color 0.25s ease; }
         .midpage-cta a:hover { background: var(--gold); color: var(--dark); }
-        .testimonial-cta { margin: 3rem auto 0; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; text-align: center; }
-        .testimonial-cta a { display: inline-block; padding: 1rem 2.6rem; background: var(--gold); color: var(--dark); border-radius: var(--radius-soft); font-size: 0.74rem; letter-spacing: 0.2em; text-transform: uppercase; text-decoration: none; transition: background 0.25s ease; }
-        .testimonial-cta a:hover { background: #d8bc82; }
-        .testimonial-cta span { font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mist); opacity: 0.6; }
         .testimonial-grid { grid-template-columns: 1fr; }
           .testimonial-photo { height: 280px; }
           .image-button.testimonial-photo { height: 280px; }
@@ -2065,13 +2057,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               </div>
             </article>
           ))}
-        </div>
-        {/* The testimonials are the most persuasive point on the page, and until
-            now they led nowhere: every booking link sat in the first 744px, then
-            ten screens with none. */}
-        <div className="testimonial-cta">
-          <a href="#trip-details" onClick={scrollToTourDates}>Reserve your place</a>
-          <span>{seasonDepartures['2026'].length + seasonDepartures['2027'].length} departures open · max 8 guests</span>
         </div>
       </section>
 

@@ -473,7 +473,7 @@ function DateOfBirthFields({ name, label, isLead = false }: { name: string; labe
         {(['day', 'month', 'year'] as const).map(part => (
           <div className={`date-of-birth-part ${part}`} key={part}>
             <label className="sr-only" htmlFor={`${name}-${part}`}>{`${label} ${part}`}</label>
-            <select id={`${name}-${part}`} name={`${name}_${part}`} className="form-select" autoComplete={autocomplete(part)} value={parts[part]} onChange={event => { update(part, event.target.value); setTouched(true); }} onBlur={() => setTouched(true)} aria-invalid={Boolean(error)} aria-describedby={error ? errorId : undefined}>
+            <select id={`${name}-${part}`} name={`${name}_${part}`} className="form-select" required data-dob-part="true" autoComplete={autocomplete(part)} value={parts[part]} onChange={event => { update(part, event.target.value); setTouched(true); }} onBlur={() => setTouched(true)} aria-invalid={Boolean(error)} aria-describedby={error ? errorId : undefined}>
               <option value="">{part[0].toUpperCase() + part.slice(1)}</option>
               {options[part].map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
@@ -900,7 +900,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
   const validateBookingForm = (form: HTMLFormElement) => {
     const invalid: Array<{ element: HTMLElement; message: string }> = [];
     const labelFor = (element: HTMLElement) => element.id ? form.querySelector(`label[for="${CSS.escape(element.id)}"]`)?.textContent?.trim() : '';
-    form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input[required], select[required], textarea[required]').forEach(element => {
+    form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input[required], select[required]:not([data-dob-part]), textarea[required]').forEach(element => {
       if (!element.disabled && !element.validity.valid) {
         const label = labelFor(element) || (element.type === 'checkbox' ? 'the required confirmation' : 'this field');
         const message = element.id === 'tour_date'
@@ -2192,43 +2192,9 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             <input type="hidden" name="display_online_payment" value={pricing.onlinePayment} />
             <input type="hidden" name="display_local_family_payment" value={pricing.localFamilyPayment} />
             <fieldset className="form-fields" disabled={formSubmitted || formSubmitting}>
-            <div className="form-section">
-              <p className="form-section-title">Personal information</p>
-              <div className="form-grid compact-grid">
-                <div className="form-group"><label className="form-label" htmlFor="first_name">Passport/Legal First Name</label><input id="first_name" className="form-input" name="first_name" type="text" placeholder="First name" maxLength={100} required /></div>
-                <div className="form-group"><label className="form-label" htmlFor="last_name">Passport/Legal Last Name</label><input id="last_name" className="form-input" name="last_name" type="text" placeholder="Last name" maxLength={100} required /></div>
-              </div>
-              <div className="form-group"><label className="form-label" htmlFor="email">Email Address — Required for Confirmation</label><input id="email" className="form-input" name="email" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} maxLength={254} required /></div>
-              <div className="form-grid compact-grid">
-                <div className="form-group"><label className="form-label" htmlFor="phone">Phone Number</label><input id="phone" className="form-input" name="phone" type="tel" placeholder="+1 (555) 000-0000" maxLength={40} /></div>
-                <div className="form-group"><label className="form-label" htmlFor="nationality">Nationality</label><input id="nationality" className="form-input" name="nationality" type="text" placeholder="e.g. American" maxLength={80} required /></div>
-              </div>
-              <div className="form-grid compact-grid">
-                <DateOfBirthFields name="date_of_birth" label="Date of Birth" isLead />
-                <div className="form-group">
-                  <label className="form-label" htmlFor="gender">Gender</label>
-                  <select id="gender" className="form-select" name="gender" required>
-                    <option value="">Select gender</option>
-                    {GENDERS.map(gender => <option key={gender}>{gender}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div className="form-group"><label className="form-label" htmlFor="dietary_restrictions">Dietary Restrictions</label><input id="dietary_restrictions" className="form-input" name="dietary_restrictions" type="text" placeholder="None, vegetarian, allergies, serious dairy/lactose issues, etc." maxLength={1000} /></div>
-              <div className="form-group"><label className="form-label" htmlFor="emergency_contact">Emergency Contact (Name & Phone)</label><input id="emergency_contact" className="form-input" name="emergency_contact" type="text" placeholder="Name · Phone number" maxLength={200} /></div>
-            </div>
-
             <div className="form-section" id="trip-details">
-              <p className="form-section-title">Trip details</p>
+              <p className="form-section-title">Your departure</p>
               <div className="form-grid compact-grid">
-                <div className="form-group">
-                  <label className="form-label" htmlFor="riding_experience">Riding Experience</label>
-                  <select id="riding_experience" className="form-select" name="riding_experience" required>
-                    <option value="">Select level</option>
-                    <option>Beginner — little to none</option>
-                    <option>Intermediate — comfortable riding</option>
-                    <option>Advanced — experienced rider</option>
-                  </select>
-                </div>
                 <div className="form-group">
                   <label className="form-label" htmlFor="tour_date">Preferred Tour Date</label>
                   <select id="tour_date" className="form-select" name="tour_date" required value={selectedTourDate} onChange={e => { tourDateTouchedRef.current = true; setSelectedTourDate(e.target.value); }}>
@@ -2238,7 +2204,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                     ))}
                   </select>
                 </div>
-              </div>
               <div className="form-group">
                 <label className="form-label" htmlFor="guest_count">Guests booking together</label>
                 <select id="guest_count" className="form-select" name="guest_count" value={guestCount} onChange={e => { guestCountTouchedRef.current = true; const next = clampGuestCount(e.target.value); setGuestCount(next); setTravellerAnnouncement(`${next} traveller section${next === 1 ? '' : 's'} ready.`); }}>
@@ -2246,6 +2211,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                     <option key={count} value={count}>{count} guest{count === 1 ? '' : 's'}</option>
                   ))}
                 </select>
+              </div>
               </div>
               <p className="sr-only" aria-live="polite" aria-atomic="true">{travellerAnnouncement}</p>
               <div className="group-pricing-card" aria-live="polite">
@@ -2264,6 +2230,44 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               <input type="hidden" name="online_payment_usd" value={groupPricing.onlinePaymentUsd} />
               <input type="hidden" name="local_family_payment_usd" value={groupPricing.localFamilyPaymentUsd} />
               <input type="hidden" name="total_trip_value_usd" value={groupPricing.totalTripValueUsd} />
+            </div>
+
+            <div className="form-section">
+              <p className="form-section-title">Personal information</p>
+              <div className="form-grid compact-grid">
+                <div className="form-group"><label className="form-label" htmlFor="first_name">Passport/Legal First Name</label><input id="first_name" className="form-input" name="first_name" type="text" placeholder="First name" maxLength={100} required /></div>
+                <div className="form-group"><label className="form-label" htmlFor="last_name">Passport/Legal Last Name</label><input id="last_name" className="form-input" name="last_name" type="text" placeholder="Last name" maxLength={100} required /></div>
+              </div>
+              <div className="form-group"><label className="form-label" htmlFor="email">Email Address</label><input id="email" className="form-input" name="email" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} maxLength={254} required /></div>
+              <div className="form-grid compact-grid">
+                <div className="form-group"><label className="form-label" htmlFor="phone">Phone Number (Optional)</label><input id="phone" className="form-input" name="phone" type="tel" placeholder="+1 (555) 000-0000" maxLength={40} /></div>
+                <div className="form-group"><label className="form-label" htmlFor="nationality">Nationality</label><input id="nationality" className="form-input" name="nationality" type="text" placeholder="e.g. American" maxLength={80} required /></div>
+              </div>
+              <div className="form-grid compact-grid">
+                <DateOfBirthFields name="date_of_birth" label="Date of Birth" isLead />
+                <div className="form-group">
+                  <label className="form-label" htmlFor="gender">Gender</label>
+                  <select id="gender" className="form-select" name="gender" required>
+                    <option value="">Select gender</option>
+                    {GENDERS.map(gender => <option key={gender}>{gender}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="form-grid compact-grid">
+                <div className="form-group"><label className="form-label" htmlFor="dietary_restrictions">Dietary Restrictions (Optional)</label><input id="dietary_restrictions" className="form-input" name="dietary_restrictions" type="text" placeholder="None, vegetarian, allergies, serious dairy/lactose issues, etc." maxLength={1000} /></div>
+                <div className="form-group"><label className="form-label" htmlFor="emergency_contact">Emergency Contact — Name &amp; Phone (Optional)</label><input id="emergency_contact" className="form-input" name="emergency_contact" type="text" placeholder="Name · Phone number" maxLength={200} /></div>
+              </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="riding_experience">Riding Experience</label>
+                  <select id="riding_experience" className="form-select" name="riding_experience" required>
+                    <option value="">Select level</option>
+                    <option>Beginner — little to none</option>
+                    <option>Intermediate — comfortable riding</option>
+                    <option>Advanced — experienced rider</option>
+                  </select>
+                </div>
+            </div>
+
               {Array.from({ length: guestCount - 1 }, (_, index) => {
                 const travellerNumber = index + 2;
                 const fieldPrefix = `travellers.${index + 1}`;
@@ -2311,9 +2315,16 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                   <span>I am the lead booker supplying my companions&apos; details for trip operations, and I have their permission to provide these details. My typed waiver below is my agreement only, not a waiver signed for any companion.</span>
                 </label>
               )}
-              <div className="form-group"><label className="form-label" htmlFor="how_heard">How did you hear about us?</label><input id="how_heard" className="form-input" name="how_heard" type="text" placeholder="Instagram, ChatGPT, friend, Google, retreat group, etc." maxLength={200} /></div>
-              <div className="form-group"><label className="form-label" htmlFor="notes">Special Notes or Questions</label><textarea id="notes" className="form-textarea" name="notes" placeholder="Anything else we should know?" maxLength={2000}></textarea></div>
+            <div className="form-section">
+              <p className="form-section-title">Anything else</p>
+              <div className="form-group"><label className="form-label" htmlFor="how_heard">How did you hear about us? (Optional)</label><input id="how_heard" className="form-input" name="how_heard" type="text" placeholder="Instagram, ChatGPT, friend, Google, retreat group, etc." maxLength={200} /></div>
+              <div className="form-group"><label className="form-label" htmlFor="notes">Special Notes or Questions (Optional)</label><textarea id="notes" className="form-textarea" name="notes" placeholder="Anything else we should know?" maxLength={2000}></textarea></div>
+            <label style={{display:'flex', gap:'0.7rem', alignItems:'flex-start', marginTop:'1rem', color:'var(--mist)', fontSize:'0.76rem', lineHeight:1.55, cursor:'pointer'}}>
+              <input type="checkbox" name="newsletter_opt_in" value="on" style={{marginTop:'0.2rem', accentColor:'var(--gold)'}} />
+              <span>Yes, email me occasional 8 Lakes Tours news, new dates, offers, deals, field notes, and business updates. This is optional and I can unsubscribe at any time.</span>
+            </label>
             </div>
+
 
             {/* Collapsible Waiver */}
             <div style={{border:'1px solid rgba(200,169,110,0.2)', borderRadius:'var(--radius-soft)', overflow:'hidden'}}>
@@ -2363,10 +2374,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               />
               <p style={{fontSize:'0.7rem', color:'var(--mist)', opacity:0.5, marginTop:'0.4rem', lineHeight:1.5}}>By typing your name you confirm that you, as the lead booker, have read and agree to the liability waiver for yourself only. This does not create a companion waiver.</p>
             </div>
-            <label style={{display:'flex', gap:'0.7rem', alignItems:'flex-start', marginTop:'1rem', color:'var(--mist)', fontSize:'0.76rem', lineHeight:1.55, cursor:'pointer'}}>
-              <input type="checkbox" name="newsletter_opt_in" value="on" style={{marginTop:'0.2rem', accentColor:'var(--gold)'}} />
-              <span>Yes, email me occasional 8 Lakes Tours news, new dates, offers, deals, field notes, and business updates. This is optional and I can unsubscribe at any time.</span>
-            </label>
             </fieldset>
 
             {/* Submit booking to ops */}

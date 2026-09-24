@@ -18,7 +18,6 @@ export const GALLERY_IMAGES: GalleryImage[] = [
   { src: '/images/gallery-extra/ger-camp-in-the-morning-mist.jpg', alt: 'The ger camp along the treeline in morning mist, horses grazing on the frost', width: 2000, height: 1125, orientation: 'landscape' },
   { src: '/images/gallery-extra/swimming-in-the-eight-lakes.jpg', alt: 'A guest wading into one of the Eight Lakes', width: 2000, height: 1500, orientation: 'landscape' },
   { src: '/images/gallery-extra/riding-behind-the-group-in-the-larch.jpg', alt: 'Riding behind the group along a wet trail through the larch', width: 1125, height: 2000, orientation: 'portrait' },
-  { src: '/images/gallery-extra/suma-hunting-binoculars-portrait.jpg', alt: 'Suma scanning the valley with binoculars while hunting', width: 864, height: 1152, orientation: 'portrait' },
   { src: '/images/gallery-extra/young-horseman-in-deel.jpg', alt: 'Young horseman in a green deel astride his horse at dusk', width: 1333, height: 2000, orientation: 'portrait' },
   { src: '/images/gallery-extra/guest-on-horseback-in-the-evening-sun.jpg', alt: 'A guest laughing on horseback in the evening sun', width: 1500, height: 2000, orientation: 'portrait' },
   { src: '/images/gallery-extra/horse-ears-above-the-river-valley.jpg', alt: 'View between a horse’s ears down to a river winding through the autumn valley', width: 1294, height: 2300, orientation: 'portrait' },

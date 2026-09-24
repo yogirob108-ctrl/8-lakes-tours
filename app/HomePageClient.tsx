@@ -1547,8 +1547,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .stripe-buy-button-frame stripe-buy-button { display:block; max-width:100%; overflow:hidden; }
         .stripe-buy-button-frame.locked { pointer-events: none; }
         .stripe-link-fallback { display: inline-flex; justify-content: center; margin-top: 0.75rem; color: rgba(245,240,232,0.58); font-size: 0.68rem; text-decoration: underline; text-underline-offset: 3px; }
-        .checkout-lock-overlay { position: absolute; inset: 0; z-index: 2; cursor: pointer; display: flex; align-items: flex-start; justify-content: center; padding-top: 0.65rem; background: transparent; }
-        .checkout-lock-overlay p { max-width:calc(100% - 1.5rem); box-sizing:border-box; font-size: 0.62rem; letter-spacing: 0.1em; line-height:1.35; text-transform: uppercase; color: var(--gold); background: rgba(14,12,9,0.72); border: 1px solid rgba(200,169,110,0.32); border-radius: var(--radius-soft); padding: 0.36rem 0.58rem; pointer-events: none; white-space:normal; overflow-wrap:anywhere; box-shadow: 0 8px 18px rgba(0,0,0,0.22); }
+        .checkout-locked-note { padding: 1rem; font-size: 0.66rem; letter-spacing: 0.1em; line-height: 1.5; text-transform: uppercase; color: rgba(10,37,64,0.6); text-align: center; }
         .checkout-error { margin-top: 0.75rem; color: #ffb4a6; font-size: 0.72rem; line-height: 1.5; text-align: center; }
         .group-request-next-step { display:flex; flex-direction:column; gap:0.35rem; border:1px solid rgba(200,169,110,0.28); background:rgba(200,169,110,0.08); border-radius:var(--radius-card); padding:0.9rem; text-align:left; }
         .group-request-next-step strong { color:var(--cream); font-size:0.86rem; }
@@ -1742,8 +1741,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           .checkout-note { font-size:0.68rem; }
           .stripe-embed-wrap { max-width:100%; }
           .stripe-buy-button-frame { min-height:220px; }
-          .checkout-lock-overlay { padding-top:0.5rem; }
-          .checkout-lock-overlay p { font-size:0.52rem; letter-spacing:0.08em; padding:0.32rem 0.46rem; }
           .intro-img-accent { display: none; }
         }
       `}</style>
@@ -2395,30 +2392,26 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                   onMouseDown={trackStripePaymentClick}
                   onTouchStart={trackStripePaymentClick}
                 >
-                  <p className="stripe-preview-amount">${groupPricing.onlinePaymentUsd.toLocaleString('en-US')} USD <span>{groupPricing.guestCount} guest{groupPricing.guestCount === 1 ? '' : 's'}</span></p>
-                  <a
-                    className="stripe-link-fallback"
-                    href={checkoutFallbackHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-disabled={!canPay}
-                    tabIndex={canPay ? 0 : -1}
-                    onClick={event => {
-                      if (!canPay) event.preventDefault();
-                      else trackStripePaymentClick();
-                    }}
-                  >
-                    Open Stripe checkout
-                  </a>
-                  {!canPay && (
-                    <div
-                      className="checkout-lock-overlay"
-                      onClick={e => { e.stopPropagation(); }}
-                    >
-                      <p>
-                        {!emailIsValid ? 'Please enter a valid email address above' : !signatureIsValid ? 'Please type your full name as a signature above' : 'Submit your booking before payment'}
-                      </p>
-                    </div>
+                  {canPay ? (
+                    <>
+                      <p className="stripe-preview-amount">${groupPricing.onlinePaymentUsd.toLocaleString('en-US')} USD <span>{groupPricing.guestCount} guest{groupPricing.guestCount === 1 ? '' : 's'}</span></p>
+                      <a
+                        className="stripe-link-fallback"
+                        href={checkoutFallbackHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={trackStripePaymentClick}
+                      >
+                        Open Stripe checkout
+                      </a>
+                    </>
+                  ) : (
+                    /* The message used to be an absolutely positioned overlay, so
+                       it printed on top of the amount. Nothing is payable yet, so
+                       show the reason in place of the preview rather than over it. */
+                    <p className="checkout-locked-note">
+                      {!emailIsValid ? 'Please enter a valid email address above' : !signatureIsValid ? 'Please type your full name as a signature above' : 'Submit your booking before payment'}
+                    </p>
                   )}
                 </div>
               ) : (

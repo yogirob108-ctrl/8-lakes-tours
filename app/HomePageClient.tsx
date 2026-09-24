@@ -2157,7 +2157,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                 {/* A private date is a conversation, not an intake form: it needs
                     the team to check the host family, horses and guide first, so
                     send it to contact rather than preselecting a date to pay for. */}
-                <a href="/contact#private-group-dates">Talk to us about a private group date</a>
+                <a href="/contact">Talk to us about a private group date</a>
                 {' '}— we&apos;ll confirm availability before any payment.
               </p>
             )}

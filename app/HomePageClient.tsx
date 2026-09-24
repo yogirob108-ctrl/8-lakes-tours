@@ -366,7 +366,6 @@ const LIGHTBOX_IMAGES: { src: string; alt: string }[] = Array.from(
 
 function WaiverModal({ onClose, onAgree }: { onClose: () => void; onAgree: () => void }) {
   const [signature, setSignature] = useState('');
-  const [waiverAgreed, setWaiverAgreed] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const canProceed = signature.trim().length > 1 && agreed;
 

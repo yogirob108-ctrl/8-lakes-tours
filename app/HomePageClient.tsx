@@ -1452,8 +1452,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .tour-date-status { font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); background: rgba(200,169,110,0.12); border: 1px solid rgba(200,169,110,0.3); padding: 0.3rem 0.7rem; border-radius: var(--radius-soft); white-space: nowrap; }
         .tour-date-row.selected .tour-date-status { background: var(--gold); color: var(--dark); border-color: var(--gold); }
         /* Two season pickers, sized to carry the section rather than sit in it. */
-        .season-picker.is-chosen { border-color: var(--gold); background: rgba(200,169,110,0.13); }
-        .season-picker.is-founding { border-color:rgba(200,169,110,0.5); }
         /* The gold edge and the heading carry the urgency; the body stays quiet
            so the banner reads as an open window rather than a sale. */
         .founding-rate-line { font-size: 0.7rem; line-height: 1.55; color: var(--mist); opacity: 0.8; }

@@ -32,6 +32,7 @@ const validPayload = (overrides = {}) => ({
   how_heard: 'Friend',
   notes: 'Window seat if possible',
   signature: 'Ada Lovelace',
+  waiver_agreed: 'on',
   travellers: [validTraveller()],
   attribution: { source: 'google', landing_url: 'https://www.8lakestours.com/' },
   ...overrides,
@@ -220,5 +221,21 @@ test('gender must be one of the offered options', () => {
     const result = normalizeBookingTravellers(1, [validTraveller({ gender })]);
     assert.equal(result.ok, true);
     assert.equal(result.travellers[0].gender, gender);
+  }
+});
+
+test('a signature must read as a name and the waiver must be explicitly agreed', () => {
+  // Two keystrokes used to pass, and nothing recorded that the waiver was read.
+  for (const signature of ['ab', 'Ada', 'A L', 'x'.repeat(3)]) {
+    const result = normalizePublicBookingPayload(validPayload({ signature }));
+    assert.equal(result.ok, false, `${signature} must not pass as a signature`);
+    assert.match(result.error, /full legal name/);
+  }
+  assert.equal(normalizePublicBookingPayload(validPayload({ signature: 'Ada Lovelace' })).ok, true);
+
+  for (const waiver of ['', undefined, 'yes', 'true']) {
+    const result = normalizePublicBookingPayload(validPayload({ waiver_agreed: waiver }));
+    assert.equal(result.ok, false, `waiver_agreed=${waiver} must not pass`);
+    assert.match(result.error, /liability waiver/);
   }
 });

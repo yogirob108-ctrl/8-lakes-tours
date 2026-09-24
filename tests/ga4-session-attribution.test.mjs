@@ -166,6 +166,7 @@ test('ga session id is a permitted booking attribution field that survives norma
     how_heard: '',
     notes: '',
     signature: 'Test Guest',
+    waiver_agreed: 'on',
     travellers: [{ position: 1, is_lead: true, first_name: 'Test', last_name: 'Guest', email: 'lead@example.invalid', phone: null, nationality: 'US', gender: 'Female', date_of_birth: '1990-01-01', riding_experience: 'Intermediate — comfortable riding', dietary_notes: null }],
     attribution: { ga_client_id: '111222.333444', ga_session_id: '1785492000', email: 'nope@example.invalid' },
   });

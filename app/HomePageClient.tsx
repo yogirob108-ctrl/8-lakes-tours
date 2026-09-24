@@ -366,6 +366,7 @@ const LIGHTBOX_IMAGES: { src: string; alt: string }[] = Array.from(
 
 function WaiverModal({ onClose, onAgree }: { onClose: () => void; onAgree: () => void }) {
   const [signature, setSignature] = useState('');
+  const [waiverAgreed, setWaiverAgreed] = useState(false);
   const [agreed, setAgreed] = useState(false);
   const canProceed = signature.trim().length > 1 && agreed;
 
@@ -508,6 +509,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [waiverExpanded, setWaiverExpanded] = useState(false);
   const [signature, setSignature] = useState('');
+  const [waiverAgreed, setWaiverAgreed] = useState(false);
   const [email, setEmail] = useState('');
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [formSubmitting, setFormSubmitting] = useState(false);
@@ -542,8 +544,11 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
     localFamilyPayment: formatApproxUsd(BASE_LOCAL_FAMILY_PAYMENT_USD, 'USD'),
   });
   const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-  const signatureIsValid = signature.trim().length > 1;
-  const hasRequiredContact = signatureIsValid && emailIsValid;
+  // "ab" used to pass. A signature has to read as a name: at least two parts,
+  // each of two letters or more.
+  const signatureParts = signature.trim().split(/\s+/).filter(Boolean);
+  const signatureIsValid = signatureParts.length >= 2 && signatureParts.every(part => part.replace(/[^\p{L}]/gu, '').length >= 2);
+  const hasRequiredContact = signatureIsValid && emailIsValid && waiverAgreed;
   const manualReason = manualPaymentReason(selectedTourDate, guestCount);
   const requiresHumanConfirmation = manualReason !== null;
   const awaitsGroupInvoice = manualReason === GROUP_INVOICE;
@@ -1550,6 +1555,8 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         /* This sits on the dark card, not on the white Stripe panel, so it takes
            the card's own gold rather than the panel's navy. */
         .checkout-locked-note { display: block; padding: 0.7rem 0.9rem; font-size: 0.66rem; letter-spacing: 0.1em; line-height: 1.5; text-transform: uppercase; color: var(--gold); background: rgba(200,169,110,0.08); border: 1px solid rgba(200,169,110,0.3); border-radius: var(--radius-soft); text-align: center; }
+        .waiver-agree { display: flex; gap: 0.7rem; align-items: flex-start; margin-top: 0.9rem; color: var(--mist); font-size: 0.76rem; line-height: 1.55; cursor: pointer; }
+        .waiver-agree input { margin-top: 0.2rem; accent-color: var(--gold); flex-shrink: 0; }
         .checkout-error { margin-top: 0.75rem; color: #ffb4a6; font-size: 0.72rem; line-height: 1.5; text-align: center; }
         .group-request-next-step { display:flex; flex-direction:column; gap:0.35rem; border:1px solid rgba(200,169,110,0.28); background:rgba(200,169,110,0.08); border-radius:var(--radius-card); padding:0.9rem; text-align:left; }
         .group-request-next-step strong { color:var(--cream); font-size:0.86rem; }
@@ -2327,7 +2334,11 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                 placeholder="Your full name"
                 style={{width:'100%', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(200,169,110,0.3)', borderRadius:'var(--radius-soft)', padding:'0.7rem 1rem', color:'var(--cream)', fontSize:'0.95rem', fontFamily:"var(--font-cormorant), 'Cormorant Garamond', serif", fontStyle:'italic', outline:'none', boxSizing:'border-box'}}
               />
-              <p style={{fontSize:'0.7rem', color:'var(--mist)', opacity:0.5, marginTop:'0.4rem', lineHeight:1.5}}>By typing your name you confirm that you, as the lead booker, have read and agree to the liability waiver for yourself only. This does not create a companion waiver.</p>
+              <p style={{fontSize:'0.7rem', color:'var(--mist)', opacity:0.5, marginTop:'0.4rem', lineHeight:1.5}}>Sign with your full legal name, as the lead booker. This does not create a companion waiver.</p>
+              <label className="waiver-agree">
+                <input type="checkbox" name="waiver_agreed" value="on" required checked={waiverAgreed} onChange={event => setWaiverAgreed(event.target.checked)} />
+                <span>I have read the liability waiver above and agree to it for myself.</span>
+              </label>
             </div>
             </fieldset>
 
@@ -2354,7 +2365,9 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                 </button>
                 <p className="pay-bar-note">
                   {!hasRequiredContact
-                    ? 'Add your name and email above to continue.'
+                    ? !emailIsValid ? 'Add your email above to continue.'
+                      : !signatureIsValid ? 'Sign with your full name above to continue.'
+                      : 'Tick the waiver agreement above to continue.'
                     : requiresHumanConfirmation
                       ? 'No payment is taken until we confirm your dates.'
                       : <>Card details go straight to Stripe — 8 Lakes Tours never sees them. ${groupPricing.localFamilyPaymentUsd.toLocaleString('en-US')} cash is paid to the host family in Mongolia.</>}
@@ -2412,7 +2425,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                        it printed on top of the amount. Nothing is payable yet, so
                        show the reason in place of the preview rather than over it. */
                     <p className="checkout-locked-note">
-                      {!emailIsValid ? 'Please enter a valid email address above' : !signatureIsValid ? 'Please type your full name as a signature above' : 'Submit your booking before payment'}
+                      {!emailIsValid ? 'Please enter a valid email address above' : !signatureIsValid ? 'Please sign with your full name above' : !waiverAgreed ? 'Please agree to the liability waiver above' : 'Submit your booking before payment'}
                     </p>
                   )}
                 </div>

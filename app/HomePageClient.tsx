@@ -525,7 +525,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
   const tourDateTouchedRef = useRef(false);
   const guestCountTouchedRef = useRef(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
-  const tourDateOptions = tourDates.map(dateOption => dateOption.date);
   const groupPricing = useMemo(() => getGroupPricing(guestCount), [guestCount]);
   const bookingFormStartedRef = useRef(false);
   const stripeClickTrackedRef = useRef(false);
@@ -911,6 +910,11 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         invalid.push({ element, message });
       }
     });
+    const chosenDate = form.querySelector<HTMLInputElement>('input[name="tour_date"]');
+    if (chosenDate && !chosenDate.value) {
+      const changeLink = form.ownerDocument.getElementById('tour_date_change');
+      if (changeLink) invalid.push({ element: changeLink, message: 'Choose a tour date before continuing.' });
+    }
     form.querySelectorAll<HTMLInputElement>('input[data-date-of-birth-canonical="true"]').forEach(element => {
       if (!element.value) {
         const firstPart = form.querySelector<HTMLInputElement>(`#${CSS.escape(element.name)}-day`);
@@ -1416,6 +1420,14 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .getting-there-note { margin: 0.9rem 1.2rem 1.2rem; padding-left: 0.8rem; border-left: 2px solid var(--gold); font-size: 0.78rem; line-height: 1.55; color: rgba(212,207,196,0.7); }
 
         .booking { background: var(--dark); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6rem; align-items: start; overflow-x: clip; }
+        /* The departure pickers introduce the whole booking block, so they span
+           both columns and sit above the price card and the form. */
+        .booking-lead { grid-column: 1 / -1; }
+        .booking-lead .tour-dates-card { margin-top: 2rem; }
+        .chosen-departure { display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:0.85rem 0.95rem; background:rgba(200,169,110,0.08); border:1px solid rgba(200,169,110,0.32); border-radius:var(--radius-soft); }
+        .chosen-departure-label { display:block; font-size:0.58rem; letter-spacing:0.22em; text-transform:uppercase; color:var(--gold); margin-bottom:0.25rem; }
+        .chosen-departure strong { color:var(--cream); font-family:var(--font-cormorant), 'Cormorant Garamond', serif; font-size:1.1rem; font-weight:400; line-height:1.1; }
+        .chosen-departure-change { flex-shrink:0; font-size:0.68rem; letter-spacing:0.14em; text-transform:uppercase; color:var(--gold); text-decoration:underline; }
         .scarcity-pill { display:inline-flex; max-width:100%; box-sizing:border-box; align-items:center; gap:0.6rem; margin-top:1.2rem; padding:0.6rem 1.1rem; background:rgba(185,74,48,0.12); border:1px solid rgba(185,74,48,0.35); border-radius: var(--radius-soft); overflow:hidden; }
         .scarcity-pill span:last-child { min-width:0; font-size:0.72rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--rust); line-height:1.45; overflow-wrap:anywhere; }
         .price-card { max-width:100%; box-sizing:border-box; overflow:hidden; background: var(--ink); border: 1px solid rgba(200,169,110,0.25); border-radius: var(--radius-card); padding: 3rem; }
@@ -1474,6 +1486,9 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .season-picker select { appearance: none; width: 100%; min-width: 0; padding: 0.85rem 2.2rem 0.85rem 0.9rem; font: inherit; font-size: 0.95rem; color: var(--cream); background-color: rgba(14,12,9,0.55); background-image: linear-gradient(45deg, transparent 50%, rgba(200,169,110,0.85) 50%), linear-gradient(135deg, rgba(200,169,110,0.85) 50%, transparent 50%); background-position: calc(100% - 1.15rem) 55%, calc(100% - 0.8rem) 55%; background-size: 0.36rem 0.36rem, 0.36rem 0.36rem; background-repeat: no-repeat; border: 1px solid rgba(200,169,110,0.42); border-radius: var(--radius-soft); cursor: pointer; }
         .season-picker select:hover { border-color: rgba(200,169,110,0.7); }
         .season-picker select:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+        .season-picker-head { display:flex; align-items:center; justify-content:space-between; gap:0.5rem; }
+        .season-picker-tag { flex-shrink:0; font-size:0.5rem; letter-spacing:0.16em; text-transform:uppercase; color:var(--dark); background:var(--gold); padding:0.22rem 0.42rem; border-radius:3px; }
+        .season-picker.is-founding { border-color:rgba(200,169,110,0.5); }
         .season-picker-note { font-size: 0.66rem; line-height: 1.5; color: var(--mist); opacity: 0.78; }
         .season-picker-sold-out { font-size: 0.66rem; line-height: 1.5; color: var(--mist); opacity: 0.6; }
         /* The gold edge and the heading carry the urgency; the body stays quiet
@@ -1525,9 +1540,18 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .group-pricing-eyebrow { font-size:0.58rem; letter-spacing:0.18em; text-transform:uppercase; color:var(--gold); margin:0 0 0.45rem; }
         .form-check input[type="checkbox"] { appearance: none; width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; border: 1px solid rgba(245,240,232,0.3); border-radius: 4px; background: transparent; cursor: pointer; position: relative; }
         .form-check input[type="checkbox"]:checked { background: var(--gold); border-color: var(--gold); }
-        .submit-btn { background: var(--gold); color: var(--dark); border: none; border-radius: var(--radius-soft); padding: 1.1rem 2rem; font-family: var(--font-jost), 'Jost', sans-serif; font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 500; cursor: pointer; transition: all 0.3s ease; width: 100%; margin-top: 0.5rem; }
-        .submit-btn:hover { background: var(--rust); color: var(--cream); }
-        .submit-btn:disabled { background: var(--sage); color: var(--cream); cursor: default; }
+        /* The payment bar: one solid, unambiguous action. Disabled reads as
+           "not yet" rather than as a broken control, so it is outlined and
+           legible instead of a washed-out fill. */
+        .pay-bar { margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.6rem; }
+        .submit-btn { display: flex; align-items: center; justify-content: center; gap: 0.55rem; width: 100%; padding: 1.15rem 1.5rem; background: var(--gold); color: var(--dark); border: 1px solid var(--gold); border-radius: var(--radius-soft); font-family: var(--font-jost), 'Jost', sans-serif; font-size: 0.78rem; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 500; line-height: 1; cursor: pointer; transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease, transform 0.12s ease; box-shadow: 0 10px 24px rgba(0,0,0,0.22); }
+        .submit-btn:hover:not(:disabled) { background: #d8bc82; border-color: #d8bc82; }
+        .submit-btn:active:not(:disabled) { transform: translateY(1px); }
+        .submit-btn:focus-visible { outline: 2px solid var(--cream); outline-offset: 3px; }
+        .submit-btn:disabled { background: transparent; border-color: rgba(200,169,110,0.34); color: rgba(245,240,232,0.55); box-shadow: none; cursor: not-allowed; }
+        .submit-btn-lock { width: 0.92rem; height: 0.92rem; flex-shrink: 0; opacity: 0.85; }
+        .submit-btn-amount { font-weight: 600; letter-spacing: 0.12em; }
+        .pay-bar-note { text-align: center; font-size: 0.68rem; line-height: 1.55; color: var(--mist); opacity: 0.66; }
         .payment-checkout-card { max-width:100%; box-sizing:border-box; overflow:hidden; margin-top: 1rem; padding: 1.2rem; background: linear-gradient(145deg, rgba(245,240,232,0.075), rgba(99,91,255,0.08)); border: 1px solid rgba(200,169,110,0.24); border-radius: var(--radius-payment); text-align: center; box-shadow: inset 0 1px 0 rgba(255,255,255,0.05); }
         .booking-save-spinner { display:inline-block; width:1em; height:1em; margin-right:0.7em; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; vertical-align:middle; animation:booking-saving 0.8s linear infinite; }
         @keyframes booking-saving { to { transform:rotate(360deg); } }
@@ -2056,7 +2080,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
 
       {/* BOOKING */}
       <section className="booking" id="book">
-        <div className="reveal">
+        <div className="booking-lead reveal">
           <span className="section-eyebrow">Reserve Your Spot</span>
           <h2 className="section-title">Choose 2026<br /><em>or Plan 2027</em></h2>
           <p className="section-body">Remaining 2026 departures stay visible while bookable, and the 2027 season runs fortnightly from May to October. Pick either year and pay online straight away — no availability request in between. The trip is $1,999 per person, and group rates apply for 3–8 guests. Book 2027 while the 2026 season is still running and you keep the founding rate.</p>
@@ -2064,6 +2088,60 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             <span style={{width:'7px', height:'7px', borderRadius:'50%', background:'var(--rust)', display:'inline-block', flexShrink:0}}></span>
             <span>Small groups only — each departure capped at 8 guests</span>
           </div>
+          <div className="tour-dates-card" id="tour-dates">
+            <p className="tour-dates-heading" style={{fontSize:'0.6rem', letterSpacing:'0.3em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'1rem'}}>Choose Your Departure</p>
+            <div className="season-picker-grid">
+              {SEASONS.map(season => {
+                const departures = seasonDepartures[season.year];
+                const chosen = departures.some(option => option.date === selectedTourDate);
+                const selectId = `season_${season.year}`;
+                return (
+                  <div className={`season-picker${chosen ? ' is-chosen' : ''}${season.year === '2027' ? ' is-founding' : ''}`} key={season.year}>
+                    <div className="season-picker-head">
+                      <span className="season-picker-label">{season.label}</span>
+                      {season.year === '2027' && departures.length > 0 && <span className="season-picker-tag">Founding rate</span>}
+                    </div>
+                    <span className="season-picker-year">{season.year}</span>
+                    {departures.length > 0 ? (
+                      <>
+                        <label className="sr-only" htmlFor={selectId}>{`Choose a ${season.year} departure`}</label>
+                        <select
+                          id={selectId}
+                          value={chosen ? selectedTourDate : ''}
+                          onChange={event => { if (event.target.value) chooseTourDate(event.target.value); }}
+                        >
+                          <option value="">{`Select a ${season.year} date`}</option>
+                          {departures.map(option => <option key={option.date} value={option.date}>{option.date}</option>)}
+                        </select>
+                        <p className="season-picker-note">{`${departures.length} departure${departures.length === 1 ? '' : 's'} · 9 days · 8 nights · max 8 guests · book and pay online`}</p>
+                      </>
+                    ) : (
+                      <p className="season-picker-sold-out">This season has finished. Ask us about a custom date.</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {seasonDepartures['2027'].length > 0 && (
+              <p className="founding-rate-note">
+                <strong className="founding-rate-heading">{FOUNDING_RATE_HEADING}</strong>
+                <span>{FOUNDING_RATE_NOTE} <em>{FOUNDING_RATE_CLOSER}</em></span>
+              </p>
+            )}
+            {requestOnlyOption && (
+              <p className="custom-date-line">
+                Want dates of your own?{' '}
+                {/* A private date is a conversation, not an intake form: it needs
+                    the team to check the host family, horses and guide first, so
+                    send it to contact rather than preselecting a date to pay for. */}
+                <a href="/contact#private-group-dates">Talk to us about a private group date</a>
+                {' '}— we&apos;ll confirm availability before any payment.
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="reveal">
           <div className="price-card" style={{marginTop:'2.5rem'}}>
             <span className="price-badge">2026 &amp; 2027 Departures — Limited Availability</span>
             <div className="price-amount">${BASE_PRICE_USD.toLocaleString('en-US')}</div>
@@ -2131,54 +2209,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               </div>
             </div>
           </div>
-          <div className="tour-dates-card" id="tour-dates">
-            <p className="tour-dates-heading" style={{fontSize:'0.6rem', letterSpacing:'0.3em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'1rem'}}>Choose Your Departure</p>
-            <div className="season-picker-grid">
-              {SEASONS.map(season => {
-                const departures = seasonDepartures[season.year];
-                const chosen = departures.some(option => option.date === selectedTourDate);
-                const selectId = `season_${season.year}`;
-                return (
-                  <div className={`season-picker${chosen ? ' is-chosen' : ''}`} key={season.year}>
-                    <span className="season-picker-label">{season.label}</span>
-                    <span className="season-picker-year">{season.year}</span>
-                    {departures.length > 0 ? (
-                      <>
-                        <label className="sr-only" htmlFor={selectId}>{`Choose a ${season.year} departure`}</label>
-                        <select
-                          id={selectId}
-                          value={chosen ? selectedTourDate : ''}
-                          onChange={event => { if (event.target.value) chooseTourDate(event.target.value); }}
-                        >
-                          <option value="">{`Select a ${season.year} date`}</option>
-                          {departures.map(option => <option key={option.date} value={option.date}>{option.date}</option>)}
-                        </select>
-                        <p className="season-picker-note">{`${departures.length} departure${departures.length === 1 ? '' : 's'} · 9 days · 8 nights · max 8 guests · book and pay online`}</p>
-                      </>
-                    ) : (
-                      <p className="season-picker-sold-out">This season has finished. Ask us about a custom date.</p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            {seasonDepartures['2027'].length > 0 && (
-              <p className="founding-rate-note">
-                <strong className="founding-rate-heading">{FOUNDING_RATE_HEADING}</strong>
-                <span>{FOUNDING_RATE_NOTE} <em>{FOUNDING_RATE_CLOSER}</em></span>
-              </p>
-            )}
-            {requestOnlyOption && (
-              <p className="custom-date-line">
-                Want dates of your own?{' '}
-                {/* A private date is a conversation, not an intake form: it needs
-                    the team to check the host family, horses and guide first, so
-                    send it to contact rather than preselecting a date to pay for. */}
-                <a href="/contact#private-group-dates">Talk to us about a private group date</a>
-                {' '}— we&apos;ll confirm availability before any payment.
-              </p>
-            )}
-          </div>
         </div>
 
         <div className="reveal reveal-delay-1" id="application">
@@ -2194,16 +2224,18 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             <fieldset className="form-fields" disabled={formSubmitted || formSubmitting}>
             <div className="form-section" id="trip-details">
               <p className="form-section-title">Your departure</p>
-              <div className="form-grid compact-grid">
-                <div className="form-group">
-                  <label className="form-label" htmlFor="tour_date">Preferred Tour Date</label>
-                  <select id="tour_date" className="form-select" name="tour_date" required value={selectedTourDate} onChange={e => { tourDateTouchedRef.current = true; setSelectedTourDate(e.target.value); }}>
-                    {!selectedTourDate && <option value="">Select date</option>}
-                    {tourDateOptions.map(dateOption => (
-                      <option key={dateOption} value={dateOption}>{dateOption}</option>
-                    ))}
-                  </select>
+              {/* The date is chosen once, in the pickers above. Repeating the
+                  control here asked the same question twice and let the two
+                  answers drift; this confirms the choice and sends people back
+                  up to change it. */}
+              <div className="chosen-departure">
+                <div>
+                  <span className="chosen-departure-label">Your departure</span>
+                  <strong>{selectedTourDate || 'No date chosen yet'}</strong>
                 </div>
+                <a id="tour_date_change" className="chosen-departure-change" href="#tour-dates" onClick={scrollToTourDates}>{selectedTourDate ? 'Change' : 'Choose a date'}</a>
+              </div>
+              <input type="hidden" name="tour_date" value={selectedTourDate} />
               <div className="form-group">
                 <label className="form-label" htmlFor="guest_count">Guests booking together</label>
                 <select id="guest_count" className="form-select" name="guest_count" value={guestCount} onChange={e => { guestCountTouchedRef.current = true; const next = clampGuestCount(e.target.value); setGuestCount(next); setTravellerAnnouncement(`${next} traveller section${next === 1 ? '' : 's'} ready.`); }}>
@@ -2211,7 +2243,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                     <option key={count} value={count}>{count} guest{count === 1 ? '' : 's'}</option>
                   ))}
                 </select>
-              </div>
               </div>
               <p className="sr-only" aria-live="polite" aria-atomic="true">{travellerAnnouncement}</p>
               <div className="group-pricing-card" aria-live="polite">
@@ -2378,15 +2409,33 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
 
             {/* Submit booking to ops */}
             {!formSubmitted || formSubmitting ? (
-              <button
-                type="submit"
-                disabled={!hasRequiredContact || formSubmitting}
-                className="submit-btn"
-                style={{marginTop:'0.5rem', opacity: hasRequiredContact ? 1 : 0.4, transition:'opacity 0.3s', cursor: hasRequiredContact ? 'pointer' : 'not-allowed'}}
-              >
-                {formSubmitting && <span className="booking-save-spinner" aria-hidden="true" />}
-                {formSubmitting ? (requiresHumanConfirmation ? 'Sending your request…' : 'Preparing your secure checkout…') : awaitsGroupInvoice ? 'Request Your Group Invoice' : requiresHumanConfirmation ? 'Submit Availability Request' : `Book & pay $${groupPricing.onlinePaymentUsd.toLocaleString('en-US')} USD`}
-              </button>
+              <div className="pay-bar">
+                <button
+                  type="submit"
+                  disabled={!hasRequiredContact || formSubmitting}
+                  className="submit-btn"
+                >
+                  {formSubmitting
+                    ? <><span className="booking-save-spinner" aria-hidden="true" />{requiresHumanConfirmation ? 'Sending your request…' : 'Preparing your secure checkout…'}</>
+                    : awaitsGroupInvoice ? 'Request your group invoice'
+                    : requiresHumanConfirmation ? 'Submit availability request'
+                    : <>
+                        <svg className="submit-btn-lock" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                          <path d="M7 10V7a5 5 0 0 1 10 0v3" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                          <rect x="4" y="10" width="16" height="10" rx="2" fill="currentColor" />
+                        </svg>
+                        <span>Book &amp; pay</span>
+                        <span className="submit-btn-amount">${groupPricing.onlinePaymentUsd.toLocaleString('en-US')} USD</span>
+                      </>}
+                </button>
+                <p className="pay-bar-note">
+                  {!hasRequiredContact
+                    ? 'Add your name and email above to continue.'
+                    : requiresHumanConfirmation
+                      ? 'No payment is taken until we confirm your dates.'
+                      : <>Card details go straight to Stripe — 8 Lakes Tours never sees them. ${groupPricing.localFamilyPaymentUsd.toLocaleString('en-US')} cash is paid to the host family in Mongolia.</>}
+                </p>
+              </div>
             ) : (
               <div style={{marginTop:'0.5rem', padding:'0.9rem 1rem', background:'rgba(200,169,110,0.08)', border:'1px solid rgba(200,169,110,0.3)', borderRadius:'var(--radius-soft)', textAlign:'center'}}>
                 <p style={{fontSize:'0.7rem', letterSpacing:'0.2em', textTransform:'uppercase', color:'var(--gold)'}}>{awaitsGroupInvoice ? 'Request received — our team will email your invoice' : requiresHumanConfirmation ? 'Request received — our team will confirm availability before payment' : 'Payment pending — your place is not yet confirmed'}</p>

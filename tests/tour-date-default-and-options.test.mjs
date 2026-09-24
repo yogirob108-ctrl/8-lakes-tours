@@ -75,8 +75,10 @@ test('booking API normalizes legacy selections before validation and storage', a
 test('fresh form preselects the default with no visible placeholder and correct CTA', async () => {
   const client = await readFile(new URL('../app/HomePageClient.tsx', import.meta.url), 'utf8');
   assert.match(client, /useState\(\(\) => getDefaultTourDate\(tourDates\)\)/, 'initial state is the earliest available departure');
-  assert.doesNotMatch(client, /<option value="">\{?["'`]Select date["'`]?\}?<\/option>/, 'placeholder must not be unconditional');
-  assert.match(client, /\{!selectedTourDate && <option value="">Select date<\/option>\}/, 'placeholder only renders when no date is selected (no bookable departure or blank draft)');
+  // No date is now shown as a prompt on the confirmation line rather than as a
+  // placeholder option, since the form no longer carries its own date control.
+  assert.match(client, /No date chosen yet/, 'the form says plainly when nothing is chosen');
+  assert.match(client, /selectedTourDate \? 'Change' : 'Choose a date'/, 'the link invites a first choice, not just a change');
   assert.match(client, /import \{[^}]*getDefaultTourDate[^}]*\} from '@\/lib\/tour-dates\.mjs'/);
   assert.match(client, /tourDateTouchedRef\.current = true/, 'both controls mark the canonical selection as user-touched');
   assert.match(client, /manualPaymentReason\(selectedTourDate, guestCount\)/, 'CTA keeps deriving from the canonical selection');

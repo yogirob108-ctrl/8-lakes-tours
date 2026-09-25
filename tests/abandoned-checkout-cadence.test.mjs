@@ -13,6 +13,7 @@ function harness({authorize=true,claim=true,claimStage='abandoned_checkout_1',er
  const db={rpc:async(name,args)=>{calls.push([name,args]);
   if(name==='list_abandoned_checkouts')return {data:[row]};
   if(name==='read_abandoned_checkout_evidence')return {data:{...evidence(),stages}};
+  if(name==='release_departure_capacity_if_safe')return {data:false};
   if(name==='claim_abandoned_checkout')return {data:claim?{should_send:true,email_event_id:'e',claim_token:'t',payload:payload(claimStage)}:{should_send:false}};
   if(name==='authorize_abandoned_checkout_v3')return {data:authorize};
   if(name==='finalize_abandoned_checkout_stage')return {};

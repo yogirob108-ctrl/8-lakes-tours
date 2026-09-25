@@ -15,6 +15,7 @@ function harness({gateMode='off',allow=[],sendResult={sent:true,id:'local-fixtur
  const db={rpc:async(name,args)=>{calls.push([name,args]);
   if(name==='list_abandoned_checkouts')return {data:[row]};
   if(name==='read_abandoned_checkout_evidence')return {data:{...evidence(),stages:{}}};
+  if(name==='release_departure_capacity_if_safe')return {data:false};
   if(name==='claim_abandoned_checkout')return gateMode==='off'
    ?{data:{should_send:false,gate:'off',gate_mode:gateMode}}
    :(allow.includes(args.p_booking_id)
@@ -64,6 +65,7 @@ test('B2: legacy dedupe max2 — journal carries legacy stage-1 completion, runn
  const db={rpc:async(name,args)=>{calls.push([name,args]);
   if(name==='list_abandoned_checkouts')return {data:[row]};
   if(name==='read_abandoned_checkout_evidence')return {data:evidence()};
+  if(name==='release_departure_capacity_if_safe')return {data:false};
   if(name==='claim_abandoned_checkout')return {data:{should_send:true,email_event_id:'e',claim_token:'t',payload:payload('abandoned_checkout_2')}};
   if(name==='authorize_abandoned_checkout_v3')return {data:true};
   if(name==='finalize_abandoned_checkout_stage')return {};

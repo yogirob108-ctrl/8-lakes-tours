@@ -23,7 +23,7 @@ create index bookings_departure_id_idx on public.bookings(departure_id);
 insert into public.departures(project_id,label,start_date,end_date)
 select p.id,v.label,v.start_date,v.end_date from public.tour_projects p cross join (values
  ('June 22 – 30, 2026',date '2026-06-22',date '2026-06-30'),('July 6 – 14, 2026',date '2026-07-06',date '2026-07-14'),('July 16 – 24, 2026',date '2026-07-16',date '2026-07-24'),('July 28 – August 5, 2026',date '2026-07-28',date '2026-08-05'),('August 4 – 12, 2026',date '2026-08-04',date '2026-08-12'),('August 24 – September 1, 2026',date '2026-08-24',date '2026-09-01'),('September 14 – 22, 2026',date '2026-09-14',date '2026-09-22'),('September 23 – October 1, 2026',date '2026-09-23',date '2026-10-01'),('October 7 – 15, 2026',date '2026-10-07',date '2026-10-15'),('October 21 – 29, 2026',date '2026-10-21',date '2026-10-29'),
- ('May 4 – 12, 2027',date '2027-05-04',date '2027-05-12'),('May 18 – 26, 2027',date '2027-05-18',date '2027-05-26'),('June 1 – 9, 2027',date '2027-06-01',date '2027-06-09'),('June 15 – 23, 2027',date '2027-06-15',date '2027-06-23'),('June 29 – July 7, 2027',date '2027-06-29',date '2027-07-07'),('July 13 – 21, 2027',date '2027-07-13',date '2027-07-21'),('July 27 – August 4, 2027',date '2027-07-27',date '2027-08-04'),('August 10 – 18, 2027',date '2027-08-10',date '2027-08-18'),('August 24 – September 1, 2027',date '2027-08-24',date '2027-09-01'),('September 7 – 15, 2027',date '2027-09-07',date '2027-09-15'),('September 21 – 29, 2027',date '2027-09-21',date '2027-09-29'),('October 5 – 13, 2027',date '2027-10-05',date '2027-10-13'),('October 19 – 27, 2027',date '2027-10-19',date '2027-10-27')
+ ('May 4 – 12, 2027',date '2027-05-04',date '2027-05-12'),('May 18 – 26, 2027',date '2027-05-18',date '2027-05-26'),('June 15 – 23, 2027',date '2027-06-15',date '2027-06-23'),('June 29 – July 7, 2027',date '2027-06-29',date '2027-07-07'),('July 13 – 21, 2027',date '2027-07-13',date '2027-07-21'),('July 27 – August 4, 2027',date '2027-07-27',date '2027-08-04'),('August 10 – 18, 2027',date '2027-08-10',date '2027-08-18'),('August 24 – September 1, 2027',date '2027-08-24',date '2027-09-01'),('September 7 – 15, 2027',date '2027-09-07',date '2027-09-15'),('September 21 – 29, 2027',date '2027-09-21',date '2027-09-29'),('October 5 – 13, 2027',date '2027-10-05',date '2027-10-13'),('October 19 – 27, 2027',date '2027-10-19',date '2027-10-27')
 ) as v(label,start_date,end_date) where p.slug='8-lakes-tours'
 on conflict(project_id,label) do nothing;
 
@@ -233,9 +233,11 @@ begin
  perform public.checkout_service_role();
  if p_provider_terminal<>'expired' or coalesce(p_session_id,'')='' then return false; end if;
  select * into b from public.bookings where id=p_booking_id for update;
+ if not found then return false; end if;
+ select * into d from public.departures where id=b.departure_id for update;
+ if not found then return false; end if;
  select * into a from public.departure_capacity_allocations where booking_id=p_booking_id for update;
  if not found or a.state<>'payment' or a.checkout_session_id is distinct from p_session_id then return false; end if;
- select * into d from public.departures where id=a.departure_id for update;
  if b.departure_id is distinct from a.departure_id then raise exception 'allocation/booking departure mismatch'; end if;
  delete from public.departure_capacity_allocations where booking_id=p_booking_id and checkout_session_id=p_session_id and state='payment';
  return found;
@@ -248,3 +250,174 @@ begin perform public.checkout_service_role(); return false; end $$;
 
 revoke all on function public.assign_new_booking_departure(),public.departure_capacity_is_active(uuid,uuid),public.departure_capacity_used(uuid,uuid),public.reserve_departure_capacity(uuid,text),public.fence_departure_capacity_ops(),public.release_departure_capacity_if_safe(uuid,text),public.release_departure_capacity_if_safe(uuid,text,text) from public,anon,authenticated;
 grant execute on function public.reserve_departure_capacity(uuid,text),public.release_departure_capacity_if_safe(uuid,text,text) to service_role;
+
+-- Rollout-off is byte-for-byte compatible with the established confirmation
+-- fence: departures/allocations are not prerequisites.  Rollout-on takes the
+-- canonical booking -> departure -> allocation lock order, then verifies the
+-- current, exact Stripe session allocation before commercial confirmation.
+create or replace function public.confirm_paid_booking_v2(p_booking_id uuid,p_session_id text,p_expected jsonb,p_token text,p_confirmed_at timestamptz) returns jsonb language plpgsql security definer set search_path='' as $$
+declare b public.bookings; o public.booking_checkout_ownership; d public.departures; a public.departure_capacity_allocations; amount numeric; used integer; active boolean;
+begin
+ perform public.checkout_service_role();
+ select b1.* into b from public.bookings b1 join public.tour_projects p on p.id=b1.project_id where b1.id=p_booking_id and p.slug='8-lakes-tours' and p.active for update of b1;
+ if not found then return jsonb_build_object('allowed',false); end if;
+ amount:=public.reconcile_paid_booking_v2(b.id); select * into o from public.booking_checkout_ownership where booking_id=b.id;
+ if p_expected is null or not(p_expected ?& array['customer_id','tour_date','guest_count','online_due_usd']) or not(to_jsonb(b)@>p_expected) or o.booking_id is null or o.terms_invalidated or o.session_id is distinct from p_session_id or not(to_jsonb(b) @> (o.expected-array['status','online_paid_usd','updated_at','payment_confirmation_token','payment_confirmation_claimed_at','confirmed_at'])) or b.status not in ('application_received','awaiting_payment','confirmed') or b.online_due_usd<=0 or amount<b.online_due_usd or not exists(select 1 from public.payments where booking_id=b.id and stripe_checkout_session_id=p_session_id and status='paid' and amount_usd*100=(o.spec#>>'{line_items,0,price_data,unit_amount}')::numeric) then return jsonb_build_object('allowed',false,'status',b.status,'online_paid_usd',amount); end if;
+ active:=public.departure_capacity_is_active(b.project_id,b.departure_id);
+ if active then
+  select * into d from public.departures where id=b.departure_id for update;
+  select * into a from public.departure_capacity_allocations where booking_id=b.id for update;
+  if not found or a.departure_id is distinct from d.id or a.guest_count is distinct from b.guest_count or a.checkout_session_id is distinct from p_session_id then return jsonb_build_object('allowed',false,'status',b.status,'online_paid_usd',amount); end if;
+  used:=public.departure_capacity_used(d.id,b.id);
+  if used+b.guest_count>d.capacity then return jsonb_build_object('allowed',false,'status',b.status,'online_paid_usd',amount); end if;
+ end if;
+ if p_token is null or p_token='' then raise exception 'confirmation token required'; end if;
+ if b.payment_confirmation_token is not null and b.payment_confirmation_claimed_at>clock_timestamp()-interval '5 minutes' then raise exception 'confirmation lease active; retry' using errcode='55P03'; end if;
+ update public.bookings set status='confirmed',confirmed_at=coalesce(confirmed_at,p_confirmed_at),updated_at=clock_timestamp(),payment_confirmation_token=p_token,payment_confirmation_claimed_at=clock_timestamp() where id=b.id;
+ if active then update public.departure_capacity_allocations set state='confirmed' where booking_id=b.id; end if;
+ return jsonb_build_object('allowed',true,'status','confirmed','online_paid_usd',amount);
+end $$;
+
+-- Reminder eligibility never creates/extends a capacity hold.  When capacity is
+-- live it uses the canonical current departure and excludes this booking's own
+-- matching allocation; when off it retains legacy unknown-date behavior.
+create or replace function public.abandoned_checkout_eligible(p_booking_id uuid,p_allowed_dates text[]) returns boolean language sql security definer set search_path='' as $$
+ select exists(select 1 from public.bookings b join public.tour_projects p on p.id=b.project_id join public.abandoned_checkout_recovery q on q.booking_id=b.id join public.booking_checkout_ownership o on o.booking_id=b.id
+  where b.id=p_booking_id and p.slug='8-lakes-tours' and p.active and b.submission_key is not null and b.status='awaiting_payment' and b.online_paid_usd=0 and b.online_due_usd>0 and b.guest_count between 1 and 8 and b.tour_date=q.tour_date and b.tour_date=any(p_allowed_dates) and q.eligible_at<=clock_timestamp() and not exists(select 1 from public.payments pay where pay.booking_id=b.id and pay.status::text not in ('pending','failed'))
+  and (not public.departure_capacity_is_active(b.project_id,b.departure_id) or exists(select 1 from public.departures d where d.id=b.departure_id and d.label=b.tour_date and public.departure_capacity_used(d.id,b.id)+b.guest_count<=d.capacity)));
+$$;
+
+-- This is a final pre-provider-send availability check, not a reservation. It
+-- retains every existing claim, ownership generation and Stripe-evidence fence.
+create or replace function public.authorize_abandoned_checkout_v3(p_booking_id uuid,p_claim_token uuid,p_allowed_dates text[],p_generation uuid,p_expired_sessions text[],p_stage text) returns boolean language plpgsql security definer set search_path='' as $$
+declare a public.booking_checkout_ownership; b public.bookings; d public.departures; used integer;
+begin
+ perform public.checkout_service_role();
+ select * into b from public.bookings where id=p_booking_id for update;
+ if not found or public.abandoned_cadence_gate_refuse(p_booking_id,'abandoned_checkout_1') or not public.abandoned_checkout_eligible(p_booking_id,p_allowed_dates) or public.due_abandoned_checkout_stage(p_booking_id) is distinct from p_stage or (p_stage='abandoned_checkout_2' and not public.abandoned_cadence_stage2_allowed(p_booking_id)) then return false; end if;
+ if public.departure_capacity_is_active(b.project_id,b.departure_id) then
+  select * into d from public.departures where id=b.departure_id for update;
+  used:=public.departure_capacity_used(d.id,b.id);
+  if d.label is distinct from b.tour_date or used+b.guest_count>d.capacity then return false; end if;
+ end if;
+ select * into a from public.booking_checkout_ownership where booking_id=p_booking_id;
+ return coalesce(not(a.invalidated or a.terms_invalidated) and (select to_jsonb(bb) from public.bookings bb where bb.id=p_booking_id) @> a.expected and a.generation=p_generation and a.session_id=any(p_expired_sessions) and not exists(select 1 from public.payments where booking_id=p_booking_id and not(stripe_checkout_session_id=any(p_expired_sessions))) and exists(select 1 from public.public_booking_notifications where booking_id=p_booking_id and template_key=p_stage and status='queued' and claim_token=p_claim_token and lease_until>clock_timestamp()),false);
+end $$;
+
+-- Inventory is released only after an explicitly verified cancellation terminal
+-- outcome. A refund alone, payment/unknown allocation, or non-cancelled booking
+-- stays allocated. Booking -> departure -> allocation locking matches confirm.
+create function public.release_confirmed_departure_capacity_on_cancel(p_booking_id uuid,p_provider_terminal text) returns boolean language plpgsql security definer set search_path='' as $$
+declare b public.bookings; d public.departures; a public.departure_capacity_allocations;
+begin
+ perform public.checkout_service_role();
+ if p_provider_terminal<>'cancelled_refunded' then return false; end if;
+ select * into b from public.bookings where id=p_booking_id for update;
+ if not found or b.status::text<>'cancelled' then return false; end if;
+ select * into d from public.departures where id=b.departure_id for update;
+ select * into a from public.departure_capacity_allocations where booking_id=b.id for update;
+ if not found or a.departure_id is distinct from d.id or a.state<>'confirmed' or not exists(select 1 from public.payments where booking_id=b.id) or exists(select 1 from public.payments where booking_id=b.id and status::text<>'refunded') then return false; end if;
+ delete from public.departure_capacity_allocations where booking_id=b.id and state='confirmed';
+ if found then insert into public.booking_events(booking_id,event_type,direction,title,body,created_by) values(b.id,'system','internal','Departure capacity released','Verified cancelled/refunded terminal outcome released confirmed departure capacity.','system'); end if;
+ return found;
+end $$;
+
+revoke all on function public.confirm_paid_booking_v2(uuid,text,jsonb,text,timestamptz),public.abandoned_checkout_eligible(uuid,text[]),public.authorize_abandoned_checkout_v3(uuid,uuid,text[],uuid,text[],text),public.release_confirmed_departure_capacity_on_cancel(uuid,text) from public,anon,authenticated;
+grant execute on function public.confirm_paid_booking_v2(uuid,text,jsonb,text,timestamptz),public.authorize_abandoned_checkout_v3(uuid,uuid,text[],uuid,text[],text),public.release_confirmed_departure_capacity_on_cancel(uuid,text) to service_role;
+
+-- A project rollout is distinct from a departure being active.  Once the
+-- project switch is on, automatic paths fail closed unless this booking has the
+-- canonical published/enforced identity.  When the switch is off the legacy
+-- paths retain their prior behavior exactly.
+create or replace function public.prepare_booking_checkout(p_booking_id uuid,p_expected jsonb,p_spec jsonb,p_expired_sessions text[],p_reuse_session text)
+returns jsonb language plpgsql security definer set search_path='' as $$
+declare b public.bookings; a public.booking_checkout_ownership; amount numeric; d public.departures; used integer; rollout_on boolean;
+begin
+ perform public.checkout_service_role();
+ select b1.* into b from public.bookings b1 join public.tour_projects p on p.id=b1.project_id where b1.id=p_booking_id and p.slug='8-lakes-tours' and p.active for update of b1;
+ if not found or p_expected is null or not(to_jsonb(b)@>p_expected) or b.status not in ('awaiting_payment','application_received') or b.online_paid_usd<>0 then raise exception 'booking changed or not payable; operator review required'; end if;
+ rollout_on:=exists(select 1 from public.departure_capacity_rollouts r where r.project_id=b.project_id and r.enabled);
+ if rollout_on and not public.departure_capacity_is_active(b.project_id,b.departure_id) then raise exception 'departure identity is not eligible for automatic checkout; operator review required'; end if;
+ if rollout_on then
+  select * into d from public.departures where id=b.departure_id for update;
+  select public.departure_capacity_used(d.id,b.id) into used;
+  if d.label is distinct from b.tour_date or used+b.guest_count>d.capacity then raise exception 'departure is full; operator review required'; end if;
+ end if;
+ amount:=(p_spec#>>'{line_items,0,price_data,unit_amount}')::numeric;
+ if amount is null or amount<=0 or amount<>b.online_due_usd*100 or p_spec->>'client_reference_id' is distinct from b.public_reference or p_spec#>>'{metadata,booking_id}' is distinct from b.id::text or p_spec#>>'{metadata,customer_id}' is distinct from b.customer_id::text or p_spec#>>'{metadata,guest_count}' is distinct from b.guest_count::text or p_spec#>>'{line_items,0,price_data,currency}' is distinct from 'usd' or p_spec#>>'{line_items,0,quantity}' is distinct from '1' or jsonb_array_length(p_spec->'line_items')<>1 or p_expired_sessions is null then raise exception 'invalid checkout specification'; end if;
+ if exists(select 1 from public.payments where booking_id=b.id and (status<>'pending' or stripe_checkout_session_id is null or not(stripe_checkout_session_id=any(p_expired_sessions) or stripe_checkout_session_id=coalesce(p_reuse_session,'')))) then raise exception 'payment activity changed; operator review required'; end if;
+ select * into a from public.booking_checkout_ownership where booking_id=b.id;
+ if found then
+  if a.session_id is not null and a.session_id=any(p_expired_sessions) then delete from public.booking_checkout_ownership where booking_id=b.id;
+  else
+   if a.invalidated or not(to_jsonb(b)@>a.expected) or (a.session_id is null and a.created_at<clock_timestamp()-interval '23 hours') or (p_reuse_session is not null and p_reuse_session is distinct from a.session_id) then raise exception 'ambiguous or changed checkout generation; operator review required'; end if;
+   return jsonb_build_object('key','booking-checkout-v3:'||a.generation,'spec',a.spec,'session_id',a.session_id);
+  end if;
+ end if;
+ insert into public.booking_checkout_ownership(booking_id,spec,expected,session_id,expired_sessions) values(b.id,p_spec,p_expected,p_reuse_session,p_expired_sessions) returning * into a;
+ return jsonb_build_object('key','booking-checkout-v3:'||a.generation,'spec',a.spec,'session_id',a.session_id);
+end $$;
+
+create or replace function public.confirm_paid_booking_v2(p_booking_id uuid,p_session_id text,p_expected jsonb,p_token text,p_confirmed_at timestamptz) returns jsonb language plpgsql security definer set search_path='' as $$
+declare b public.bookings; o public.booking_checkout_ownership; d public.departures; a public.departure_capacity_allocations; amount numeric; used integer; rollout_on boolean;
+begin
+ perform public.checkout_service_role();
+ select b1.* into b from public.bookings b1 join public.tour_projects p on p.id=b1.project_id where b1.id=p_booking_id and p.slug='8-lakes-tours' and p.active for update of b1;
+ if not found then return jsonb_build_object('allowed',false); end if;
+ amount:=public.reconcile_paid_booking_v2(b.id); select * into o from public.booking_checkout_ownership where booking_id=b.id;
+ if p_expected is null or not(p_expected ?& array['customer_id','tour_date','guest_count','online_due_usd']) or not(to_jsonb(b)@>p_expected) or o.booking_id is null or o.terms_invalidated or o.session_id is distinct from p_session_id or not(to_jsonb(b) @> (o.expected-array['status','online_paid_usd','updated_at','payment_confirmation_token','payment_confirmation_claimed_at','confirmed_at'])) or b.status not in ('application_received','awaiting_payment','confirmed') or b.online_due_usd<=0 or amount<b.online_due_usd or not exists(select 1 from public.payments where booking_id=b.id and stripe_checkout_session_id=p_session_id and status='paid' and amount_usd*100=(o.spec#>>'{line_items,0,price_data,unit_amount}')::numeric) then return jsonb_build_object('allowed',false,'status',b.status,'online_paid_usd',amount); end if;
+ rollout_on:=exists(select 1 from public.departure_capacity_rollouts r where r.project_id=b.project_id and r.enabled);
+ if rollout_on then
+  if not public.departure_capacity_is_active(b.project_id,b.departure_id) then return jsonb_build_object('allowed',false,'status',b.status,'online_paid_usd',amount); end if;
+  select * into d from public.departures where id=b.departure_id for update;
+  select * into a from public.departure_capacity_allocations where booking_id=b.id for update;
+  if not found or a.departure_id is distinct from d.id or a.guest_count is distinct from b.guest_count or a.checkout_session_id is distinct from p_session_id then return jsonb_build_object('allowed',false,'status',b.status,'online_paid_usd',amount); end if;
+  used:=public.departure_capacity_used(d.id,b.id);
+  if d.label is distinct from b.tour_date or used+b.guest_count>d.capacity then return jsonb_build_object('allowed',false,'status',b.status,'online_paid_usd',amount); end if;
+ end if;
+ if p_token is null or p_token='' then raise exception 'confirmation token required'; end if;
+ if b.payment_confirmation_token is not null and b.payment_confirmation_claimed_at>clock_timestamp()-interval '5 minutes' then raise exception 'confirmation lease active; retry' using errcode='55P03'; end if;
+ update public.bookings set status='confirmed',confirmed_at=coalesce(confirmed_at,p_confirmed_at),updated_at=clock_timestamp(),payment_confirmation_token=p_token,payment_confirmation_claimed_at=clock_timestamp() where id=b.id;
+ if rollout_on then update public.departure_capacity_allocations set state='confirmed' where booking_id=b.id; end if;
+ return jsonb_build_object('allowed',true,'status','confirmed','online_paid_usd',amount);
+end $$;
+
+create or replace function public.abandoned_checkout_eligible(p_booking_id uuid,p_allowed_dates text[]) returns boolean language sql security definer set search_path='' as $$
+ select exists(select 1 from public.bookings b join public.tour_projects p on p.id=b.project_id join public.abandoned_checkout_recovery q on q.booking_id=b.id join public.booking_checkout_ownership o on o.booking_id=b.id
+  where b.id=p_booking_id and p.slug='8-lakes-tours' and p.active and b.submission_key is not null and b.status='awaiting_payment' and b.online_paid_usd=0 and b.online_due_usd>0 and b.guest_count between 1 and 8 and b.tour_date=q.tour_date and b.tour_date=any(p_allowed_dates) and q.eligible_at<=clock_timestamp() and not exists(select 1 from public.payments pay where pay.booking_id=b.id and pay.status::text not in ('pending','failed'))
+  and (not exists(select 1 from public.departure_capacity_rollouts r where r.project_id=b.project_id and r.enabled) or (public.departure_capacity_is_active(b.project_id,b.departure_id) and exists(select 1 from public.departures d where d.id=b.departure_id and d.label=b.tour_date and public.departure_capacity_used(d.id,b.id)+b.guest_count<=d.capacity))));
+$$;
+
+create or replace function public.authorize_abandoned_checkout_v3(p_booking_id uuid,p_claim_token uuid,p_allowed_dates text[],p_generation uuid,p_expired_sessions text[],p_stage text) returns boolean language plpgsql security definer set search_path='' as $$
+declare a public.booking_checkout_ownership; b public.bookings; d public.departures; used integer; rollout_on boolean;
+begin
+ perform public.checkout_service_role();
+ select * into b from public.bookings where id=p_booking_id for update;
+ if not found or public.abandoned_cadence_gate_refuse(p_booking_id,'abandoned_checkout_1') or not public.abandoned_checkout_eligible(p_booking_id,p_allowed_dates) or public.due_abandoned_checkout_stage(p_booking_id) is distinct from p_stage or (p_stage='abandoned_checkout_2' and not public.abandoned_cadence_stage2_allowed(p_booking_id)) then return false; end if;
+ rollout_on:=exists(select 1 from public.departure_capacity_rollouts r where r.project_id=b.project_id and r.enabled);
+ if rollout_on then
+  if not public.departure_capacity_is_active(b.project_id,b.departure_id) then return false; end if;
+  select * into d from public.departures where id=b.departure_id for update;
+  used:=public.departure_capacity_used(d.id,b.id);
+  if d.label is distinct from b.tour_date or used+b.guest_count>d.capacity then return false; end if;
+ end if;
+ select * into a from public.booking_checkout_ownership where booking_id=p_booking_id;
+ return coalesce(not(a.invalidated or a.terms_invalidated) and (select to_jsonb(bb) from public.bookings bb where bb.id=p_booking_id) @> a.expected and a.generation=p_generation and a.session_id=any(p_expired_sessions) and not exists(select 1 from public.payments where booking_id=p_booking_id and not(stripe_checkout_session_id=any(p_expired_sessions))) and exists(select 1 from public.public_booking_notifications where booking_id=p_booking_id and template_key=p_stage and status='queued' and claim_token=p_claim_token and lease_until>clock_timestamp()),false);
+end $$;
+
+-- Lock booking -> departure -> allocation, matching confirmation.  The exact
+-- session id makes an old provider expiry unable to delete a newer allocation.
+create or replace function public.release_departure_capacity_if_safe(p_booking_id uuid,p_session_id text,p_provider_terminal text) returns boolean language plpgsql security definer set search_path='' as $$
+declare b public.bookings; a public.departure_capacity_allocations; d public.departures;
+begin
+ perform public.checkout_service_role();
+ if p_provider_terminal<>'expired' or coalesce(p_session_id,'')='' then return false; end if;
+ select * into b from public.bookings where id=p_booking_id for update;
+ if not found or b.departure_id is null then return false; end if;
+ select * into d from public.departures where id=b.departure_id for update;
+ select * into a from public.departure_capacity_allocations where booking_id=p_booking_id for update;
+ if not found or a.state<>'payment' or a.checkout_session_id is distinct from p_session_id then return false; end if;
+ if a.departure_id is distinct from d.id then raise exception 'allocation/booking departure mismatch'; end if;
+ delete from public.departure_capacity_allocations where booking_id=p_booking_id and checkout_session_id=p_session_id and state='payment';
+ return found;
+end $$;

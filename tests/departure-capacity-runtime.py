@@ -40,6 +40,7 @@ def main():
             sql(conn, "select set_config('request.jwt.claim.role','service_role',false)")
             project = sql(conn, "insert into public.tour_projects(slug,name,active) values ('capacity-test','Capacity test',true) returning id")[0][0]
             dep = sql(conn, "insert into public.departures(project_id,label,start_date,end_date,published,capacity_enforced) values (%s,'July 6 – 14, 2026','2026-07-06','2026-07-14',true,true) returning id", (project,))[0][0]
+            sql(conn, "insert into public.departure_capacity_rollouts(project_id,enabled,enabled_at) values (%s,true,clock_timestamp())", (project,))
             customer = sql(conn, "insert into public.customers(first_name,last_name,email) values ('Test','Guest','test@example.invalid') returning id")[0][0]
             def booking(n, guests=1, label='July 6 – 14, 2026'):
                 return sql(conn, "insert into public.bookings(public_reference,project_id,customer_id,tour_date,guest_count,status,total_trip_value_usd,online_due_usd,family_cash_due_usd) values (%s,%s,%s,%s,%s,'awaiting_payment',1,1,0) returning id", (f'CAP-{n}',project,customer,label,guests))[0][0]
@@ -61,6 +62,15 @@ def main():
             try: sql(conn,"update public.bookings set guest_count=2 where id=%s",(winner,)); raise AssertionError('over-capacity ops edit committed')
             except psycopg.Error: pass
             assert sql(conn,"select guest_count from public.bookings where id=%s",(winner,))[0][0] == 1
+            # A manually confirmed booking without an allocation is canonical
+            # committed capacity too: seven existing guests plus a two-person
+            # checkout must not be admitted (7 + 2 > 8).
+            manual = booking('manual-confirmed', 7)
+            # Simulate a legacy/manual status transition: it has no allocation.
+            sql(conn, "delete from public.departure_capacity_allocations where booking_id=%s", (seven,))
+            sql(conn, "update public.bookings set status='confirmed' where id=%s", (manual,))
+            two = booking('two', 2)
+            assert sql(conn, "select public.reserve_departure_capacity(%s)", (two,))[0][0] is False
             # Unknown labels are not eligible for automatic allocation.
             unknown=booking('unknown',1,'Made up departure')
             assert sql(conn,"select public.reserve_departure_capacity(%s)",(unknown,))[0][0] is False

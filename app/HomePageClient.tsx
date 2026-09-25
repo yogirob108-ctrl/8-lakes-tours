@@ -1202,8 +1202,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .hero-sub { font-size: 1.05rem; line-height: 1.7; color: var(--mist); max-width: 680px; margin-bottom: 1.5rem; }
         .hero-sub .mobile-line { display: none; }
         .hero-sub .desktop-line { display: inline; }
-        .hero-price { margin-top: 1.4rem; font-size: 0.8rem; letter-spacing: 0.06em; color: rgba(245,240,232,0.78); }
-        .hero-price strong { color: var(--gold); font-weight: 500; }
         .hero-actions { display: flex; gap: 1rem; align-items: center; }
         .btn-primary {
           display: inline-block; background: var(--gold); color: var(--dark);
@@ -1305,13 +1303,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .trust-card { border: 1px solid rgba(200,169,110,0.2); border-radius: var(--radius-card); background: rgba(200,169,110,0.045); padding: 1.6rem; min-height: 210px; display: flex; flex-direction: column; justify-content: space-between; }
         .trust-quote { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 1.25rem; color: var(--cream); line-height: 1.55; font-style: italic; }
         .trust-source { font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); margin-top: 1.4rem; }
-        .midpage-cta { grid-column: 1 / -1; display: flex; justify-content: center; margin-top: 3rem; }
-        .midpage-cta a { display: inline-block; padding: 0.95rem 2.4rem; border: 1px solid var(--gold); border-radius: var(--radius-soft); color: var(--gold); font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; text-decoration: none; transition: background 0.25s ease, color 0.25s ease; }
-        .midpage-cta a:hover { background: var(--gold); color: var(--dark); }
-        .testimonial-cta { margin: 3rem auto 0; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; text-align: center; }
-        .testimonial-cta a { display: inline-block; padding: 1rem 2.6rem; background: var(--gold); color: var(--dark); border-radius: var(--radius-soft); font-size: 0.74rem; letter-spacing: 0.2em; text-transform: uppercase; text-decoration: none; transition: background 0.25s ease; }
-        .testimonial-cta a:hover { background: #d8bc82; }
-        .testimonial-cta span { font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mist); opacity: 0.6; }
         .testimonial-grid { max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
         .testimonial-card { background: rgba(245,240,232,0.04); border: 1px solid rgba(200,169,110,0.18); border-radius: var(--radius-card); overflow: hidden; }
         .testimonial-photo { position: relative; height: 360px; overflow: hidden; display: block; width: 100%; }
@@ -1644,9 +1635,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           .hero-sub { margin-bottom: 1.2rem; }
           .hero-sub .mobile-line { display: inline; }
           .hero-sub .desktop-line { display: none; }
-          .hero-price { margin-top: 1.4rem; font-size: 0.8rem; letter-spacing: 0.06em; color: rgba(245,240,232,0.78); }
-        .hero-price strong { color: var(--gold); font-weight: 500; }
-        .hero-actions { flex-direction: column; align-items: stretch; gap: 0.8rem; }
+          .hero-actions { flex-direction: column; align-items: stretch; gap: 0.8rem; }
           .hero-actions .btn-primary, .hero-actions .btn-ghost { text-align: center; }
           .intro-points { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.1rem 0.75rem; margin-top: 2.2rem; align-items: start; }
           .offer-strip { padding: 1.25rem 1.2rem; grid-template-columns: 1fr; gap: 1rem; }
@@ -1711,14 +1700,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           .trust { padding: 3.5rem 1.5rem 4rem; }
           .itinerary { padding-bottom: 3rem; }
           .trust-grid { grid-template-columns: 1fr; }
-          .midpage-cta { grid-column: 1 / -1; display: flex; justify-content: center; margin-top: 3rem; }
-        .midpage-cta a { display: inline-block; padding: 0.95rem 2.4rem; border: 1px solid var(--gold); border-radius: var(--radius-soft); color: var(--gold); font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; text-decoration: none; transition: background 0.25s ease, color 0.25s ease; }
-        .midpage-cta a:hover { background: var(--gold); color: var(--dark); }
-        .testimonial-cta { margin: 3rem auto 0; display: flex; flex-direction: column; align-items: center; gap: 0.75rem; text-align: center; }
-        .testimonial-cta a { display: inline-block; padding: 1rem 2.6rem; background: var(--gold); color: var(--dark); border-radius: var(--radius-soft); font-size: 0.74rem; letter-spacing: 0.2em; text-transform: uppercase; text-decoration: none; transition: background 0.25s ease; }
-        .testimonial-cta a:hover { background: #d8bc82; }
-        .testimonial-cta span { font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--mist); opacity: 0.6; }
-        .testimonial-grid { grid-template-columns: 1fr; }
+          .testimonial-grid { grid-template-columns: 1fr; }
           .testimonial-photo { height: 280px; }
           .image-button.testimonial-photo { height: 280px; }
           .itinerary-grid { grid-template-columns: 1fr; }
@@ -1825,9 +1807,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             <span className="mobile-line">Nine days on horseback across the vastness of the steppe, living alongside nomadic families. Small groups, beginner and intermediate riders welcome.</span>
             <span className="desktop-line">Nine days on horseback through the vastness of the Orkhon Valley and Eight Lakes, living alongside nomadic families whose way of life is still attuned to the steppe. Small groups, local horsemen, beginner and intermediate riders welcome.</span>
           </p>
-          {/* The price was first stated below the fold. For an unusual split
-              payment, saying it up front reads as confidence, not a catch. */}
-          <p className="hero-price">From <strong>${BASE_PRICE_USD.toLocaleString('en-US')}</strong> per person · 9 days · 8 nights · max 8 guests</p>
           <div className="hero-actions">
             <a href="#application" className="btn-primary">Reserve Online</a>
             <a href="#experience" className="btn-ghost">Explore the Journey</a>
@@ -2040,12 +2019,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             <p style={{fontSize:'0.8rem', color:'var(--cream)', lineHeight:1.6}}><strong style={{fontWeight:400, color:'var(--gold)'}}>This is a real expedition.</strong> Plans shift with the weather, the horses and the land. Guests who love it come ready for simple conditions, long days and shared space — and leave with something no itinerary could promise.</p>
           </div>
         </div>
-        {/* Mid-page, right after the visitor has learned what the trip includes
-            and how they get there. The one after the testimonials sits beside
-            the booking section already, so it left this stretch uncovered. */}
-        <div className="midpage-cta">
-          <a href="#trip-details" onClick={scrollToTourDates}>Check dates &amp; reserve</a>
-        </div>
       </section>
 
       {/* TRUST */}
@@ -2072,13 +2045,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               </div>
             </article>
           ))}
-        </div>
-        {/* The testimonials are the most persuasive point on the page, and until
-            now they led nowhere: every booking link sat in the first 744px, then
-            ten screens with none. */}
-        <div className="testimonial-cta">
-          <a href="#trip-details" onClick={scrollToTourDates}>Reserve your place</a>
-          <span>{seasonDepartures['2026'].length + seasonDepartures['2027'].length} departures open · max 8 guests</span>
         </div>
       </section>
 
@@ -2426,62 +2392,60 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             <p role="status" aria-live="polite">{formSubmitting ? (requiresHumanConfirmation ? 'Sending your request…' : 'Preparing your secure checkout…') : formSubmitted && requiresHumanConfirmation ? 'Request received. Awaiting availability confirmation.' : ''}</p>
             {formError && <p className="form-error" role="alert">{formError}</p>}
 
-            {formSubmitted && (
-              <div className="payment-checkout-card">
-                <p className="checkout-eyebrow">Online Reservation Payment</p>
-                {awaitsGroupInvoice ? (
-                  <p className="checkout-copy">
-                    Groups of 3–8 pay together on one invoice. Submit the form and our team will email one invoice for <strong>{formatApproxUsd(groupPricing.onlinePaymentUsd, pricing.currency)}</strong> covering all {groupPricing.guestCount} guests, so nobody has to pay separately.
-                  </p>
-                ) : requiresHumanConfirmation ? (
-                  <p className="checkout-copy">
-                    Our team will confirm your date, horses, guide and host family, then email your secure payment link.
-                  </p>
-                ) : (
-                  <p className="checkout-copy">
-                    Submit the booking form with a valid email first, then pay <strong>{formatApproxUsd(groupPricing.onlinePaymentUsd, pricing.currency)} online</strong> for {groupPricing.guestCount} guest{groupPricing.guestCount === 1 ? '' : 's'} to reserve your place. The host-family cash portion is handled in Mongolia.
-                  </p>
-                )}
-                <p className="checkout-note">
-                  Prices are in USD. Your card may show a converted amount.
+            <div className="payment-checkout-card">
+              <p className="checkout-eyebrow">Online Reservation Payment</p>
+              {awaitsGroupInvoice ? (
+                <p className="checkout-copy">
+                  Groups of 3–8 pay together on one invoice. Submit the form and our team will email one invoice for <strong>{formatApproxUsd(groupPricing.onlinePaymentUsd, pricing.currency)}</strong> covering all {groupPricing.guestCount} guests, so nobody has to pay separately.
                 </p>
-                {!requiresHumanConfirmation ? (
-                  <div
-                    className="checkout-button-wrap stripe-embed-wrap"
-                    aria-disabled={!canPay}
-                    onMouseDown={trackStripePaymentClick}
-                    onTouchStart={trackStripePaymentClick}
-                  >
-                    {canPay ? (
-                      <>
-                        <p className="stripe-preview-amount">${groupPricing.onlinePaymentUsd.toLocaleString('en-US')} USD <span>{groupPricing.guestCount} guest{groupPricing.guestCount === 1 ? '' : 's'}</span></p>
-                        <a
-                          className="stripe-link-fallback"
-                          href={checkoutFallbackHref}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={trackStripePaymentClick}
-                        >
-                          Open Stripe checkout
-                        </a>
-                      </>
-                    ) : (
-                      /* The message used to be an absolutely positioned overlay, so
-                         it printed on top of the amount. Nothing is payable yet, so
-                         show the reason in place of the preview rather than over it. */
-                      <p className="checkout-locked-note">
-                        {!emailIsValid ? 'Please enter a valid email address above' : !signatureIsValid ? 'Please sign with your full name above' : !waiverAgreed ? 'Please agree to the liability waiver above' : 'Submit your booking before payment'}
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="group-request-next-step">
-                    <strong>No charge yet.</strong>
-                    <span>You only pay once your date is confirmed.</span>
-                  </div>
-                )}
-              </div>
-            )}
+              ) : requiresHumanConfirmation ? (
+                <p className="checkout-copy">
+                  Our team will confirm your date, horses, guide and host family, then email your secure payment link.
+                </p>
+              ) : (
+                <p className="checkout-copy">
+                  Submit the booking form with a valid email first, then pay <strong>{formatApproxUsd(groupPricing.onlinePaymentUsd, pricing.currency)} online</strong> for {groupPricing.guestCount} guest{groupPricing.guestCount === 1 ? '' : 's'} to reserve your place. The host-family cash portion is handled in Mongolia.
+                </p>
+              )}
+              <p className="checkout-note">
+                Prices are in USD. Your card may show a converted amount.
+              </p>
+              {!requiresHumanConfirmation ? (
+                <div
+                  className="checkout-button-wrap stripe-embed-wrap"
+                  aria-disabled={!canPay}
+                  onMouseDown={trackStripePaymentClick}
+                  onTouchStart={trackStripePaymentClick}
+                >
+                  {canPay ? (
+                    <>
+                      <p className="stripe-preview-amount">${groupPricing.onlinePaymentUsd.toLocaleString('en-US')} USD <span>{groupPricing.guestCount} guest{groupPricing.guestCount === 1 ? '' : 's'}</span></p>
+                      <a
+                        className="stripe-link-fallback"
+                        href={checkoutFallbackHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={trackStripePaymentClick}
+                      >
+                        Open Stripe checkout
+                      </a>
+                    </>
+                  ) : (
+                    /* The message used to be an absolutely positioned overlay, so
+                       it printed on top of the amount. Nothing is payable yet, so
+                       show the reason in place of the preview rather than over it. */
+                    <p className="checkout-locked-note">
+                      {!emailIsValid ? 'Please enter a valid email address above' : !signatureIsValid ? 'Please sign with your full name above' : !waiverAgreed ? 'Please agree to the liability waiver above' : 'Submit your booking before payment'}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="group-request-next-step">
+                  <strong>No charge yet.</strong>
+                  <span>You only pay once your date is confirmed.</span>
+                </div>
+              )}
+            </div>
             <p style={{fontSize:'0.72rem', color:'var(--mist)', opacity:0.58, textAlign:'center', lineHeight:1.6}}>{requiresHumanConfirmation ? 'We\'ll reply by email with availability.' : 'Your booking is confirmed once the online payment is completed. If anything needs checking, we\'ll contact you directly.'}</p>
             <p style={{fontSize:'0.7rem', color:'var(--mist)', opacity:0.4, textAlign:'center', lineHeight:1.6, marginTop:'0.5rem'}}>
               By submitting this form you agree to our{' '}

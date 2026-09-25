@@ -79,9 +79,9 @@ begin
  if s1 is null then raise exception 'stage 1 completion not durable'; end if;
  a:=claim_abandoned_checkout(b,allowed,'{}');
  if (a->>'should_send')::boolean then raise exception 'stage 1 sent twice'; end if;
- -- No immediate catch-up: stage 2 is NOT due before 24h after stage 1.
+ -- No immediate catch-up: stage 2 is NOT due before 48h after stage 1.
  if due_abandoned_checkout_stage(b) is not null then raise exception 'stage 2 catch-up'; end if;
- update abandoned_checkout_recovery set stages=jsonb_set(stages,'{abandoned_checkout_1,completed_at}',to_jsonb(now()-interval '25 hours')) where booking_id=b;
+ update abandoned_checkout_recovery set stages=jsonb_set(stages,'{abandoned_checkout_1,completed_at}',to_jsonb(now()-interval '49 hours')) where booking_id=b;
  -- Stage 2 now due; its claim is distinct from stage 1 and gated the same way.
  if due_abandoned_checkout_stage(b) is distinct from 'abandoned_checkout_2' then raise exception 'stage 2 not due'; end if;
  a:=claim_abandoned_checkout(b,allowed,'{"to":"recovery@example.invalid","subject":"Original","text":"private","html":"private"}');

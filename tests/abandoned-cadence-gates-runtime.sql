@@ -56,7 +56,7 @@ begin
  -- seeded legacy path exercised below, then verify v2 refuses while OFF and
  -- authorizes once an explicit legacy-path activation exists)
  update abandoned_cadence_rollout set mode='test_allowlist';
- update abandoned_checkout_recovery set stages=jsonb_build_object('abandoned_checkout_1',jsonb_build_object('completed_at',now()-interval '25 hours')) where booking_id=b;
+ update abandoned_checkout_recovery set stages=jsonb_build_object('abandoned_checkout_1',jsonb_build_object('completed_at',now()-interval '49 hours')) where booking_id=b;
  insert into email_events(booking_id,customer_id,template_key,to_email,subject,body_snapshot,sent_by,status,public_submission_email_key)
   values(b,c,'abandoned_checkout','gate-fixture@example.invalid','legacy','legacy','legacy-deployed','queued',b::text||':legacy:probe') returning id into n;
  insert into public_booking_notifications(booking_id,template_key,email_event_id,payload,status)

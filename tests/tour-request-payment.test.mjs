@@ -21,23 +21,21 @@ test('scheduled inventory is 2026 and 2027 only, and every one of it is directly
   }
 });
 
-test('the unresolved June 1–9 departure is not published for automatic checkout', () => {
-  assert.equal(TOUR_DATES.some(option => option.date === 'June 1 – 9, 2027'), false);
-  assert.equal(requiresManualPaymentLink('June 1 – 9, 2027', 1), true);
-});
-
-test('the remaining 2027 season has only approved nine-day departures', () => {
+test('the 2027 season runs fortnightly from May to October and is nine days long', () => {
   const season = TOUR_DATES.filter(option => option.startDate?.startsWith('2027'));
   const day = 86400000;
 
-  assert.equal(season.length, 12);
+  assert.equal(season.length, 13);
   assert.equal(season[0].startDate, '2027-05-04');
   assert.equal(season.at(-1).endDate, '2027-10-27');
   for (const [index, option] of season.entries()) {
     const start = Date.parse(`${option.startDate}T00:00:00Z`);
     assert.equal((Date.parse(`${option.endDate}T00:00:00Z`) - start) / day, 8, `${option.date} must be 9 days / 8 nights`);
     assert.match(option.detail, /9 Days · 8 Nights/);
-
+    if (index > 0) {
+      const previous = Date.parse(`${season[index - 1].startDate}T00:00:00Z`);
+      assert.equal((start - previous) / day, 14, `${option.date} must fall a fortnight after the previous departure`);
+    }
   }
 });
 

@@ -1875,7 +1875,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             aria-label="View larger image: Robert with the host family and their horses, all in traditional deels on the Mongolian steppe"
             onClick={() => openLightbox('/images/host-family-horses-deels.jpg')}
           >
-            <Image src="/images/host-family-horses-deels.jpg" alt="Robert with the host family and their horses, all in traditional deels on the Mongolian steppe" fill quality={72} sizes="100vw" />
+            <Image src="/images/host-family-portrait.jpg" alt="Robert with the host family and their horses, all in traditional deels on the Mongolian steppe" fill quality={72} sizes="100vw" />
           </button>
           <p className="section-body">I met Ganbold while travelling through Mongolia on horseback. I meant to pass through, but his family opened their ger to me, as nomadic families have done for travellers for generations. We didn&apos;t speak the same language, but we shared an appreciation for the steppe and the way of life out there, and it didn&apos;t take long to feel like family. We rode together, cooked, drank tea and laughed a lot.</p>
           <p className="section-body" style={{marginTop:'1.2rem'}}>Suma, Ganbold&apos;s son, loves horses. He has ridden and worked with them his whole life, and he still herds his own horses and yaks across this valley. He likes guiding too, taking people out and showing them the land he grew up in. When the idea of bringing small groups here came up, he was up for it straight away.</p>
@@ -1889,7 +1889,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             aria-label="View larger image: Robert with the host family and their horses, all in traditional deels on the Mongolian steppe"
             onClick={() => openLightbox('/images/host-family-horses-deels.jpg')}
           >
-            <Image src="/images/host-family-horses-deels.jpg" alt="Robert with the host family and their horses, all in traditional deels on the Mongolian steppe" fill quality={72} sizes="(max-width: 900px) 100vw, 50vw" />
+            <Image src="/images/host-family-portrait.jpg" alt="Robert with the host family and their horses, all in traditional deels on the Mongolian steppe" fill quality={72} sizes="(max-width: 900px) 100vw, 50vw" />
           </button>
         </div>
       </section>

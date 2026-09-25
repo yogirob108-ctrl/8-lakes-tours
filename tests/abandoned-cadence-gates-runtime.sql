@@ -79,7 +79,7 @@ begin
  insert into booking_checkout_ownership(booking_id,spec,expected,session_id) values(b,'{"line_items":[{"price_data":{"unit_amount":99900}}]}','{}','cs_gate3');
  insert into payments(booking_id,provider,stripe_checkout_session_id,amount_usd,status) values(b,'stripe','cs_gate3',999,'pending');
  insert into email_events(booking_id,customer_id,template_key,to_email,subject,body_snapshot,sent_by,status,provider_message_id,sent_at,public_submission_email_key)
- values(b,c,'abandoned_checkout','gate-fixture@example.invalid','legacy sent','legacy sent','legacy-deployed','sent','legacy-msg-1',now()-interval '30 hours',b::text||':legacy:1');
+ values(b,c,'abandoned_checkout','gate-fixture@example.invalid','legacy sent','legacy sent','legacy-deployed','sent','legacy-msg-1',now()-interval '49 hours',b::text||':legacy:1');
  -- B2-dedupe: seed derives stage-1 completion from the sent ledger, never fabricates.
  perform public.abandoned_cadence_seed_legacy_stage1();
  if coalesce((select stages->'abandoned_checkout_1'->>'completed_at' from abandoned_checkout_recovery where booking_id=b),'')='' then raise exception 'B2-SEED: legacy sent reminder did not seed stage-1 completion'; end if;

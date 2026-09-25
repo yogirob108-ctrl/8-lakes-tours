@@ -201,6 +201,10 @@ test('stage reminders have distinct plain personal copy and the same private res
  assert.match(second.text,/final reminder/i);
  assert.ok(first.text.includes(url));
  assert.ok(second.text.includes(url));
+ for (const email of [first,second]) {
+  assert.match(email.text,/Your place is not confirmed\. Places remain subject to availability\./);
+  assert.match(email.html,/Your place is not confirmed\. Places remain subject to availability\./);
+ }
  assert.equal((first.text.match(/Rob Zaher/g)||[]).length,1);
  assert.equal((second.text.match(/Rob Zaher/g)||[]).length,1);
  assert.doesNotMatch(`${first.text}\n${second.text}`,/seat reservation|seat reserved|place reserved/i);

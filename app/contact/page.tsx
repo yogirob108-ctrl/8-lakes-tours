@@ -99,7 +99,7 @@ export default function Page() {
         </section>
         <section style={{ marginTop: '2.5rem' }}>
           <h2 style={h2Style}>Booking a scheduled departure</h2>
-          <p style={pStyle}>For any published 2026 or 2027 date, the fastest way to start is the booking form on the homepage. It asks for your preferred date, riding experience, dietary restrictions, emergency contact, and any special notes so the team can prepare properly and check fit if anything needs review. Scheduled dates are booked and paid online without waiting on us.</p>
+          <p style={pStyle}>For any published date, the fastest way to start is the booking form on the homepage. It asks for your preferred date, riding experience, dietary restrictions, emergency contact, and any special notes so the team can prepare properly and check fit if anything needs review. Scheduled dates are booked and paid online without waiting on us.</p>
           <p style={{...pStyle, marginTop: '1rem'}}><Link href="/#application" style={{ color: '#c8a96e' }}>Go to booking form →</Link></p>
         </section>
       </div>

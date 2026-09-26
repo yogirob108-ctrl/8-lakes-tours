@@ -1,9 +1,10 @@
 "use client";
 import Image from 'next/image';
 import { track } from '@vercel/analytics';
-import { type FormEvent, type MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { type FocusEvent, type FormEvent, type MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { GROUP_INVOICE, manualPaymentReason, normalizeTourDateSelection } from '@/lib/tour-booking.mjs';
-import { FOUNDING_RATE_NOTE, getDefaultTourDate, getSeasonYear } from '@/lib/tour-dates.mjs';
+import { getDefaultTourDate, getSeasonYear } from '@/lib/tour-dates.mjs';
+import { isValidBookingEmail } from '@/lib/email-validation.mjs';
 import { BASE_LOCAL_FAMILY_PAYMENT_USD, BASE_ONLINE_PAYMENT_USD, BASE_PRICE_USD, GROUP_PRICING_TIERS, MAX_GROUP_SIZE, clampGuestCount, getGroupPricing } from '@/lib/group-pricing.mjs';
 import { GENDERS, normalizeBookingTravellers } from '@/lib/booking-travellers.mjs';
 import { composeDateOfBirth, splitDateOfBirth } from '@/lib/date-of-birth-fields.mjs';
@@ -306,7 +307,7 @@ const HOME_FAQS = [
   { q: 'Do I need riding experience?', a: 'No experience necessary. Beginners are welcome — our local guides will teach you everything you need to know before the trek begins.' },
   { q: 'Are there showers or Western toilets?', a: 'No. Countryside toilets are simple outhouses with squat toilets, and there are no regular showers. Ger stays are warm and welcoming in a rural way, but the facilities are basic. Wet wipes cover you between river washes, and a cold plunge in the river is part of the rhythm when conditions allow.' },
   { q: 'Is this trip safe?', a: 'Yes. Basic first aid is on site and experienced local guides — including Suma, who has led many groups through this terrain — are with you throughout. Ground transport is on call for emergencies and can reach the ger village within a few hours. Travel insurance with emergency evacuation cover is required before departure.' },
-  { q: 'How does payment work?', a: 'All official prices are in USD. The 2026 rate depends on group size: $1,999 per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8. Bookings of 1–2 guests on a fixed date pay the $999 per-guest online booking payment straight after the form. Groups of 1–8 book together and pay the exact group online amount in one secure Stripe checkout. Group discounts are shared evenly between 8 Lakes Tours and the host family, so the online payment runs $899–$999 per guest and the local family cash runs $900–$1,000 per guest. The family portion is paid directly in clean USD cash to the nomadic host families in Mongolia.' },
+  { q: 'How does payment work?', a: 'All official prices are in USD. Price depends on group size: $1,999 per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8. Bookings of 1–2 guests on a fixed date pay the $999 per-guest online booking payment straight after the form. Groups of 1–8 book together and pay the exact group online amount in one secure Stripe checkout. Group discounts are shared evenly between 8 Lakes Tours and the host family, so the online payment runs $899–$999 per guest and the local family cash runs $900–$1,000 per guest. The family portion is paid directly in clean USD cash to the nomadic host families in Mongolia.' },
   { q: 'What if I need to cancel?', a: 'Cancel more than 21 days before departure and the online payment is refunded, minus unrecoverable payment processing fees. Within 21 days you are entitled to 50% back on the same terms, and we will still try to move you to another date or accept a replacement traveller, which can recover more than the 50%. If we cancel your departure, your online payment is refunded on the same terms.' },
   { q: 'Do I need a visa?', a: 'Many travellers can enter Mongolia visa-free for tourism, but the allowance depends on your passport. US and South Korean passport holders commonly receive up to 90 days; UK/EU, Australian, Canadian, Japanese, New Zealand, and many other passport holders commonly receive up to 30 days. Rules and temporary exemptions can change, so check the current Mongolian consular or e-visa guidance for your nationality before booking flights.' },
 ];
@@ -545,7 +546,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
     onlinePayment: formatApproxUsd(BASE_ONLINE_PAYMENT_USD, 'USD'),
     localFamilyPayment: formatApproxUsd(BASE_LOCAL_FAMILY_PAYMENT_USD, 'USD'),
   });
-  const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const emailIsValid = isValidBookingEmail(email);
   // "ab" used to pass. A signature has to read as a name: at least two parts,
   // each of two letters or more.
   const signatureParts = signature.trim().split(/\s+/).filter(Boolean);
@@ -880,6 +881,12 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
     const id = target.id;
     if (id) {
       document.getElementById(`${id}-inline-error`)?.remove();
+      const describedBy = target.getAttribute('aria-describedby');
+      if (describedBy) {
+        const remaining = describedBy.split(/\s+/).filter(value => value && value !== `${id}-inline-error`);
+        if (remaining.length) target.setAttribute('aria-describedby', remaining.join(' '));
+        else target.removeAttribute('aria-describedby');
+      }
       // Keep the same array when this field has no error to clear. A fresh
       // array on every keystroke re-renders the form, and a re-render between
       // a select's `input` and `change` events rewrites the controlled value
@@ -888,14 +895,34 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
     }
   };
 
+  const validateEmailOnBlur = (event: FocusEvent<HTMLInputElement>) => {
+    const element = event.currentTarget;
+    const optional = !element.required;
+    if (optional && !element.value.trim()) return;
+    if (isValidBookingEmail(element.value)) return;
+    clearFieldValidation(element);
+    element.setAttribute('aria-invalid', 'true');
+    const inline = document.createElement('p');
+    inline.className = 'field-error form-inline-validation-error';
+    inline.id = `${element.id}-inline-error`;
+    inline.textContent = optional ? 'Enter a complete email address, such as name@domain.tld, or leave this optional field blank.' : 'Enter a complete email address, such as name@domain.tld.';
+    inline.setAttribute('role', 'alert');
+    element.setAttribute('aria-describedby', `${element.getAttribute('aria-describedby') || ''} ${inline.id}`.trim());
+    element.closest('.form-group')?.append(inline);
+    setValidationErrors(current => current.some(error => error.id === element.id) ? current : [...current, { id: element.id, message: inline.textContent }]);
+  };
+
   const validateBookingForm = (form: HTMLFormElement) => {
     const invalid: Array<{ element: HTMLElement; message: string }> = [];
     const labelFor = (element: HTMLElement) => element.id ? form.querySelector(`label[for="${CSS.escape(element.id)}"]`)?.textContent?.trim() : '';
-    form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input[required], select[required]:not([data-dob-part]), textarea[required]').forEach(element => {
-      if (!element.disabled && !element.validity.valid) {
+    form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input[required], input[type="email"]:not([required]), select[required]:not([data-dob-part]), textarea[required]').forEach(element => {
+      const invalidEmail = element instanceof HTMLInputElement && element.type === 'email' && Boolean(element.value.trim()) && !isValidBookingEmail(element.value);
+      if (!element.disabled && (!element.validity.valid || invalidEmail)) {
         const label = labelFor(element) || (element.type === 'checkbox' ? 'the required confirmation' : 'this field');
         const message = element.id === 'tour_date'
           ? 'Choose a tour date before continuing.'
+          : element instanceof HTMLInputElement && element.type === 'email'
+            ? element.required ? 'Enter a complete email address, such as name@domain.tld.' : 'Enter a complete email address, such as name@domain.tld, or leave this optional field blank.'
           : element.type === 'checkbox'
             ? `Confirm ${label.replace(/^I /, '').replace(/\.$/, '')}.`
             : `Enter ${label.replace(/\s*\(Optional\)/i, '')}.`;
@@ -1069,7 +1096,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
       {
         '@type': 'ItemList',
         '@id': 'https://www.8lakestours.com/#departure-options',
-        name: '8 Lakes Tours 2026 and 2027 departure dates',
+        name: '8 Lakes Tours departure dates',
         itemListElement: tourDates.map((tourDate, index) => ({
           '@type': 'ListItem',
           position: index + 1,
@@ -1466,11 +1493,11 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         /* Two season pickers, sized to carry the section rather than sit in it. */
         /* The gold edge and the heading carry the urgency; the body stays quiet
            so the banner reads as an open window rather than a sale. */
-        .founding-rate-line { font-size: 0.7rem; line-height: 1.55; color: var(--mist); opacity: 0.8; }
-        .founding-rate-line strong { color: var(--gold); }
+
         .custom-date-line { margin-top: 0.8rem; font-size: 0.68rem; color: var(--mist); opacity: 0.75; }
         .custom-date-line a { color: var(--gold); text-decoration: underline; }
         .tour-date-row.muted .tour-date-status { color: var(--mist); background: transparent; border-color: transparent; opacity: 0.5; }
+        #book { scroll-margin-top: 6rem; }
         #application { scroll-margin-top: 6rem; }
         /* Deeper offset: picking a date lands here, and leaving the section
            above partly in view keeps it obvious the form starts further up. */
@@ -1824,7 +1851,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         <div>
           <p className="offer-strip-kicker">Still hoping to ride this season?</p>
           <h2 className="offer-strip-title">Book September–October 2026</h2>
-          <p className="offer-strip-note">Late-season places are open now, and the 2027 season is already booking at the founding rate.</p>
+          <p className="offer-strip-note">Late-season places are open now.</p>
         </div>
         <div className="offer-strip-facts">
           <div className="offer-fact"><strong>{pricing.tourPrice}</strong><span>Total per person</span><small className="offer-fact-note">Group rates apply</small></div>
@@ -2066,21 +2093,16 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
       {/* BOOKING */}
       <section className="booking" id="book">
         <div className="booking-lead reveal">
-          <span className="section-eyebrow">Reserve Your Spot</span>
-          <h2 className="section-title">Choose 2026<br /><em>or Plan 2027</em></h2>
-          <p className="section-body">Remaining 2026 departures stay visible while bookable, and the 2027 season runs fortnightly from May to October. Pick either year and pay online straight away — no availability request in between. The trip is $1,999 per person, and group rates apply for 3–8 guests. Book 2027 while the 2026 season is still running and you keep the founding rate.</p>
-          <div className="scarcity-pill">
-            <span style={{width:'7px', height:'7px', borderRadius:'50%', background:'var(--rust)', display:'inline-block', flexShrink:0}}></span>
-            <span>Small groups only — each departure capped at 8 guests</span>
-          </div>
+          <h2 className="section-title">Reserve your spot</h2>
+          <p className="section-body">The trip is $1,999 per person, and group rates apply for 3–8 guests.</p>
         </div>
 
         <div className="reveal">
           <div className="price-card" style={{marginTop:'2.5rem'}}>
-            <span className="price-badge">2026 &amp; 2027 Departures — Limited Availability</span>
+            <span className="price-badge">Scheduled departures</span>
             <div className="price-amount">${BASE_PRICE_USD.toLocaleString('en-US')}</div>
             <div className="price-per">Per Person · 9 Days / 8 Nights · Group rates apply for 3–8 guests</div>
-            <div className="price-note">All official prices are in USD. Every currently available 2026 and 2027 departure can be booked and paid online for 1–8 guests. Groups of 1–8 book together and pay the exact group amount in one secure Stripe checkout. Only a private date of your own choosing is personally confirmed before payment.</div>
+
             <div className="payment-split" aria-label="How the 8 Lakes Tours payment is split">
               <div className="payment-split-card">
                 <span className="payment-split-label">Pay online</span>
@@ -2114,7 +2136,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             <details className="payment-details">
               <summary className="payment-summary">How payment works</summary>
               <div className="payment-detail-body">
-                <p><strong>Online:</strong> reserves your place with 8 Lakes Tours. Every scheduled 2026 and 2027 departure is paid in one Stripe checkout for your whole group (1–8 guests); only a private custom date is confirmed before payment.</p>
+                <p><strong>Online:</strong> reserves your place with 8 Lakes Tours. Scheduled departures are paid in one Stripe checkout for your whole group (1–8 guests); only a private custom date is confirmed before payment.</p>
                 <p><strong>Locally:</strong> clean USD cash paid directly to your host family, who can&apos;t reliably receive online transfers. Group discounts are split evenly between both payments.</p>
               </div>
             </details>
@@ -2148,7 +2170,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         <div className="reveal reveal-delay-1" id="application">
           <span className="section-eyebrow">Booking Details</span>
           <h2 className="section-title" style={{fontSize:'2rem', marginBottom:'1rem'}}>Secure<br /><em>Your Place</em></h2>
-          <p className="section-body" style={{fontSize:'0.9rem', marginBottom:'2rem'}}>Choose a 2026 or 2027 departure and tell us who&apos;s coming. Every scheduled date books and pays the same way: groups of 1–8 pay the exact group amount in one checkout after submitting. {FOUNDING_RATE_NOTE} Only private, custom dates are confirmed before payment.</p>
+          <p className="section-body" style={{fontSize:'0.9rem', marginBottom:'2rem'}}>Select a departure date and tell us who&apos;s coming. Every scheduled date books and pays the same way: groups of 1–8 pay the exact group amount in one checkout after submitting. Only private, custom dates are confirmed before payment.</p>
           <form ref={bookingFormRef} noValidate className="booking-form" onFocusCapture={markBookingFormStarted} onInput={event => { clearFieldValidation(event.target); scheduleDraftSave(event.currentTarget); }} onSubmit={async e => { e.preventDefault(); await submitBooking(e.currentTarget); }}>
             {validationErrors.length > 0 && <div className="booking-error-summary" role="alert" aria-labelledby="booking-error-summary-title"><strong id="booking-error-summary-title">Check the highlighted fields</strong><ul>{validationErrors.map(error => <li key={`${error.id}-${error.message}`}><button type="button" onClick={() => { const field = document.getElementById(error.id); field?.focus({ preventScroll: true }); field?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' }); }}>{error.message}</button></li>)}</ul></div>}
             <input type="hidden" name="display_currency" value={pricing.currency} />
@@ -2169,16 +2191,14 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                     const departures = seasonDepartures[season.year];
                     if (!departures.length) return null;
                     return (
-                      <optgroup key={season.year} label={season.year === '2027' ? `${season.year} season — founding rate` : `${season.year} season`}>
+                      <optgroup key={season.year} label={`${season.year} season`}>
                         {departures.map(option => <option key={option.date} value={option.date}>{option.date}</option>)}
                       </optgroup>
                     );
                   })}
                 </select>
               </div>
-              {seasonDepartures['2027'].length > 0 && (
-                <p className="founding-rate-line"><strong>Founding rate:</strong> {FOUNDING_RATE_NOTE}</p>
-              )}
+
               {requestOnlyOption && (
               <p className="custom-date-line">
                 Want dates of your own?{' '}
@@ -2222,7 +2242,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                 <div className="form-group"><label className="form-label" htmlFor="first_name">Passport/Legal First Name</label><input id="first_name" className="form-input" name="first_name" type="text" placeholder="First name" maxLength={100} required /></div>
                 <div className="form-group"><label className="form-label" htmlFor="last_name">Passport/Legal Last Name</label><input id="last_name" className="form-input" name="last_name" type="text" placeholder="Last name" maxLength={100} required /></div>
               </div>
-              <div className="form-group"><label className="form-label" htmlFor="email">Email Address</label><input id="email" className="form-input" name="email" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} maxLength={254} required /></div>
+              <div className="form-group"><label className="form-label" htmlFor="email">Email Address</label><input id="email" className="form-input" name="email" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} onBlur={validateEmailOnBlur} maxLength={254} required /></div>
               <div className="form-grid compact-grid">
                 <div className="form-group"><label className="form-label" htmlFor="phone">Phone Number (Optional)</label><input id="phone" className="form-input" name="phone" type="tel" placeholder="+1 (555) 000-0000" maxLength={40} /></div>
                 <div className="form-group"><label className="form-label" htmlFor="nationality">Nationality</label><input id="nationality" className="form-input" name="nationality" type="text" placeholder="e.g. American" maxLength={80} required /></div>
@@ -2286,7 +2306,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                       </div>
                     </div>
                     <div className="form-grid compact-grid">
-                      <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.email`}>Email (Optional)</label><input id={`${fieldPrefix}.email`} className="form-input" name={`travellers.${index + 1}.email`} type="email" maxLength={254} /></div>
+                      <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.email`}>Email (Optional)</label><input id={`${fieldPrefix}.email`} className="form-input" name={`travellers.${index + 1}.email`} type="email" onBlur={validateEmailOnBlur} maxLength={254} /></div>
                       <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.phone`}>Phone (Optional)</label><input id={`${fieldPrefix}.phone`} className="form-input" name={`travellers.${index + 1}.phone`} type="tel" maxLength={40} /></div>
                     </div>
                     <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.dietary_notes`}>Dietary Notes (Optional)</label><input id={`${fieldPrefix}.dietary_notes`} className="form-input" name={`travellers.${index + 1}.dietary_notes`} type="text" maxLength={1000} /></div>

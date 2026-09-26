@@ -182,7 +182,7 @@ test('client and booking API both use the shared payment-gating contract', async
   );
 });
 
-test('public AI references defer to live inventory and describe 2027 as request-only', async () => {
+test('public AI references defer to live inventory without year framing', async () => {
   const [summary, full] = await Promise.all([
     readFile(new URL('../public/llms.txt', import.meta.url), 'utf8'),
     readFile(new URL('../public/llms-full.txt', import.meta.url), 'utf8'),
@@ -190,7 +190,7 @@ test('public AI references defer to live inventory and describe 2027 as request-
   for (const source of [summary, full]) {
     assert.doesNotMatch(source, /seven fixed 2026 departures/i);
     assert.match(source, /live homepage is the source of truth/i);
-    assert.match(source, /2027/i);
+    assert.doesNotMatch(source, /202[67]/);
     assert.match(source, /confirm.*before payment|before payment.*confirm/i);
   }
 });

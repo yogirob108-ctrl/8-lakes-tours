@@ -88,14 +88,14 @@ test('restore honours a saved draft date or private choice but never overrides a
   assert.match(client, /if \(!tourDateTouchedRef\.current && draftTourDate\) setSelectedTourDate\(draftTourDate\)/, 'untouched default yields to a real saved choice; a user edit is never overwritten');
 });
 
-test('public AI references describe the unified request option', async () => {
+test('public AI references describe the unified request option without year selling', async () => {
   const [summary, full] = await Promise.all([
     readFile(new URL('../public/llms.txt', import.meta.url), 'utf8'),
     readFile(new URL('../public/llms-full.txt', import.meta.url), 'utf8'),
   ]);
   for (const source of [summary, full]) {
     assert.match(source, /Private group date on request/);
-    assert.match(source, /2027/);
+    assert.doesNotMatch(source, /202[67]/);
     assert.match(source, /confirm.*before payment|before payment.*confirm/i);
   }
 });

@@ -51,7 +51,7 @@ test('strict booking email validator accepts outer whitespace, plus tags, and su
   for (const value of [' rider+summer@updates.example.co.uk ', 'a.b-c@travel.example.tours']) {
     assert.equal(isValidBookingEmail(value), true, value);
   }
-  for (const value of ['', 'name', 'name@domain', 'name@domain.', 'name @domain.tld', 'name@domain .tld', 'name@@domain.tld', '@domain.tld', 'name@.tld']) {
+  for (const value of ['', 'name', 'name@domain', 'name@domain.', 'name @domain.tld', 'name@domain .tld', 'name@@domain.tld', '@domain.tld', 'name@.tld', 'name@domain!.com', 'name@domain_.com', '.name@example.com', 'name..surname@example.com', 'name,@example.com', 'name@example.123']) {
     assert.equal(isValidBookingEmail(value), false, value);
   }
 });

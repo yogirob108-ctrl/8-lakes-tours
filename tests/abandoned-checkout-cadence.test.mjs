@@ -13,6 +13,7 @@ function harness({authorize=true,claim=true,claimStage='abandoned_checkout_1',er
  const db={rpc:async(name,args)=>{calls.push([name,args]);
   if(name==='list_abandoned_checkouts')return {data:[row]};
   if(name==='read_abandoned_checkout_evidence')return {data:{...evidence(),stages}};
+  if(name==='release_departure_capacity_if_safe')return {data:false};
   if(name==='claim_abandoned_checkout')return {data:claim?{should_send:true,email_event_id:'e',claim_token:'t',payload:payload(claimStage)}:{should_send:false}};
   if(name==='authorize_abandoned_checkout_v3')return {data:authorize};
   if(name==='finalize_abandoned_checkout_stage')return {};
@@ -29,15 +30,15 @@ test('stage 1 claims under the original template key ~1h after submission',async
  assert.equal(r.sent,1);
  const claim=h.calls.find(([n])=>n==='claim_abandoned_checkout');
  assert.equal(claim[1].p_payload.stage,'abandoned_checkout_1');
- assert.equal(claim[1].p_payload.subject,'Continue your 8 Lakes checkout');
+ assert.equal(claim[1].p_payload.subject,'A quick note about your 8 Lakes booking');
  const send=h.sent[0];
  assert.equal(send.idempotencyKey,'public-booking-b-abandoned_checkout_1');
  const fin=h.calls.find(([n])=>n==='finalize_abandoned_checkout_stage');
  assert.equal(fin[1].p_stage,'abandoned_checkout_1');
  assert.equal(fin[1].p_sent,true);
 });
-test('stage 2 fires only after a durable stage-1 completion at least 24h old',async()=>{
- const h=harness({claimStage:'abandoned_checkout_2',stages:{abandoned_checkout_1:{completed_at:ago(25)}}});
+test('stage 2 fires only after a durable stage-1 completion at least 48h old',async()=>{
+ const h=harness({claimStage:'abandoned_checkout_2',stages:{abandoned_checkout_1:{completed_at:ago(49)}}});
  const r=await h.run();
  assert.equal(r.sent,1);
  assert.equal(h.calls.find(([n])=>n==='claim_abandoned_checkout')[1].p_payload.stage,'abandoned_checkout_2');
@@ -50,8 +51,8 @@ test('no immediate catch-up: stage-1 completed 2h ago is excluded from the queue
  assert.equal(r.suppressed_reasons.no_due_stage,1);
  assert.equal(h.calls.find(([n])=>n==='claim_abandoned_checkout'),undefined);
 });
-test('stage-1 completed under 24h never lets stage 2 run early even if stage-2 due marker exists',async()=>{
- const h=harness({claimStage:null,stages:{abandoned_checkout_1:{completed_at:ago(23)}}});
+test('stage-1 completed under 48h never lets stage 2 run early even if stage-2 due marker exists',async()=>{
+ const h=harness({claimStage:null,stages:{abandoned_checkout_1:{completed_at:ago(47)}}});
  const r=await h.run();
  assert.equal(r.sent,0);
  assert.equal(r.suppressed_reasons.no_due_stage,1);
@@ -131,10 +132,10 @@ test('blocked stage retries bounded after the provider is fixed; never batch cat
  assert.equal(dueStage({abandoned_checkout_1:{blocked_at:ago(25),failed_at:ago(25)}},NOW,{expiresAt:ago(-24)}),'abandoned_checkout_1');
  assert.equal(dueStage({abandoned_checkout_1:{blocked_at:ago(24*8)}},NOW,{expiresAt:ago(24*8)}),null);
  // Stage-1 completion during a delayed (domain-fix) window still admits stage 2
- // at stage1+24h, staying open until stage1+72h: beyond the legacy 48h intake.
+ // at stage1+48h, staying open until stage1+96h: beyond the legacy 48h intake.
  assert.equal(dueStage({abandoned_checkout_1:{completed_at:ago(49)}},NOW,{expiresAt:ago(4)}),'abandoned_checkout_2');
- assert.equal(dueStage({abandoned_checkout_1:{completed_at:ago(24.5)}},NOW,{expiresAt:ago(4)}),'abandoned_checkout_2');
- assert.equal(dueStage({abandoned_checkout_1:{completed_at:ago(80)}},NOW,{expiresAt:ago(4)}),null);
+ assert.equal(dueStage({abandoned_checkout_1:{completed_at:ago(47.5)}},NOW,{expiresAt:ago(4)}),null);
+ assert.equal(dueStage({abandoned_checkout_1:{completed_at:ago(100)}},NOW,{expiresAt:ago(4)}),null);
  // No batch catch-up: a completed stage 2 keeps the booking permanently done.
  assert.equal(dueStage({abandoned_checkout_1:{completed_at:ago(49)},abandoned_checkout_2:{completed_at:ago(2)}},NOW,{expiresAt:ago(4)}),null);
  // Untouched rows with no attempt never catch up after the intake window.
@@ -192,13 +193,25 @@ test('dry run evaluates stages without claiming or sending',async()=>{
  assert.equal(h.sent.length,0);
  assert.equal(h.calls.find(([n])=>n==='claim_abandoned_checkout'),undefined);
 });
-test('both stages send byte-identical email copy; no new stage-specific copy',()=>{
- const a=recoveryEmail(row,'https://example.invalid/pay?token=private');
- assert.equal(a.subject,'Continue your 8 Lakes checkout');
- assert.match(a.text,/not confirmed/);
+test('stage reminders have distinct plain personal copy and the same private resume link',()=>{
+ const url='https://example.invalid/pay?token=private';
+ const first=recoveryEmail(row,url,'abandoned_checkout_1');
+ const second=recoveryEmail(row,url,'abandoned_checkout_2');
+ assert.notEqual(first.subject,second.subject);
+ assert.match(first.text,/details you already entered/i);
+ assert.match(second.text,/final reminder/i);
+ assert.ok(first.text.includes(url));
+ assert.ok(second.text.includes(url));
+ for (const email of [first,second]) {
+  assert.match(email.text,/Your place is not confirmed\. Places remain subject to availability\./);
+  assert.match(email.html,/Your place is not confirmed\. Places remain subject to availability\./);
+ }
+ assert.equal((first.text.match(/Rob Zaher/g)||[]).length,1);
+ assert.equal((second.text.match(/Rob Zaher/g)||[]).length,1);
+ assert.doesNotMatch(`${first.text}\n${second.text}`,/seat reservation|seat reserved|place reserved/i);
 });
 test('dry_run observations document per-stage eligibility and suppression reasons',async()=>{
- const h=harness({claimStage:'abandoned_checkout_2',stages:{abandoned_checkout_1:{completed_at:ago(25)}}});
+ const h=harness({claimStage:'abandoned_checkout_2',stages:{abandoned_checkout_1:{completed_at:ago(49)}}});
  const r=await h.run({dryRun:true});
  assert.equal(r.eligible,1);
  assert.equal(r.stages.abandoned_checkout_2,1);

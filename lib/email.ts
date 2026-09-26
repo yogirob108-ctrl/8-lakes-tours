@@ -35,14 +35,7 @@ type LifecycleEmailInput = {
   reference: string;
   firstName: string;
   tourDate: string;
-  // Use the booking's agreed local-cash amount when known. Keep the legacy
-  // default only for older callers that do not yet carry this field.
-  familyCashDueUsd?: number | null;
 };
-
-function lifecycleFamilyCash(input: LifecycleEmailInput) {
-  return input.familyCashDueUsd == null ? FAMILY_CASH_USD : usd(input.familyCashDueUsd);
-}
 
 function getResendClient() {
   const apiKey = process.env.RESEND_API_KEY;
@@ -360,7 +353,6 @@ export function paymentReceivedInternalEmail(input: LifecycleEmailInput & { amou
 }
 
 export function paymentConfirmedCustomerEmail(input: LifecycleEmailInput & { amountUsd: number }) {
-  const familyCash = lifecycleFamilyCash(input);
   const subject = `Payment received for your 8 Lakes booking (${input.reference})`;
   const name = firstName(input.firstName);
   const amount = `$${input.amountUsd.toLocaleString('en-US')}`;
@@ -372,11 +364,11 @@ We have received your ${amount} online booking payment. Your place is confirmed.
 Booking reference: ${input.reference}
 Tour date: ${input.tourDate || 'TBC'}
 Online payment received: ${amount}
-Paid locally in Mongolia: ${familyCash}
+Paid locally in Mongolia: ${FAMILY_CASH_USD}
 
 ${DASH_RULE_TEXT}
 
-The remaining ${familyCash} goes directly to the host family in Mongolia, in clean USD cash.
+The remaining ${FAMILY_CASH_USD} goes directly to the host family in Mongolia, in clean USD cash.
 
 Next we send preparation notes, packing guidance, insurance reminders, and arrival coordination before departure.
 
@@ -394,10 +386,10 @@ info@8lakestours.com`;
       ['Booking reference', escapeHtml(input.reference)],
       ['Tour date', escapeHtml(input.tourDate || 'TBC')],
       ['Online payment received', escapeHtml(amount)],
-      ['Paid locally in Mongolia', escapeHtml(familyCash)],
+      ['Paid locally in Mongolia', escapeHtml(FAMILY_CASH_USD)],
     ]),
     sectionRuleHtml(),
-    p(`The remaining ${escapeHtml(familyCash)} goes directly to the host family in Mongolia, in clean USD cash.`),
+    p(`The remaining ${escapeHtml(FAMILY_CASH_USD)} goes directly to the host family in Mongolia, in clean USD cash.`),
     p(`Next we send preparation notes, packing guidance, insurance reminders, and arrival coordination before departure.`),
     p(`If anything comes up before then, just reply to this email.`),
     signoffHtml(),
@@ -411,7 +403,6 @@ info@8lakestours.com`;
 }
 
 export function preparationCustomerEmail(input: LifecycleEmailInput) {
-  const familyCash = lifecycleFamilyCash(input);
   const subject = `Getting ready for Mongolia (${input.reference})`;
   const name = firstName(input.firstName);
   const text = `Hi ${name},
@@ -420,7 +411,7 @@ Here is how to prepare for your 8 Lakes Tours trip.
 
 Booking reference: ${input.reference}
 Tour date: ${input.tourDate || 'TBC'}
-Cash for the host family: ${familyCash} (clean USD notes, paid directly in Mongolia)
+Cash for the host family: ${FAMILY_CASH_USD} (clean USD notes, paid directly in Mongolia)
 
 ${DASH_RULE_TEXT}
 
@@ -451,7 +442,7 @@ info@8lakestours.com`;
     detailsHtml([
       ['Booking reference', escapeHtml(input.reference)],
       ['Tour date', escapeHtml(input.tourDate || 'TBC')],
-      ['Cash for the host family', `${escapeHtml(familyCash)} (clean USD notes, paid directly in Mongolia)`],
+      ['Cash for the host family', `${escapeHtml(FAMILY_CASH_USD)} (clean USD notes, paid directly in Mongolia)`],
     ]),
     sectionRuleHtml(),
     p(`<strong>Packing:</strong> pack for all seasons, even in summer. Steppe weather moves quickly between warm sun, cold wind, rain, and very cold nights. Bring warm layers, waterproof outerwear, comfortable riding clothes, warm socks, a hat, gloves, and basic toiletries.`),
@@ -473,7 +464,6 @@ info@8lakestours.com`;
 }
 
 export function insuranceReminderCustomerEmail(input: LifecycleEmailInput) {
-  const familyCash = lifecycleFamilyCash(input);
   const subject = `Travel insurance check (${input.reference})`;
   const name = firstName(input.firstName);
   const text = `Hi ${name},
@@ -487,7 +477,7 @@ ${DASH_RULE_TEXT}
 
 Please make sure your travel insurance is active and covers horseback riding or adventure activity, medical treatment, emergency evacuation, and repatriation. Not every standard policy includes horseback riding, so it is worth double checking that part.
 
-Also check that your passport, flights, warm layers, personal medication, first-aid basics, and ${familyCash} clean USD cash for the host family are sorted.
+Also check that your passport, flights, warm layers, personal medication, first-aid basics, and ${FAMILY_CASH_USD} clean USD cash for the host family are sorted.
 
 Any last questions, just reply to this email.
 
@@ -505,7 +495,7 @@ info@8lakestours.com`;
     ]),
     sectionRuleHtml(),
     p(`Please make sure your travel insurance is active and covers <strong>horseback riding or adventure activity, medical treatment, emergency evacuation, and repatriation</strong>. Not every standard policy includes horseback riding, so it is worth double checking that part.`),
-    p(`Also check that your passport, flights, warm layers, personal medication, first-aid basics, and ${escapeHtml(familyCash)} clean USD cash for the host family are sorted.`),
+    p(`Also check that your passport, flights, warm layers, personal medication, first-aid basics, and ${escapeHtml(FAMILY_CASH_USD)} clean USD cash for the host family are sorted.`),
     p(`Any last questions, just reply to this email.`),
     signoffHtml(),
   ].join('\n');

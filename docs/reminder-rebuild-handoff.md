@@ -30,8 +30,8 @@ An explicit first activation records one durable watermark. Only bookings insert
    ```
 
    Confirm `sent: 0`; inspect both `draft_recovery` and post-submit suppression/eligibility output. Do not use an unscoped or non-dry run at this step.
-4. Parent/owner: replace or deliberately account for the existing daily Vercel invocation before enabling a second scheduler. The current Vercel declaration is daily (`15 8 * * *`) and cannot meet the roughly-one-hour target. No scheduler was configured by this change.
-5. Configure an external managed scheduler, initially paused, to run the wrapper every **5 minutes**. The database eligibility anchor remains one hour after checkout; the 5-minute polling window targets approximately 60–65 minutes rather than up to nearly two hours. Enforce one concurrent invocation across every scheduler source, retain no request headers in logs, and retain a pause control.
+4. The scheduler is already installed as `/Users/kokos/.hermes/scripts/8l_reminder_tick.py` under Hermes cron job `003e29361e29`, every 5 minutes, **paused**. The parent verified the job. Do not create a second scheduler or reactivate it as part of this change.
+5. Keep job `003e29361e29` paused until owner approval. Its installed Python scheduler already enforces the 5-minute cadence, 55-second timeout, HTTPS endpoint, single-process lock, header-free output, and pause control.
 6. After owner approval, set `ABANDONED_CHECKOUT_RECOVERY_ENABLED=true` on the deployed site and read it back using the authenticated non-dry endpoint. This does not imply any pre-submit-draft change.
 7. Immediately before the agreed first fresh-checkout window, call the service-role activation RPC with a unique audited reference:
 
@@ -48,21 +48,13 @@ An explicit first activation records one durable watermark. Only bookings insert
    A different reference, or a fresh activation after a watermark exists, is refused. Read back the rollout row after every activation/resume. Do not activate until the send gate, dry-run evidence, and scheduler replacement are ready.
 8. Enable the scheduler and observe the agreed bounded operational window. Verify each provider-accepted send against `email_events`, `public_booking_notifications`, recovery `stages`, and the exact booking reference before continuing.
 
-## External scheduler contract
+## Installed scheduler contract
 
-`./scripts/run-abandoned-checkout-reminder.sh` pins the only permitted endpoint, requires `CRON_SECRET`, rejects newline-bearing secrets, and passes the Authorization header to curl through stdin configuration. The secret is not present in curl's argv or URL. The wrapper is not a scheduler.
-
-Use a managed scheduler secret store to inject only `CRON_SECRET`, and execute:
-
-```bash
-bash scripts/run-abandoned-checkout-reminder.sh
-```
-
-Use a 5-minute cadence, 55-second request timeout, HTTPS-only endpoint (already pinned by the wrapper), non-2xx retry handling, a global single-concurrency policy, header-free logs, and a pause switch. No Hermes cron was created.
+The removed shell-wrapper instruction is obsolete. Hermes cron job `003e29361e29` invokes the installed `/Users/kokos/.hermes/scripts/8l_reminder_tick.py`; it is paused and must stay paused until approved activation. That script pins the endpoint, reads `CRON_SECRET` from Hermes secret storage without argv exposure, rejects redirects/non-2xx outcomes, and uses one local lock. Do not add another scheduler or execute a repository wrapper.
 
 ## Verified locally
 
-- Wrapper test uses a mock `curl`; it asserts no request occurs, no fake secret is in curl argv, stdin config contains the Authorization header, and the pinned endpoint is used.
+- Installed Python scheduler is documented as the sole paused 5-minute job; no repository shell wrapper is required.
 - Clean isolated PostgreSQL rehearsal proves pre-activation bookings receive no recovery row; post-activation bookings get recovery and all matching bindings atomically; same-ref activation is idempotent; pause/resume preserves the original watermark; changing the reference is refused.
 - Existing SQL suites pass for the one-hour eligibility gate, stage 2 at least 24 hours after durable stage-1 completion, maximum two sends, dry-run zero claims/sends, paid/cancelled suppression, request-only exclusion, provider-block/unknown-outcome handling, and legacy-history fencing.
 

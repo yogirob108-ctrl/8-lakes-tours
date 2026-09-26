@@ -9,7 +9,7 @@ const canonical = 'https://www.8lakestours.com/horse-trekking-mongolia';
 
 export const metadata: Metadata = {
   title: 'Mongolia Horse Trekking | 9-Day Eight Lakes Expedition',
-  description: 'Ride Mongolia’s Orkhon Valley and Naiman Nuur on a 9-day small-group horse trek with local horsemen and a nomadic host family. Beginners welcome. 2027 interest and private departures open by request.',
+  description: 'Ride Mongolia’s Orkhon Valley and Naiman Nuur on a 9-day small-group horse trek with local horsemen and a nomadic host family. Beginners welcome. Scheduled departures bookable online.',
   alternates: { canonical },
   // Paid-search landing page: live for Google Ads, kept out of the organic index so it
   // does not compete with the homepage for "Mongolian horse trekking".
@@ -104,10 +104,10 @@ export default function HorseTrekkingMongoliaPage() {
           <h1>Mongolia horse trekking,<br /><em>beyond the usual tour.</em></h1>
           <p className={styles.lede}>Ride into the Eight Lakes with local horsemen, live with a nomadic host family and travel in a group small enough to remain part of the landscape.</p>
           <div className={styles.heroActions}>
-            <LandingCta href="/#application" label="Request 2027 dates" placement="hero" />
+            <LandingCta href="/#application" label="Reserve your spot" placement="hero" />
             <a href="#route" className={styles.textLink}>See the route</a>
           </div>
-          <p className={styles.heroNote}>2027 small-group dates are being planned. Private 2027 departures are available by request and confirmed personally before payment.</p>
+          <p className={styles.heroNote}>Scheduled departures are bookable and payable online.</p>
         </div>
       </section>
 
@@ -164,10 +164,10 @@ export default function HorseTrekkingMongoliaPage() {
         <div className={styles.priceLead}>
           <p className={styles.eyebrow}>Transparent pricing</p>
           <h2>$1,799–$1,999<br /><em>per person.</em></h2>
-          <p>Price depends on the number of guests booking together, and the group discount is shared evenly between 8 Lakes Tours and your host family. Fixed 2026 departures can be booked and paid online; no automatic payment is taken for 2027 interest or private-date requests.</p>
+          <p>Price depends on the number of guests booking together, and the group discount is shared evenly between 8 Lakes Tours and your host family. Scheduled departures can be booked and paid online; no automatic payment is taken for a private date of your own choosing.</p>
         </div>
         <div className={styles.paymentCard}>
-          <div><span>Online booking payment</span><strong>$899–$999 pp</strong><p>Paid online for fixed 2026 dates; confirmed first for request-only dates.</p></div>
+          <div><span>Online booking payment</span><strong>$899–$999 pp</strong><p>Paid online for scheduled dates; confirmed first for request-only dates.</p></div>
           <div className={styles.plus}>+</div>
           <div><span>Direct to host family</span><strong>$900–$1,000 pp</strong><p>Clean USD cash paid locally in Mongolia.</p></div>
           <p className={styles.total}>Total: $1,799–$1,999 per person · flights and insurance not included</p>
@@ -191,10 +191,10 @@ export default function HorseTrekkingMongoliaPage() {
         <Image src="/images/expedition-originals/orkhon-valley-sunset-wide.jpg" alt="Sunset over the Orkhon Valley river bends" fill quality={82} sizes="100vw" />
         <div className={styles.ctaShade} />
         <div>
-          <p className={styles.eyebrow}>2027 Mongolia</p>
-          <h2>Fixed dates are being planned.<br /><em>Private departures are open by request.</em></h2>
+          <p className={styles.eyebrow}>Mongolia horse trekking</p>
+          <h2>Explore scheduled dates.<br /><em>Private departures are open by request.</em></h2>
           <p>Tell us your preferred window and group size. Our team will check the host family, horses, guide and route before any payment step.</p>
-          <LandingCta href="/#application" label="Request 2027 availability" placement="closing" />
+          <LandingCta href="/#application" label="Reserve your spot" placement="closing" />
         </div>
       </section>
 

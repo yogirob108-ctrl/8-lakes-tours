@@ -10,7 +10,7 @@ const payment = { id: 'payment', booking_id: booking.id, amount_usd: 2847, strip
 const session = { id: 'cs_fixture', payment_status: 'paid', amount_total: 284700, currency: 'usd', payment_intent: 'pi_fixture', client_reference_id: booking.public_reference, metadata: { booking_id: booking.id, customer_id: booking.customer_id, guest_count: '3' } };
 function handler(paymentRow = payment, bookingRow = booking) {
   let writes = 0;
-  const db = { from(table) { return { select() { return this; }, eq(column, value) { this.column = column; this.value = value; return this; }, async maybeSingle() { return { data: table === 'payments' ? paymentRow : bookingRow }; }, update() { writes++; throw new Error('write attempted'); }, insert() { writes++; throw new Error('write attempted'); } }; } };
+  const db = { from(table) { return { select() { return this; }, eq(column, value) { this.column = column; this.value = value; return this; }, in() { return this; }, contains() { return this; }, limit() { return this; }, async maybeSingle() { return { data: table === 'payments' ? paymentRow : table === 'bookings' ? bookingRow : null }; }, update() { writes++; throw new Error('write attempted'); }, insert() { writes++; throw new Error('write attempted'); } }; } };
   const exports = {};
   const source = readFileSync(new URL('../app/api/stripe/webhook/route.ts', import.meta.url), 'utf8') + '\nexport { handleCheckoutSessionPaid };';
   const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;

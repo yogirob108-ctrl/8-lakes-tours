@@ -5,17 +5,17 @@ import {readFileSync} from 'node:fs';
 import ts from 'typescript';
 import vm from 'node:vm';
 const row={booking_id:'b',public_reference:'REF',email:'nobody@example.invalid'};
-const evidence={generation:'g',session_ids:['cs_owned'],session_id:'cs_owned',customer_id:'c',guest_count:3,amount_cents:292200};
+const evidence={generation:'g',session_ids:['cs_owned'],session_id:'cs_owned',customer_id:'c',guest_count:3,amount_cents:292200,stage:'abandoned_checkout_1',stages:{}};
 const expired={id:'cs_owned',status:'expired',payment_status:'unpaid',client_reference_id:'REF',metadata:{booking_id:'b',customer_id:'c',guest_count:'3'},amount_total:292200,currency:'usd'};
 for(const [name,session] of [['open',{...expired,status:'open'}],['complete unpaid',{...expired,status:'complete'}],['complete paid',{...expired,status:'complete',payment_status:'paid'}],['unknown',{...expired,status:null}],['unavailable',null],['foreign reference',{...expired,client_reference_id:'OTHER'}],['conflicting metadata',{...expired,metadata:{...expired.metadata,booking_reference:'OTHER'}}],['expired unpaid',expired]]) {
  test(`recovery provider evidence: ${name}`,async()=>{
   let sends=0,reads=0;
   const calls=[];
-  const db={rpc:async(name,args)=>{calls.push([name,args]); if(name==='list_abandoned_checkouts')return {data:[row]};if(name==='read_abandoned_checkout_evidence')return {data:evidence};if(name==='claim_abandoned_checkout')return {data:{should_send:true,claim_token:'t',payload:{}}};if(name==='authorize_abandoned_checkout_v2')return {data:true};if(name==='authorize_abandoned_checkout')return {data:true};return {};}};
+  const db={rpc:async(name,args)=>{calls.push([name,args]); if(name==='list_abandoned_checkouts')return {data:[row]};if(name==='read_abandoned_checkout_evidence')return {data:evidence};if(name==='claim_abandoned_checkout')return {data:{should_send:true,claim_token:'t',payload:{stage:'abandoned_checkout_1'}}};if(name==='authorize_abandoned_checkout_v3')return {data:true};return {};}};
   await runAbandonedCheckoutRecovery({db,allowedDates:['Scheduled'],recoveryUrl:()=> 'https://example.invalid/pay',retrieveSession:async()=>{reads++;if(!session)throw Error('offline');return session;},sendEmail:async()=>{sends++;return {sent:true};}});
   assert.equal(sends,name==='expired unpaid'?1:0);
   assert.equal(reads,1);
-  if(sends) assert.ok(calls.some(([n,a])=>n==='authorize_abandoned_checkout_v2'&&a.p_generation==='g'&&a.p_expired_sessions[0]==='cs_owned'));
+  if(sends) assert.ok(calls.some(([n,a])=>n==='authorize_abandoned_checkout_v3'&&a.p_generation==='g'&&a.p_expired_sessions[0]==='cs_owned'&&a.p_stage==='abandoned_checkout_1'));
  });
 }
 test('actual confirmation transition refuses old 2922 payment against edited 4000 terms',async()=>{

@@ -49,8 +49,36 @@ test('every customer-facing email carries the quiet four-line signature block', 
     assert.ok(mail.html.includes(SIGNATURE_HTML), `${name}: html missing signature block`);
     assert.ok(mail.html.includes('font-size:13px;line-height:1.6;color:#767676'), `${name}: signature block not muted small text`);
     assert.ok(mail.text.includes(SIGNATURE_TEXT), `${name}: text missing signature block`);
-    assert.ok(mail.html.includes('<p style="margin:24px 0 0">Rob Zaher<br>8 Lakes Tours</p>'), `${name}: signoff damaged`);
+    assert.ok(mail.html.includes('<p style="margin:24px 0 0">Robert Zaher<br>8 Lakes Tours</p>'), `${name}: signoff damaged`);
   }
+});
+
+test('lifecycle emails use the booked cash due, including zero, instead of the default', () => {
+  const customInput = { reference: '8L-CRBP3K8', firstName: 'Eri', tourDate: '23 September–1 October 2026', familyCashDueUsd: 900 };
+  const customEmails = [
+    email.paymentConfirmedCustomerEmail({ ...customInput, amountUsd: 899 }),
+    email.preparationCustomerEmail(customInput),
+    email.insuranceReminderCustomerEmail(customInput),
+  ];
+  for (const mail of customEmails) {
+    assert.ok(mail.text.includes('$900'), 'custom cash due is in text');
+    assert.ok(mail.html.includes('$900'), 'custom cash due is in html');
+    assert.ok(!mail.text.includes('$1,000'), 'hardcoded cash default is absent from text');
+    assert.ok(!mail.html.includes('$1,000'), 'hardcoded cash default is absent from html');
+  }
+
+  const zero = email.preparationCustomerEmail({ ...customInput, familyCashDueUsd: 0 });
+  assert.ok(zero.text.includes('$0'), 'zero cash due is preserved rather than defaulted');
+  assert.ok(!zero.text.includes('$1,000'), 'zero cash due does not fall back to the default');
+});
+
+test('all public lifecycle callers load and pass the booked cash due', () => {
+  const cron = readFileSync(`${REPO}/app/api/cron/drip-emails/route.ts`, 'utf8');
+  assert.match(cron, /family_cash_due_usd/);
+  assert.match(cron, /familyCashDueUsd: booking\.family_cash_due_usd/);
+  const webhook = readFileSync(`${REPO}/app/api/stripe/webhook/route.ts`, 'utf8');
+  assert.match(webhook, /bookingSelect = '.*family_cash_due_usd/);
+  assert.match(webhook, /familyCashDueUsd: booking\.family_cash_due_usd/);
 });
 
 test('internal operator notifications do not gain the customer signature block', () => {

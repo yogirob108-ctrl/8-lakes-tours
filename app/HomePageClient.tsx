@@ -1,12 +1,14 @@
 "use client";
 import Image from 'next/image';
 import { track } from '@vercel/analytics';
-import { type FormEvent, type MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { type FocusEvent, type FormEvent, type MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { GROUP_INVOICE, manualPaymentReason, normalizeTourDateSelection } from '@/lib/tour-booking.mjs';
-import { getDefaultTourDate } from '@/lib/tour-dates.mjs';
+import { getDefaultTourDate, getSeasonYear } from '@/lib/tour-dates.mjs';
+import { isValidBookingEmail } from '@/lib/email-validation.mjs';
 import { BASE_LOCAL_FAMILY_PAYMENT_USD, BASE_ONLINE_PAYMENT_USD, BASE_PRICE_USD, GROUP_PRICING_TIERS, MAX_GROUP_SIZE, clampGuestCount, getGroupPricing } from '@/lib/group-pricing.mjs';
-import { normalizeBookingTravellers } from '@/lib/booking-travellers.mjs';
+import { GENDERS, normalizeBookingTravellers } from '@/lib/booking-travellers.mjs';
 import { composeDateOfBirth, splitDateOfBirth } from '@/lib/date-of-birth-fields.mjs';
+import { CONSENT_STORAGE_KEY, normalizeConsentChoice } from '@/lib/google-consent.mjs';
 import MobileNavMenu from './components/MobileNavMenu';
 
 type FunnelEventProperties = Record<string, string | number | boolean>;
@@ -36,6 +38,7 @@ type AttributionPayload = {
   ttclid?: string;
   msclkid?: string;
   ga_client_id?: string;
+  ga_session_id?: string;
 };
 
 declare global {
@@ -59,48 +62,73 @@ function trackFunnelEvent(name: string, properties: FunnelEventProperties = {}) 
 
 const ATTRIBUTION_STORAGE_KEY = 'eight_lakes_first_attribution';
 
-function getGaClientId() {
-  if (typeof document === 'undefined') return '';
-  const gaCookie = document.cookie
-    .split('; ')
-    .find(cookie => cookie.startsWith('_ga='))
-    ?.split('=')[1];
-
-  if (!gaCookie) return '';
-  const parts = gaCookie.split('.');
-  return parts.length >= 4 ? `${parts[2]}.${parts[3]}` : gaCookie;
+function hasMeasurementConsent() {
+  if (typeof window === 'undefined') return false;
+  try {
+    return normalizeConsentChoice(window.localStorage.getItem(CONSENT_STORAGE_KEY)) === 'measurement';
+  } catch {
+    return false;
+  }
 }
 
-function getGaClientIdFromGtag(): Promise<string> {
-  if (typeof window === 'undefined' || typeof window.gtag !== 'function') return Promise.resolve('');
+function validGaClientId(value: unknown) {
+  return typeof value === 'string' && /^\d{1,20}\.\d{1,20}$/.test(value) ? value : '';
+}
 
+function validGaSessionId(value: unknown) {
+  return typeof value === 'string' && /^\d{1,20}$/.test(value) ? value : '';
+}
+
+function getGaClientId() {
+  if (typeof document === 'undefined' || !hasMeasurementConsent()) return '';
+  const raw = document.cookie.split('; ').find(cookie => cookie.startsWith('_ga='))?.slice(4);
+  try {
+    const parts = raw ? decodeURIComponent(raw).split('.') : [];
+    return parts.length >= 4 ? validGaClientId(`${parts[2]}.${parts[3]}`) : '';
+  } catch {
+    return '';
+  }
+}
+
+function getGtagValue(field: 'client_id' | 'session_id'): Promise<string> {
+  if (typeof window === 'undefined' || !hasMeasurementConsent() || typeof window.gtag !== 'function') return Promise.resolve('');
   return new Promise((resolve) => {
     let settled = false;
     const finish = (value: unknown) => {
       if (settled) return;
       settled = true;
-      resolve(typeof value === 'string' ? value : '');
+      resolve(field === 'client_id' ? validGaClientId(value) : validGaSessionId(value));
     };
-
     window.setTimeout(() => finish(''), 700);
-    window.gtag?.('get', GA_MEASUREMENT_ID, 'client_id', finish);
+    window.gtag?.('get', GA_MEASUREMENT_ID, field, finish);
   });
+}
+
+function getGaSessionIdFromCookie(): string {
+  if (typeof document === 'undefined' || !hasMeasurementConsent()) return '';
+  const raw = document.cookie.split('; ').find(cookie => cookie.startsWith(`_ga_${GA_MEASUREMENT_ID.slice(2)}=`))?.split('=').slice(1).join('=');
+  if (!raw) return '';
+  let value = '';
+  try { value = decodeURIComponent(raw); } catch { return ''; }
+  // GS1's third dot-separated field and GS2's s<id> field carry the numeric
+  // session id. Cookie formats are only a bounded fallback when gtag get is
+  // unavailable; never send the raw cookie value as an MP session_id.
+  const gs1 = value.match(/^GS1\.\d+\.(\d{1,20})(?:\.|$)/);
+  const gs2 = value.match(/^GS2\.\d+\.s(\d{1,20})(?:\$|$)/);
+  return validGaSessionId(gs1?.[1] || gs2?.[1] || '');
 }
 
 async function collectAttributionWithGaRetry() {
   const attribution = collectAttribution();
-  if (attribution.ga_client_id) return attribution;
-
-  const clientId = await getGaClientIdFromGtag();
-  if (!clientId) return attribution;
-
-  const next = { ...attribution, ga_client_id: clientId };
+  if (!hasMeasurementConsent()) return attribution;
+  const [clientId, sessionId] = await Promise.all([getGtagValue('client_id'), getGtagValue('session_id')]);
+  const next = { ...attribution, ga_client_id: clientId || attribution.ga_client_id || '', ga_session_id: sessionId || attribution.ga_session_id || '' };
   try {
     const stored = window.localStorage.getItem(ATTRIBUTION_STORAGE_KEY);
     const first = stored ? JSON.parse(stored) as AttributionPayload : {};
-    window.localStorage.setItem(ATTRIBUTION_STORAGE_KEY, JSON.stringify({ ...first, ga_client_id: first.ga_client_id || clientId }));
+    window.localStorage.setItem(ATTRIBUTION_STORAGE_KEY, JSON.stringify({ ...first, ga_client_id: first.ga_client_id || next.ga_client_id, ga_session_id: first.ga_session_id || next.ga_session_id }));
   } catch {
-    // Storage can be blocked; the current submit payload still carries the client id.
+    // Storage can be blocked; the current submit payload still carries current identifiers.
   }
   return next;
 }
@@ -123,6 +151,7 @@ function collectAttribution(): AttributionPayload {
     ttclid: params.get('ttclid') || '',
     msclkid: params.get('msclkid') || '',
     ga_client_id: getGaClientId(),
+    ga_session_id: getGaSessionIdFromCookie(),
   };
 
   let first: AttributionPayload = {};
@@ -142,10 +171,15 @@ function collectAttribution(): AttributionPayload {
     }
   }
 
+  const measurementAllowed = hasMeasurementConsent();
   return {
     ...first,
     current_url: current.current_url,
-    ga_client_id: current.ga_client_id || first.ga_client_id || '',
+    // Never resurrect a stored GA identifier after consent was declined or
+    // withdrawn. Session identifiers are current-visit-only to avoid joining a
+    // paid event to an earlier visitor session.
+    ga_client_id: measurementAllowed ? current.ga_client_id || first.ga_client_id || '' : '',
+    ga_session_id: measurementAllowed ? current.ga_session_id : '',
   };
 }
 
@@ -183,9 +217,10 @@ const PACKING_LIST = [
   'Rain jacket or waterproof shell for sudden weather changes',
   'Warm base layer, fleece/down layer, hat and gloves for cold mornings and evenings',
   'Riding gloves or lightweight outdoor gloves',
+  'Sports bras if you wear them — the trotting is a lot on long riding days',
   'Sun hat or cap',
   'Sunglasses with secure strap',
-  'Swimsuit for daily river ice baths, lakes or hot springs',
+  'Swimsuit for daily river baths, lakes or hot springs',
   'Headlamp or small flashlight',
   'Reusable water bottle',
   'Sunscreen and lip balm with SPF',
@@ -193,7 +228,7 @@ const PACKING_LIST = [
   'Personal medication and basic toiletries',
   'Personal first-aid kit, blister care and any painkillers/anti-inflammatory medicine you normally use',
   'Wet wipes for cleaning hands and body when there are no showers',
-  'Hand cream or Vaseline for dry weather',
+  'Hand cream, chapstick or Vaseline for dry weather',
   'Travel pillow if you sleep better with one',
   'Universal adapter plug and power bank',
   'Binoculars or camera if you want them',
@@ -249,36 +284,57 @@ function getLocalizedPricing(groupPricing = getGroupPricing(1)): LocalizedPricin
   };
 }
 
-const STRIP_IMAGES = [
-  { src: '/images/expedition-originals/river-horseman-silhouette-portrait.jpg', alt: 'Horseman silhouetted beside the river' },
-  { src: '/images/expedition-originals/horseman-valley-lookout-portrait.jpg', alt: 'Horseman looking across the Orkhon Valley' },
-  { src: '/images/expedition-originals/suma-river-crossing-original.jpg', alt: 'Suma riding through a shallow river crossing' },
-  { src: '/images/expedition-originals/orkhon-valley-sunset-wide.jpg', alt: 'Sunset over the Orkhon Valley river bends' },
-  { src: '/images/expedition-originals/ger-and-van-camp-wide.jpg', alt: 'Traditional ger camp with a van and mountain backdrop' },
-  { src: '/images/expedition-originals/yaks-river-backlit-portrait.jpg', alt: 'Yaks grazing beside the river in backlit evening sun' },
-];
+
 
 const MAIN_ALBUM_IMAGES = [
-  { src: '/images/guide-horse-portrait.jpg', alt: 'Suma standing with his horse on the open steppe', orientation: 'portrait', collage: 'lead' },
+  { src: '/images/gallery-extra/horseman-on-his-dark-horse-monochrome.jpg', alt: 'A horseman in a deel and hat mounted on his dark horse, in black and white', orientation: 'portrait', collage: 'lead' },
   { src: '/images/gallery-extra/horseback-storm-valley-pov.jpg', alt: 'Horseback point of view riding into a stormy mountain valley', orientation: 'landscape', collage: 'hero' },
-  { src: '/images/gallery-extra/packed-horses-rain-camp.jpg', alt: 'Packed horses waiting under storm clouds', orientation: 'landscape', collage: 'wide-left' },
-  { src: '/images/gallery-extra/horses-in-forest-rain.jpg', alt: 'Pack horses resting in the forest rain', orientation: 'landscape', collage: 'wide-right' },
-  { src: '/images/expedition-originals/ger-blue-hour-original.jpg', alt: 'Ger at blue hour beneath the mountains', orientation: 'landscape', collage: 'small-a' },
-  { src: '/images/gallery-extra/orkhon-valley-sunburst-panorama.jpg', alt: 'Sunburst over the Orkhon Valley river bends after rain', orientation: 'landscape', collage: 'small-b' },
+  { src: '/images/gallery-extra/guest-in-a-red-scarf-on-the-summer-steppe.jpg', alt: 'A guest in a red neck scarf riding across the green summer steppe', orientation: 'landscape', collage: 'wide-left' },
+  { src: '/images/gallery-extra/guest-looking-back-mid-river-crossing.jpg', alt: 'A guest looking back from the saddle while her horse stands in the river', orientation: 'portrait', collage: 'wide-right' },
+  { src: '/images/expedition-originals/ger-and-van-camp-wide.jpg', alt: 'Ger and van camp beneath the mountains', orientation: 'landscape', collage: 'small-a' },
+  { src: '/images/gallery-extra/the-lake-and-its-islands-from-the-ridge.jpg', alt: 'One of the Eight Lakes and its wooded islands seen from the ridge above', orientation: 'landscape', collage: 'small-b' },
   { src: '/images/eagle-portrait-original.jpg', alt: 'Close portrait of a Mongolian eagle', orientation: 'portrait', objectPosition: '72% center', collage: 'tall' },
   { src: '/images/gallery-extra/rider-rearing-horse-wide.jpg', alt: 'Rider on a rearing horse against the sky', orientation: 'landscape', collage: 'bottom-left' },
-  { src: '/images/gers2.jpg', alt: 'White gers spread across open grassland below the mountains', orientation: 'landscape', collage: 'bottom-mid' },
-  { src: '/images/expedition-originals/rider-storm-valley-panorama-portrait.jpg', alt: 'Horseback point of view crossing a grassy Mongolian valley under storm clouds', orientation: 'portrait', mobileFullWidth: true, collage: 'bottom-right' },
+  { src: '/images/gallery-extra/herder-on-a-motorbike-above-the-valleys.jpg', alt: 'A herder on a motorbike pausing on a ridge above the green valleys', orientation: 'landscape', collage: 'bottom-mid' },
+  { src: '/images/gallery-extra/leading-the-pack-horse-below-the-cliffs.jpg', alt: 'A rider leading a loaded pack horse along the valley track below the cliffs', orientation: 'landscape', mobileFullWidth: true, collage: 'bottom-right' },
 ];
 
+
 const HOME_FAQS = [
-  { q: 'What happens after I submit the form?', a: 'For standard 1–2 guest bookings, you can continue to the online payment and receive confirmation once payment is complete. Scheduled groups of 1–8 pay the exact group online amount in one Stripe checkout. Private, custom, and unconfirmed dates require our team to confirm availability before payment. Before arrival, our team coordinates timing with you and the host-family pickup from Bat-Ulzii.' },
+  // Six questions, each answering something that stops a booking. What happens
+  // after you submit is now explained beside the button, and the dates are in
+  // the picker, so those gave way to cancellation, conditions and safety.
   { q: 'Do I need riding experience?', a: 'No experience necessary. Beginners are welcome — our local guides will teach you everything you need to know before the trek begins.' },
-  { q: 'What departure dates are available?', a: 'Remaining 2026 fixed departures stay listed while bookable. 2027 small-group dates are being planned, and private 2027 departures can be requested for June through September. All 2027 options require our team to confirm the host family, horses, guide and logistics before payment.' },
-  { q: 'How does payment work?', a: 'All official prices are in USD. The 2026 rate depends on group size: $1,999 per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8. Bookings of 1–2 guests on a fixed date pay the $999 per-guest online booking payment straight after the form. Groups of 1–8 book together and pay the exact group online amount in one secure Stripe checkout. Group discounts are shared evenly between 8 Lakes Tours and the host family, so the online payment runs $899–$999 per guest and the local family cash runs $900–$1,000 per guest. The family portion is paid directly in clean USD cash to the nomadic host families in Mongolia.' },
+  { q: 'Are there showers or Western toilets?', a: 'No. Countryside toilets are simple outhouses with squat toilets, and there are no regular showers. Ger stays are warm and welcoming in a rural way, but the facilities are basic. Wet wipes cover you between river washes, and a cold plunge in the river is part of the rhythm when conditions allow.' },
+  { q: 'Is this trip safe?', a: 'Yes. Basic first aid is on site and experienced local guides — including Suma, who has led many groups through this terrain — are with you throughout. Ground transport is on call for emergencies and can reach the ger village within a few hours. Travel insurance with emergency evacuation cover is required before departure.' },
+  { q: 'How does payment work?', a: 'All official prices are in USD. Price depends on group size: $1,999 per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8. Bookings of 1–2 guests on a fixed date pay the $999 per-guest online booking payment straight after the form. Groups of 1–8 book together and pay the exact group online amount in one secure Stripe checkout. Group discounts are shared evenly between 8 Lakes Tours and the host family, so the online payment runs $899–$999 per guest and the local family cash runs $900–$1,000 per guest. The family portion is paid directly in clean USD cash to the nomadic host families in Mongolia.' },
+  { q: 'What if I need to cancel?', a: 'Cancel more than 21 days before departure and the online payment is refunded, minus unrecoverable payment processing fees. Within 21 days you are entitled to 50% back on the same terms, and we will still try to move you to another date or accept a replacement traveller, which can recover more than the 50%. If we cancel your departure, your online payment is refunded on the same terms.' },
   { q: 'Do I need a visa?', a: 'Many travellers can enter Mongolia visa-free for tourism, but the allowance depends on your passport. US and South Korean passport holders commonly receive up to 90 days; UK/EU, Australian, Canadian, Japanese, New Zealand, and many other passport holders commonly receive up to 30 days. Rules and temporary exemptions can change, so check the current Mongolian consular or e-visa guidance for your nationality before booking flights.' },
-  { q: 'Is there WiFi or cell service?', a: 'Remote trek days are mostly offline, with little to no cell service. The host family camp has Starlink and solar-powered charging for phones, cameras, and essentials, so you can reconnect between riding days. For simple Mongolian communication, Grok has worked best for us so far; ChatGPT also works well for translation when you have signal.' },
 ];
+
+const TESTIMONIAL_CARDS = [
+            {
+              name: 'Irik · USA',
+              src: '/images/testimonial-irik-clawson-sunset.jpg',
+              alt: 'Robert Zaher smiling on horseback beside a river valley',
+              quote: 'Endless riding from one plain to the next, across the Steppe, by the lakes…. Magical. What more is there in life?',
+              objectPosition: 'center',
+            },
+            {
+              name: 'Milou · AU',
+              src: '/images/testimonial-milou.jpeg',
+              alt: 'Milou travelling by motorbike through the Mongolian steppe',
+              quote: 'So grateful to be able to stay with the loveliest family in Mongolia, experience life on the steppe and trek with horses through the most beautiful landscapes!',
+              objectPosition: '76% center',
+            },
+            {
+              name: 'Fin · UK',
+              src: '/images/testimonial-fin-bennet-host.jpg',
+              alt: 'Fin Bennet and his Mongolian host wearing traditional deels on the open steppe',
+              quote: 'It couldn’t be further from back home and that makes me so excited.',
+              objectPosition: 'center 42%',
+            },
+          ];
 
 const GALLERY_IMAGES = [
   { src: '/images/guide.jpg', alt: 'Mongolian horseman in traditional dress' },
@@ -294,9 +350,23 @@ const GALLERY_IMAGES = [
   { src: '/images/mosaic4.jpg', alt: 'Wide sunset view across the Orkhon Valley' },
   { src: '/images/riding3.jpg', alt: 'Grazing animals beside the river' },
   { src: '/images/mosaic5.jpg', alt: 'Ger silhouette at dusk' },
-  ...STRIP_IMAGES.map(({ src, alt }) => ({ src, alt })),
   ...MAIN_ALBUM_IMAGES.map(({ src, alt }) => ({ src, alt })),
 ];
+
+// Every image that can be opened full-frame, in one list, so the lightbox always
+// shows the photo that was clicked (and arrow keys walk the whole set).
+const LIGHTBOX_IMAGES: { src: string; alt: string }[] = Array.from(
+  new Map(
+    [
+      ...GALLERY_IMAGES,
+      ...MAIN_ALBUM_IMAGES,
+      ...TESTIMONIAL_CARDS,
+      { src: '/images/suma-horseback-deel.jpg', alt: 'Suma on horseback in a traditional deel on the Mongolian steppe' },
+      { src: '/images/host-family-horses-deels.jpg', alt: 'Robert with the host family and their horses, all in traditional deels on the Mongolian steppe' },
+    ].map(image => [image.src, { src: image.src, alt: image.alt }] as const),
+  ).values(),
+);
+
 
 function WaiverModal({ onClose, onAgree }: { onClose: () => void; onAgree: () => void }) {
   const [signature, setSignature] = useState('');
@@ -407,7 +477,7 @@ function DateOfBirthFields({ name, label, isLead = false }: { name: string; labe
         {(['day', 'month', 'year'] as const).map(part => (
           <div className={`date-of-birth-part ${part}`} key={part}>
             <label className="sr-only" htmlFor={`${name}-${part}`}>{`${label} ${part}`}</label>
-            <select id={`${name}-${part}`} name={`${name}_${part}`} className="form-select" autoComplete={autocomplete(part)} value={parts[part]} onChange={event => { update(part, event.target.value); setTouched(true); }} onBlur={() => setTouched(true)} aria-invalid={Boolean(error)} aria-describedby={error ? errorId : undefined}>
+            <select id={`${name}-${part}`} name={`${name}_${part}`} className="form-select" required data-dob-part="true" autoComplete={autocomplete(part)} value={parts[part]} onChange={event => { update(part, event.target.value); setTouched(true); }} onBlur={() => setTouched(true)} aria-invalid={Boolean(error)} aria-describedby={error ? errorId : undefined}>
               <option value="">{part[0].toUpperCase() + part.slice(1)}</option>
               {options[part].map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
             </select>
@@ -420,12 +490,29 @@ function DateOfBirthFields({ name, label, isLead = false }: { name: string; labe
   );
 }
 
+const SEASONS = [
+  { year: '2026', label: 'This season' },
+  { year: '2027', label: 'Next season' },
+] as const;
+
 export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
   const lateSeasonDepartures = tourDates.filter(option => option.startDate && option.startDate >= '2026-09-01');
+  // Scheduled departures split by season for the two pickers; the request-only
+  // option has no startDate and is offered separately beneath them.
+  const seasonDepartures = useMemo(() => {
+    const grouped: Record<string, TourDateOption[]> = { 2026: [], 2027: [] };
+    for (const option of tourDates) {
+      if (!option.startDate || option.requiresConfirmation) continue;
+      grouped[getSeasonYear(option)]?.push(option);
+    }
+    return grouped;
+  }, [tourDates]);
+  const requestOnlyOption = tourDates.find(option => option.requiresConfirmation);
   const [showWaiver, setShowWaiver] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [waiverExpanded, setWaiverExpanded] = useState(false);
   const [signature, setSignature] = useState('');
+  const [waiverAgreed, setWaiverAgreed] = useState(false);
   const [email, setEmail] = useState('');
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [formSubmitting, setFormSubmitting] = useState(false);
@@ -441,8 +528,8 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
   const [leadError, setLeadError] = useState('');
   const [selectedTourDate, setSelectedTourDate] = useState(() => getDefaultTourDate(tourDates));
   const tourDateTouchedRef = useRef(false);
+  const guestCountTouchedRef = useRef(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
-  const tourDateOptions = tourDates.map(dateOption => dateOption.date);
   const groupPricing = useMemo(() => getGroupPricing(guestCount), [guestCount]);
   const bookingFormStartedRef = useRef(false);
   const stripeClickTrackedRef = useRef(false);
@@ -459,15 +546,18 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
     onlinePayment: formatApproxUsd(BASE_ONLINE_PAYMENT_USD, 'USD'),
     localFamilyPayment: formatApproxUsd(BASE_LOCAL_FAMILY_PAYMENT_USD, 'USD'),
   });
-  const emailIsValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
-  const signatureIsValid = signature.trim().length > 1;
-  const hasRequiredContact = signatureIsValid && emailIsValid;
+  const emailIsValid = isValidBookingEmail(email);
+  // "ab" used to pass. A signature has to read as a name: at least two parts,
+  // each of two letters or more.
+  const signatureParts = signature.trim().split(/\s+/).filter(Boolean);
+  const signatureIsValid = signatureParts.length >= 2 && signatureParts.every(part => part.replace(/[^\p{L}]/gu, '').length >= 2);
+  const hasRequiredContact = signatureIsValid && emailIsValid && waiverAgreed;
   const manualReason = manualPaymentReason(selectedTourDate, guestCount);
   const requiresHumanConfirmation = manualReason !== null;
   const awaitsGroupInvoice = manualReason === GROUP_INVOICE;
   const canPay = formSubmitted && Boolean(paymentUrl) && !requiresHumanConfirmation;
   const checkoutFallbackHref = canPay ? paymentUrl : '#book';
-  const lightboxImage = lightboxIndex === null ? null : GALLERY_IMAGES[lightboxIndex];
+  const lightboxImage = lightboxIndex === null ? null : LIGHTBOX_IMAGES[lightboxIndex];
   const isLightboxOpen = lightboxIndex !== null;
   const restoreCheckoutDraft = async (ownership: { draft_id: string; credential: string }) => {
     const response = await fetch('/api/checkout-draft', {
@@ -488,13 +578,16 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
       field.dispatchEvent(new Event('change', { bubbles: true }));
     };
     assign('first_name', draft.first_name); assign('last_name', draft.last_name); assign('email', draft.email);
-    assign('phone', draft.phone); assign('tour_date', draft.tour_date); assign('guest_count', draft.guest_count); assign('notes', draft.notes);
+    // guest_count is controlled and always holds a value, so it restores through
+    // state below rather than through a direct write the assign guard would skip.
+    assign('phone', draft.phone); assign('tour_date', draft.tour_date); assign('notes', draft.notes);
     const restoreDate = (name: string, value: unknown, raw?: { date_of_birth_day?: string; date_of_birth_month?: string; date_of_birth_year?: string }) => {
       const parts = splitDateOfBirth(String(value || ''));
       assign(`${name}_day`, parts.day || raw?.date_of_birth_day); assign(`${name}_month`, parts.month || raw?.date_of_birth_month); assign(`${name}_year`, parts.year || raw?.date_of_birth_year);
     };
     restoreDate('date_of_birth', draft.date_of_birth, draft);
-    (draft.travellers || []).forEach((traveller: { first_name?: string; last_name?: string; date_of_birth?: string; date_of_birth_day?: string; date_of_birth_month?: string; date_of_birth_year?: string }, index: number) => {
+    const companions = (draft.travellers || []) as Array<{ first_name?: string; last_name?: string; date_of_birth?: string; date_of_birth_day?: string; date_of_birth_month?: string; date_of_birth_year?: string }>;
+    const restoreCompanions = () => companions.forEach((traveller, index) => {
       assign(`travellers.${index + 1}.first_name`, traveller.first_name);
       assign(`travellers.${index + 1}.last_name`, traveller.last_name);
       restoreDate(`travellers.${index + 1}.date_of_birth`, traveller.date_of_birth, traveller);
@@ -506,11 +599,18 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
     // date only lands while the visitor has not personally touched either date
     // control, and a real user edit is never overwritten.
     const currentEmail = (form.elements.namedItem('email') as HTMLInputElement | null)?.value;
-    const currentGuestCount = (form.elements.namedItem('guest_count') as HTMLSelectElement | null)?.value;
     const draftTourDate = normalizeTourDateSelection(String(draft.tour_date || ''));
     if (!currentEmail) setEmail(String(draft.email || ''));
     if (!tourDateTouchedRef.current && draftTourDate) setSelectedTourDate(draftTourDate);
-    if (!currentGuestCount) setGuestCount(Number(draft.guest_count) || 1);
+    // Companion fieldsets only exist once the guest count has rendered them, so
+    // restore the count first and fill those fields on the following frame.
+    const draftGuestCount = clampGuestCount(draft.guest_count);
+    if (!guestCountTouchedRef.current && draftGuestCount > 1) {
+      setGuestCount(draftGuestCount);
+      window.setTimeout(restoreCompanions, 0);
+      return;
+    }
+    restoreCompanions();
   };
 
   // The poster image is the LCP element; the drone loop only loads once the page is
@@ -555,12 +655,12 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
       }
     } catch { /* Private browsing can disable session storage. */ }
   }, []);
-  const openLightbox = (src: string, alt: string) => {
-    const imageIndex = GALLERY_IMAGES.findIndex(image => image.src === src && image.alt === alt);
+  const openLightbox = (src: string) => {
+    const imageIndex = LIGHTBOX_IMAGES.findIndex(image => image.src === src);
     setLightboxIndex(imageIndex >= 0 ? imageIndex : 0);
   };
-  const showPreviousImage = () => setLightboxIndex(current => current === null ? current : (current + GALLERY_IMAGES.length - 1) % GALLERY_IMAGES.length);
-  const showNextImage = () => setLightboxIndex(current => current === null ? current : (current + 1) % GALLERY_IMAGES.length);
+  const showPreviousImage = () => setLightboxIndex(current => current === null ? current : (current + LIGHTBOX_IMAGES.length - 1) % LIGHTBOX_IMAGES.length);
+  const showNextImage = () => setLightboxIndex(current => current === null ? current : (current + 1) % LIGHTBOX_IMAGES.length);
 
   const markBookingFormStarted = () => {
     if (bookingFormStartedRef.current) return;
@@ -578,22 +678,12 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
     });
   };
 
-  const chooseTourDate = (date: string) => {
-    if (formSubmitted || formSubmitting) return;
-    trackFunnelEvent('date_selected', { tour_date: date });
-    tourDateTouchedRef.current = true;
-    setSelectedTourDate(date);
-    window.setTimeout(() => {
-      document.getElementById('application')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      window.setTimeout(() => document.getElementById('tour_date')?.focus({ preventScroll: true }), 520);
-    }, 40);
-  };
 
   const scrollToTourDates = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
-    const target = document.getElementById('tour-dates');
+    const target = document.getElementById('trip-details');
     if (!target) return;
-    history.pushState(null, '', '#tour-dates');
+    history.pushState(null, '', '#trip-details');
     target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
@@ -628,13 +718,13 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
 
     const preloadIndexes = [
       lightboxIndex,
-      (lightboxIndex + 1) % GALLERY_IMAGES.length,
-      (lightboxIndex + GALLERY_IMAGES.length - 1) % GALLERY_IMAGES.length,
-      (lightboxIndex + 2) % GALLERY_IMAGES.length,
+      (lightboxIndex + 1) % LIGHTBOX_IMAGES.length,
+      (lightboxIndex + LIGHTBOX_IMAGES.length - 1) % LIGHTBOX_IMAGES.length,
+      (lightboxIndex + 2) % LIGHTBOX_IMAGES.length,
     ];
 
     preloadIndexes.forEach(index => {
-      const src = GALLERY_IMAGES[index]?.src;
+      const src = LIGHTBOX_IMAGES[index]?.src;
       if (!src) return;
       const image = new window.Image();
       image.decoding = 'async';
@@ -663,10 +753,10 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setLightboxIndex(null);
       if (event.key === 'ArrowLeft') {
-        setLightboxIndex(current => current === null ? current : (current + GALLERY_IMAGES.length - 1) % GALLERY_IMAGES.length);
+        setLightboxIndex(current => current === null ? current : (current + LIGHTBOX_IMAGES.length - 1) % LIGHTBOX_IMAGES.length);
       }
       if (event.key === 'ArrowRight') {
-        setLightboxIndex(current => current === null ? current : (current + 1) % GALLERY_IMAGES.length);
+        setLightboxIndex(current => current === null ? current : (current + 1) % LIGHTBOX_IMAGES.length);
       }
     };
 
@@ -791,18 +881,48 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
     const id = target.id;
     if (id) {
       document.getElementById(`${id}-inline-error`)?.remove();
-      setValidationErrors(current => current.filter(error => error.id !== id));
+      const describedBy = target.getAttribute('aria-describedby');
+      if (describedBy) {
+        const remaining = describedBy.split(/\s+/).filter(value => value && value !== `${id}-inline-error`);
+        if (remaining.length) target.setAttribute('aria-describedby', remaining.join(' '));
+        else target.removeAttribute('aria-describedby');
+      }
+      // Keep the same array when this field has no error to clear. A fresh
+      // array on every keystroke re-renders the form, and a re-render between
+      // a select's `input` and `change` events rewrites the controlled value
+      // back to state, silently discarding the option the visitor just picked.
+      setValidationErrors(current => current.some(error => error.id === id) ? current.filter(error => error.id !== id) : current);
     }
+  };
+
+  const validateEmailOnBlur = (event: FocusEvent<HTMLInputElement>) => {
+    const element = event.currentTarget;
+    const optional = !element.required;
+    if (optional && !element.value.trim()) return;
+    if (isValidBookingEmail(element.value)) return;
+    clearFieldValidation(element);
+    element.setAttribute('aria-invalid', 'true');
+    const inline = document.createElement('p');
+    inline.className = 'field-error form-inline-validation-error';
+    inline.id = `${element.id}-inline-error`;
+    inline.textContent = optional ? 'Enter a complete email address, such as name@domain.tld, or leave this optional field blank.' : 'Enter a complete email address, such as name@domain.tld.';
+    inline.setAttribute('role', 'alert');
+    element.setAttribute('aria-describedby', `${element.getAttribute('aria-describedby') || ''} ${inline.id}`.trim());
+    element.closest('.form-group')?.append(inline);
+    setValidationErrors(current => current.some(error => error.id === element.id) ? current : [...current, { id: element.id, message: inline.textContent }]);
   };
 
   const validateBookingForm = (form: HTMLFormElement) => {
     const invalid: Array<{ element: HTMLElement; message: string }> = [];
     const labelFor = (element: HTMLElement) => element.id ? form.querySelector(`label[for="${CSS.escape(element.id)}"]`)?.textContent?.trim() : '';
-    form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input[required], select[required], textarea[required]').forEach(element => {
-      if (!element.disabled && !element.validity.valid) {
+    form.querySelectorAll<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>('input[required], input[type="email"]:not([required]), select[required]:not([data-dob-part]), textarea[required]').forEach(element => {
+      const invalidEmail = element instanceof HTMLInputElement && element.type === 'email' && Boolean(element.value.trim()) && !isValidBookingEmail(element.value);
+      if (!element.disabled && (!element.validity.valid || invalidEmail)) {
         const label = labelFor(element) || (element.type === 'checkbox' ? 'the required confirmation' : 'this field');
         const message = element.id === 'tour_date'
           ? 'Choose a tour date before continuing.'
+          : element instanceof HTMLInputElement && element.type === 'email'
+            ? element.required ? 'Enter a complete email address, such as name@domain.tld.' : 'Enter a complete email address, such as name@domain.tld, or leave this optional field blank.'
           : element.type === 'checkbox'
             ? `Confirm ${label.replace(/^I /, '').replace(/\.$/, '')}.`
             : `Enter ${label.replace(/\s*\(Optional\)/i, '')}.`;
@@ -896,8 +1016,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         price_per_person_usd: groupPricing.perPersonUsd,
         riding_experience: String(formData.get('riding_experience') || 'Not provided'),
         reference: payload.reference,
-        currency: 'USD',
-        value: groupPricing.onlinePaymentUsd,
       });
       setFormSubmitted(true);
       if (payload.paymentUrl) await openSecureCheckout(payload.paymentUrl);
@@ -978,7 +1096,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
       {
         '@type': 'ItemList',
         '@id': 'https://www.8lakestours.com/#departure-options',
-        name: '8 Lakes Tours departure dates and 2027 request options',
+        name: '8 Lakes Tours departure dates',
         itemListElement: tourDates.map((tourDate, index) => ({
           '@type': 'ListItem',
           position: index + 1,
@@ -1206,12 +1324,15 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .partnership-img::before { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(90deg, rgba(18,15,11,0.38), rgba(18,15,11,0.06) 42%, rgba(18,15,11,0.18)), linear-gradient(180deg, rgba(200,169,110,0.10), transparent 38%, rgba(14,12,9,0.30)); mix-blend-mode: multiply; }
         .partnership-img img { width: 100%; height: 100%; object-fit: cover; object-position: 52% center; filter: saturate(0.84) contrast(1.08) brightness(0.88); }
 
-        .trust { background: var(--dark); padding: 7rem 5rem 3.5rem; }
+        .trust { background: var(--dark); padding: 5rem 5rem 6rem; }
         .trust-header { max-width: 760px; margin: 0 auto 3rem; text-align: center; }
         .trust-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; max-width: 1120px; margin: 0 auto; }
         .trust-card { border: 1px solid rgba(200,169,110,0.2); border-radius: var(--radius-card); background: rgba(200,169,110,0.045); padding: 1.6rem; min-height: 210px; display: flex; flex-direction: column; justify-content: space-between; }
         .trust-quote { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 1.25rem; color: var(--cream); line-height: 1.55; font-style: italic; }
         .trust-source { font-size: 0.62rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); margin-top: 1.4rem; }
+        .midpage-cta { grid-column: 1 / -1; display: flex; justify-content: center; margin-top: 3rem; }
+        .midpage-cta a { display: inline-block; padding: 0.95rem 2.4rem; border: 1px solid var(--gold); border-radius: var(--radius-soft); color: var(--gold); font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; text-decoration: none; transition: background 0.25s ease, color 0.25s ease; }
+        .midpage-cta a:hover { background: var(--gold); color: var(--dark); }
         .testimonial-grid { max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
         .testimonial-card { background: rgba(245,240,232,0.04); border: 1px solid rgba(200,169,110,0.18); border-radius: var(--radius-card); overflow: hidden; }
         .testimonial-photo { position: relative; height: 360px; overflow: hidden; display: block; width: 100%; }
@@ -1231,7 +1352,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .contact-card-label { font-size: 0.58rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); }
         .contact-card-value { font-size: 0.85rem; color: var(--cream); overflow-wrap: anywhere; }
 
-        .itinerary { background: var(--dark); padding-top: 4.5rem; }
+        .itinerary { background: var(--dark); padding-bottom: 4rem; }
         .itinerary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-top: 4rem; }
         .itin-card { background: var(--ink); border-radius: var(--radius-card); padding: 3rem; position: relative; overflow: hidden; transition: background 0.3s ease; }
         .itin-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--gold); transform: scaleX(0); transform-origin: left; transition: transform 0.4s ease; }
@@ -1309,13 +1430,18 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .packing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem 1.2rem; padding: 0 1.2rem 1.2rem; border-top: 1px solid rgba(200,169,110,0.15); }
         .packing-grid li { list-style: none; position: relative; padding-left: 1rem; font-size: 0.82rem; line-height: 1.55; color: rgba(212,207,196,0.82); }
         .packing-grid li::before { content: '•'; position: absolute; left: 0; color: var(--gold); }
-        .getting-there-steps { counter-reset: step; display: grid; gap: 0.8rem; margin: 0; padding: 1rem 1.2rem 0; border-top: 1px solid rgba(200,169,110,0.15); list-style: none; }
+        .getting-there { margin-top: 1.5rem; border: 1px solid rgba(200,169,110,0.22); border-radius: var(--radius-card); background: rgba(200,169,110,0.045); }
+        .getting-there-heading { padding: 0.95rem 1.2rem 0; font-size: 0.68rem; letter-spacing: 0.24em; text-transform: uppercase; color: var(--gold); }
+        .getting-there-steps { counter-reset: step; display: grid; gap: 0.8rem; margin: 0; padding: 0.9rem 1.2rem 0; list-style: none; }
         .getting-there-steps li { counter-increment: step; position: relative; padding-left: 2rem; font-size: 0.82rem; line-height: 1.55; color: rgba(212,207,196,0.82); }
         .getting-there-steps li::before { content: counter(step, decimal-leading-zero); position: absolute; left: 0; top: 0.1rem; color: var(--gold); font-size: 0.62rem; letter-spacing: 0.12em; }
         .getting-there-steps strong { display: block; color: var(--cream); font-weight: 400; }
         .getting-there-note { margin: 0.9rem 1.2rem 1.2rem; padding-left: 0.8rem; border-left: 2px solid var(--gold); font-size: 0.78rem; line-height: 1.55; color: rgba(212,207,196,0.7); }
 
         .booking { background: var(--dark); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 6rem; align-items: start; overflow-x: clip; }
+        /* The departure pickers introduce the whole booking block, so they span
+           both columns and sit above the price card and the form. */
+        .booking-lead { grid-column: 1 / -1; }
         .scarcity-pill { display:inline-flex; max-width:100%; box-sizing:border-box; align-items:center; gap:0.6rem; margin-top:1.2rem; padding:0.6rem 1.1rem; background:rgba(185,74,48,0.12); border:1px solid rgba(185,74,48,0.35); border-radius: var(--radius-soft); overflow:hidden; }
         .scarcity-pill span:last-child { min-width:0; font-size:0.72rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--rust); line-height:1.45; overflow-wrap:anywhere; }
         .price-card { max-width:100%; box-sizing:border-box; overflow:hidden; background: var(--ink); border: 1px solid rgba(200,169,110,0.25); border-radius: var(--radius-card); padding: 3rem; }
@@ -1353,7 +1479,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .price-spec-row { display:flex; justify-content:space-between; gap:1rem; min-width:0; font-size:0.8rem; color:var(--mist); padding:0.6rem 0; border-bottom:1px solid rgba(245,240,232,0.07); }
         .price-spec-row span { min-width:0; overflow-wrap:anywhere; }
         .price-spec-row span:last-child { color:var(--cream); text-align:right; }
-        .tour-dates-card { margin-top: 1.5rem; padding: 1.25rem; background: rgba(200,169,110,0.08); border: 1px solid rgba(200,169,110,0.35); border-radius: var(--radius-card); }
         .tour-date-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem; }
         .tour-date-row { appearance: none; width: 100%; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; justify-content: space-between; gap: 0.75rem; padding: 0.72rem 0.78rem; background: rgba(200,169,110,0.07); border: 1px solid rgba(200,169,110,0.2); border-radius: var(--radius-soft); font: inherit; text-align: left; color: inherit; cursor: pointer; transition: background 0.24s ease, border-color 0.24s ease, transform 0.24s ease, box-shadow 0.24s ease; }
         .tour-date-row:hover, .tour-date-row:focus-visible { background: rgba(200,169,110,0.12); border-color: rgba(200,169,110,0.52); transform: translateY(-1px); outline: none; }
@@ -1365,8 +1490,18 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .tour-date-row.muted .tour-date-detail { opacity: 0.5; }
         .tour-date-status { font-size: 0.6rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--gold); background: rgba(200,169,110,0.12); border: 1px solid rgba(200,169,110,0.3); padding: 0.3rem 0.7rem; border-radius: var(--radius-soft); white-space: nowrap; }
         .tour-date-row.selected .tour-date-status { background: var(--gold); color: var(--dark); border-color: var(--gold); }
+        /* Two season pickers, sized to carry the section rather than sit in it. */
+        /* The gold edge and the heading carry the urgency; the body stays quiet
+           so the banner reads as an open window rather than a sale. */
+
+        .custom-date-line { margin-top: 0.8rem; font-size: 0.68rem; color: var(--mist); opacity: 0.75; }
+        .custom-date-line a { color: var(--gold); text-decoration: underline; }
         .tour-date-row.muted .tour-date-status { color: var(--mist); background: transparent; border-color: transparent; opacity: 0.5; }
-        #application, #tour-dates { scroll-margin-top: 6rem; }
+        #book { scroll-margin-top: 6rem; }
+        #application { scroll-margin-top: 6rem; }
+        /* Deeper offset: picking a date lands here, and leaving the section
+           above partly in view keeps it obvious the form starts further up. */
+        #trip-details { scroll-margin-top: 9rem; }
         .booking-form { display: flex; flex-direction: column; gap: 1rem; }
         .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
         .form-section { border: 1px solid rgba(200,169,110,0.16); border-radius: var(--radius-card); background: rgba(245,240,232,0.025); padding: 1.2rem; display: flex; flex-direction: column; gap: 1rem; }
@@ -1403,9 +1538,18 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .group-pricing-eyebrow { font-size:0.58rem; letter-spacing:0.18em; text-transform:uppercase; color:var(--gold); margin:0 0 0.45rem; }
         .form-check input[type="checkbox"] { appearance: none; width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; border: 1px solid rgba(245,240,232,0.3); border-radius: 4px; background: transparent; cursor: pointer; position: relative; }
         .form-check input[type="checkbox"]:checked { background: var(--gold); border-color: var(--gold); }
-        .submit-btn { background: var(--gold); color: var(--dark); border: none; border-radius: var(--radius-soft); padding: 1.1rem 2rem; font-family: var(--font-jost), 'Jost', sans-serif; font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; font-weight: 500; cursor: pointer; transition: all 0.3s ease; width: 100%; margin-top: 0.5rem; }
-        .submit-btn:hover { background: var(--rust); color: var(--cream); }
-        .submit-btn:disabled { background: var(--sage); color: var(--cream); cursor: default; }
+        /* The payment bar: one solid, unambiguous action. Disabled reads as
+           "not yet" rather than as a broken control, so it is outlined and
+           legible instead of a washed-out fill. */
+        .pay-bar { margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.6rem; }
+        .submit-btn { display: flex; align-items: center; justify-content: center; gap: 0.55rem; width: 100%; padding: 1.15rem 1.5rem; background: var(--gold); color: var(--dark); border: 1px solid var(--gold); border-radius: var(--radius-soft); font-family: var(--font-jost), 'Jost', sans-serif; font-size: 0.78rem; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 500; line-height: 1; cursor: pointer; transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease, transform 0.12s ease; box-shadow: 0 10px 24px rgba(0,0,0,0.22); }
+        .submit-btn:hover:not(:disabled) { background: #d8bc82; border-color: #d8bc82; }
+        .submit-btn:active:not(:disabled) { transform: translateY(1px); }
+        .submit-btn:focus-visible { outline: 2px solid var(--cream); outline-offset: 3px; }
+        .submit-btn:disabled { background: transparent; border-color: rgba(200,169,110,0.34); color: rgba(245,240,232,0.55); box-shadow: none; cursor: not-allowed; }
+        .submit-btn-lock { width: 0.92rem; height: 0.92rem; flex-shrink: 0; opacity: 0.85; }
+        .submit-btn-amount { font-weight: 600; letter-spacing: 0.12em; }
+        .pay-bar-note { text-align: center; font-size: 0.68rem; line-height: 1.55; color: var(--mist); opacity: 0.66; }
         .payment-checkout-card { max-width:100%; box-sizing:border-box; overflow:hidden; margin-top: 1rem; padding: 1.2rem; background: linear-gradient(145deg, rgba(245,240,232,0.075), rgba(99,91,255,0.08)); border: 1px solid rgba(200,169,110,0.24); border-radius: var(--radius-payment); text-align: center; box-shadow: inset 0 1px 0 rgba(255,255,255,0.05); }
         .booking-save-spinner { display:inline-block; width:1em; height:1em; margin-right:0.7em; border:2px solid currentColor; border-right-color:transparent; border-radius:50%; vertical-align:middle; animation:booking-saving 0.8s linear infinite; }
         @keyframes booking-saving { to { transform:rotate(360deg); } }
@@ -1442,8 +1586,11 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .stripe-buy-button-frame stripe-buy-button { display:block; max-width:100%; overflow:hidden; }
         .stripe-buy-button-frame.locked { pointer-events: none; }
         .stripe-link-fallback { display: inline-flex; justify-content: center; margin-top: 0.75rem; color: rgba(245,240,232,0.58); font-size: 0.68rem; text-decoration: underline; text-underline-offset: 3px; }
-        .checkout-lock-overlay { position: absolute; inset: 0; z-index: 2; cursor: pointer; display: flex; align-items: flex-start; justify-content: center; padding-top: 0.65rem; background: transparent; }
-        .checkout-lock-overlay p { max-width:calc(100% - 1.5rem); box-sizing:border-box; font-size: 0.62rem; letter-spacing: 0.1em; line-height:1.35; text-transform: uppercase; color: var(--gold); background: rgba(14,12,9,0.72); border: 1px solid rgba(200,169,110,0.32); border-radius: var(--radius-soft); padding: 0.36rem 0.58rem; pointer-events: none; white-space:normal; overflow-wrap:anywhere; box-shadow: 0 8px 18px rgba(0,0,0,0.22); }
+        /* This sits on the dark card, not on the white Stripe panel, so it takes
+           the card's own gold rather than the panel's navy. */
+        .checkout-locked-note { display: block; padding: 0.7rem 0.9rem; font-size: 0.66rem; letter-spacing: 0.1em; line-height: 1.5; text-transform: uppercase; color: var(--gold); background: rgba(200,169,110,0.08); border: 1px solid rgba(200,169,110,0.3); border-radius: var(--radius-soft); text-align: center; }
+        .waiver-agree { display: flex; gap: 0.7rem; align-items: flex-start; margin-top: 0.9rem; color: var(--mist); font-size: 0.76rem; line-height: 1.55; cursor: pointer; }
+        .waiver-agree input { margin-top: 0.2rem; accent-color: var(--gold); flex-shrink: 0; }
         .checkout-error { margin-top: 0.75rem; color: #ffb4a6; font-size: 0.72rem; line-height: 1.5; text-align: center; }
         .group-request-next-step { display:flex; flex-direction:column; gap:0.35rem; border:1px solid rgba(200,169,110,0.28); background:rgba(200,169,110,0.08); border-radius:var(--radius-card); padding:0.9rem; text-align:left; }
         .group-request-next-step strong { color:var(--cream); font-size:0.86rem; }
@@ -1479,7 +1626,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .footer-cta:hover { background: var(--cream); border-color: var(--cream); color: var(--dark); transform: translateY(-2px); }
         .footer-links { margin: 3rem auto 0; display: flex; flex-wrap: wrap; gap: 0.9rem 1.5rem; justify-content: center; }
         .footer-link { color: rgba(200,169,110,0.86); text-decoration: none; font-size: 0.68rem; letter-spacing: 0.18em; text-transform: uppercase; transition: color 0.3s ease; }
-        .privacy-choices-link { appearance: none; border: 0; background: transparent; padding: 0; font: inherit; cursor: pointer; }
+        .privacy-choices-link { appearance: none; border: 0; background: transparent; padding: 0; font-family: inherit; line-height: inherit; cursor: pointer; }
         .footer-link:hover { color: var(--cream); }
         .footer-note { border-top: 1px solid rgba(200,169,110,0.14); max-width: 1120px; margin: 3.5rem auto 0; padding-top: 1.4rem; display: flex; justify-content: space-between; gap: 1rem; font-size: 0.75rem; color: rgba(212,207,196,0.68); }
 
@@ -1518,7 +1665,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           .hero-sub { margin-bottom: 1.2rem; }
           .hero-sub .mobile-line { display: inline; }
           .hero-sub .desktop-line { display: none; }
-          .hero-actions { flex-direction: column; align-items: stretch; gap: 0.8rem; }
+        .hero-actions { flex-direction: column; align-items: stretch; gap: 0.8rem; }
           .hero-actions .btn-primary, .hero-actions .btn-ghost { text-align: center; }
           .intro-points { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.1rem 0.75rem; margin-top: 2.2rem; align-items: start; }
           .offer-strip { padding: 1.25rem 1.2rem; grid-template-columns: 1fr; gap: 1rem; }
@@ -1566,8 +1713,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           .contact-section { padding: 4rem 1.5rem; }
           .contact-layout { grid-template-columns: 1fr; gap: 2rem; }
           .lead-card-public { padding: 1.2rem; }
-          .tour-dates-card { margin-top: 1rem; padding: 0.8rem 0.62rem; border-radius: var(--radius-card); }
-          .tour-dates-heading { font-size:0.52rem !important; letter-spacing:0.22em !important; margin-bottom:0.62rem !important; }
           .tour-date-list { grid-template-columns: 1fr; gap: 0.26rem; }
           .tour-date-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.38rem; padding: 0.48rem 0.54rem; min-height: 3.08rem; align-items: center; border-radius: var(--radius-soft); }
           .tour-date-title { font-size: clamp(0.78rem, 4.7vw, 0.9rem); line-height:1.08; margin: 0; }
@@ -1582,10 +1727,13 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           .form-textarea { min-height: 88px; }
           .form-grid { grid-template-columns: 1fr; gap: 0.75rem; }
           .form-grid.compact-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-          .trust { padding: 4rem 1.5rem 2.5rem; }
-          .itinerary { padding-top: 3rem; }
+          .trust { padding: 3.5rem 1.5rem 4rem; }
+          .itinerary { padding-bottom: 3rem; }
           .trust-grid { grid-template-columns: 1fr; }
-          .testimonial-grid { grid-template-columns: 1fr; }
+          .midpage-cta { grid-column: 1 / -1; display: flex; justify-content: center; margin-top: 3rem; }
+        .midpage-cta a { display: inline-block; padding: 0.95rem 2.4rem; border: 1px solid var(--gold); border-radius: var(--radius-soft); color: var(--gold); font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; text-decoration: none; transition: background 0.25s ease, color 0.25s ease; }
+        .midpage-cta a:hover { background: var(--gold); color: var(--dark); }
+        .testimonial-grid { grid-template-columns: 1fr; }
           .testimonial-photo { height: 280px; }
           .image-button.testimonial-photo { height: 280px; }
           .itinerary-grid { grid-template-columns: 1fr; }
@@ -1639,8 +1787,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           .checkout-note { font-size:0.68rem; }
           .stripe-embed-wrap { max-width:100%; }
           .stripe-buy-button-frame { min-height:220px; }
-          .checkout-lock-overlay { padding-top:0.5rem; }
-          .checkout-lock-overlay p { font-size:0.52rem; letter-spacing:0.08em; padding:0.32rem 0.46rem; }
           .intro-img-accent { display: none; }
         }
       `}</style>
@@ -1682,8 +1828,8 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             aria-hidden="true"
             onPlaying={event => event.currentTarget.classList.add('is-playing')}
           >
-            <source src="/videos/orkhon-valley-drone-loop-mobile.mp4?v=4" type="video/mp4" media="(max-width: 900px)" />
-            <source src="/videos/orkhon-valley-drone-loop.mp4?v=4" type="video/mp4" />
+            <source src="/videos/orkhon-valley-drone-loop-mobile.mp4?v=9" type="video/mp4" media="(max-width: 900px)" />
+            <source src="/videos/orkhon-valley-drone-loop.mp4?v=9" type="video/mp4" />
           </video>
         </div>
         <div className="hero-overlay"></div>
@@ -1704,8 +1850,8 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
       {lateSeasonDepartures.length > 0 && <section className="offer-strip" aria-label="Late-season 2026 expedition availability and price summary">
         <div>
           <p className="offer-strip-kicker">Still hoping to ride this season?</p>
-          <h2 className="offer-strip-title">Book September–November 2026</h2>
-          <p className="offer-strip-note">Late-season places are open now — choose your date and reserve online.</p>
+          <h2 className="offer-strip-title">Book September–October 2026</h2>
+          <p className="offer-strip-note">Late-season places are open now.</p>
         </div>
         <div className="offer-strip-facts">
           <div className="offer-fact"><strong>{pricing.tourPrice}</strong><span>Total per person</span><small className="offer-fact-note">Group rates apply</small></div>
@@ -1713,7 +1859,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           <div className="offer-fact"><strong>Beginner friendly</strong><span>Local horsemen guide</span></div>
           <div className="offer-fact"><strong>Max 8</strong><span>Guests per departure</span></div>
         </div>
-        <a className="offer-strip-cta" href="#tour-dates" onClick={scrollToTourDates}>See dates &amp; book</a>
+        <a className="offer-strip-cta" href="#trip-details" onClick={scrollToTourDates}>See dates &amp; book</a>
       </section>}
 
 
@@ -1724,7 +1870,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             type="button"
             className="image-button"
             aria-label="View larger image: Suma on horseback in a traditional deel on the Mongolian steppe"
-            onClick={() => openLightbox('/images/suma-horseback-deel.jpg', 'Suma on horseback in a traditional deel on the Mongolian steppe')}
+            onClick={() => openLightbox('/images/suma-horseback-deel.jpg')}
           >
             <Image src="/images/suma-horseback-deel.jpg" alt="Suma on horseback in a traditional deel on the Mongolian steppe" fill quality={72} sizes="(max-width: 900px) 100vw, 50vw" />
           </button>
@@ -1745,22 +1891,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         </div>
       </section>
 
-      {/* PHOTO STRIP */}
-      <div className="photo-strip">
-        {STRIP_IMAGES.map((item) => (
-          <div className="strip-item" key={item.src}>
-            <button
-              type="button"
-              className="image-button"
-              aria-label={`View larger image: ${item.alt}`}
-              onClick={() => openLightbox(item.src, item.alt)}
-            >
-              <Image src={item.src} alt={item.alt} fill quality={70} sizes="(max-width: 900px) 20vw, 20vw" />
-            </button>
-          </div>
-        ))}
-      </div>
-
       {/* PARTNERSHIP */}
       <section className="partnership" style={{padding:0}}>
         <div className="partnership-text reveal">
@@ -1770,9 +1900,9 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             type="button"
             className="image-button partnership-inline-photo"
             aria-label="View larger image: Robert with the host family and their horses, all in traditional deels on the Mongolian steppe"
-            onClick={() => openLightbox('/images/host-family-horses-deels.jpg', 'Robert with the host family and their horses, all in traditional deels on the Mongolian steppe')}
+            onClick={() => openLightbox('/images/host-family-horses-deels.jpg')}
           >
-            <Image src="/images/host-family-horses-deels.jpg" alt="Robert with the host family and their horses, all in traditional deels on the Mongolian steppe" fill quality={72} sizes="100vw" />
+            <Image src="/images/host-family-portrait.jpg" alt="Robert with the host family and their horses, all in traditional deels on the Mongolian steppe" fill quality={72} sizes="100vw" />
           </button>
           <p className="section-body">I met Ganbold while travelling through Mongolia on horseback. I meant to pass through, but his family opened their ger to me, as nomadic families have done for travellers for generations. We didn&apos;t speak the same language, but we shared an appreciation for the steppe and the way of life out there, and it didn&apos;t take long to feel like family. We rode together, cooked, drank tea and laughed a lot.</p>
           <p className="section-body" style={{marginTop:'1.2rem'}}>Suma, Ganbold&apos;s son, loves horses. He has ridden and worked with them his whole life, and he still herds his own horses and yaks across this valley. He likes guiding too, taking people out and showing them the land he grew up in. When the idea of bringing small groups here came up, he was up for it straight away.</p>
@@ -1784,59 +1914,10 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             type="button"
             className="image-button"
             aria-label="View larger image: Robert with the host family and their horses, all in traditional deels on the Mongolian steppe"
-            onClick={() => openLightbox('/images/host-family-horses-deels.jpg', 'Robert with the host family and their horses, all in traditional deels on the Mongolian steppe')}
+            onClick={() => openLightbox('/images/host-family-horses-deels.jpg')}
           >
-            <Image src="/images/host-family-horses-deels.jpg" alt="Robert with the host family and their horses, all in traditional deels on the Mongolian steppe" fill quality={72} sizes="(max-width: 900px) 100vw, 50vw" />
+            <Image src="/images/host-family-portrait.jpg" alt="Robert with the host family and their horses, all in traditional deels on the Mongolian steppe" fill quality={72} sizes="(max-width: 900px) 100vw, 50vw" />
           </button>
-        </div>
-      </section>
-
-      {/* TRUST */}
-      <section className="trust" id="trust">
-        <div className="trust-header reveal">
-          <span className="section-eyebrow">From Past Guests</span>
-          <h2 className="section-title">Built on<br /><em>Real Relationships</em></h2>
-          <p className="section-body" style={{margin:'0 auto'}}>Real people have already made the journey into this valley. These are early guest impressions from the same world you&apos;ll be stepping into: the vastness and freedom of the steppe, and a nomadic way of life still attuned to it.</p>
-        </div>
-        <div className="testimonial-grid">
-          {[
-            {
-              name: 'Irik · USA',
-              src: '/images/testimonial-irik-clawson-sunset.jpg',
-              alt: 'Robert Zaher smiling on horseback beside a river valley',
-              quote: 'Endless riding from one plain to the next, across the Steppe, by the lakes…. Magical. What more is there in life?',
-              objectPosition: 'center',
-            },
-            {
-              name: 'Milou · AU',
-              src: '/images/testimonial-milou.jpeg',
-              alt: 'Milou travelling by motorbike through the Mongolian steppe',
-              quote: 'So grateful to be able to stay with the loveliest family in Mongolia, experience life on the steppe and trek with horses through the most beautiful landscapes!',
-              objectPosition: '76% center',
-            },
-            {
-              name: 'Fin · UK',
-              src: '/images/testimonial-fin-bennet-host.jpg',
-              alt: 'Fin Bennet and his Mongolian host wearing traditional deels on the open steppe',
-              quote: 'It couldn’t be further from back home and that makes me so excited.',
-              objectPosition: 'center 42%',
-            },
-          ].map(testimonial => (
-            <article className="testimonial-card reveal" key={testimonial.name}>
-              <button
-                type="button"
-                className="image-button testimonial-photo"
-                aria-label={`View larger image: ${testimonial.alt}`}
-                onClick={() => openLightbox(testimonial.src, testimonial.alt)}
-              >
-                <Image src={testimonial.src} alt={testimonial.alt} fill quality={76} sizes="(max-width: 900px) 100vw, 33vw" style={{ objectPosition: testimonial.objectPosition ?? 'center' }} />
-              </button>
-              <div className="testimonial-body">
-                <p className="testimonial-quote">“{testimonial.quote}”</p>
-                <p className="testimonial-name">{testimonial.name}</p>
-              </div>
-            </article>
-          ))}
         </div>
       </section>
 
@@ -1856,7 +1937,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               <li>Traditional ger accommodation</li>
               <li>Yak milking & daily routines</li>
               <li>Horse handling & riding practice</li>
-              <li>Optional daily river ice baths</li>
+              <li>Optional daily river cold plunges</li>
               <li>Cultural exchange & shared meals</li>
               <li style={{opacity:1, color:'var(--gold)'}}>Optional: van day trip to nearby historic sites & waterfalls</li>
             </ul>
@@ -1898,7 +1979,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               type="button"
               className="image-button"
               aria-label={`View larger image: ${item.alt}`}
-              onClick={() => openLightbox(item.src, item.alt)}
+              onClick={() => openLightbox(item.src)}
             >
               <Image
                 src={item.src}
@@ -1929,7 +2010,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             <li><span className="icon">✦</span> Host family accommodation (traditional gers)</li>
             <li><span className="icon">✦</span> 3 traditional Mongolian meals per day</li>
             <li><span className="icon">✦</span> Guided 4-day horseback trek</li>
-            <li><span className="icon">✦</span> Horses & local expert guides</li>
+            <li><span className="icon">✦</span> Horses, saddles &amp; tack, and local expert guides</li>
             <li><span className="icon">✦</span> Cultural immersion activities</li>
           </ul>
         </div>
@@ -1940,7 +2021,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             <li><span className="icon">✦</span> International flights</li>
             <li><span className="icon">✦</span> Travel insurance (required) — <a href="https://www.worldnomads.com" target="_blank" rel="noopener noreferrer" style={{color:'var(--gold)'}}>World Nomads</a></li>
             <li><span className="icon">✦</span> Warm sleeping bag & personal camping comfort items</li>
-            <li><span className="icon">✦</span> Riding layers, waterproof shell & sturdy boots</li>
+            <li><span className="icon">✦</span> Warm layers, waterproof shell & sturdy boots</li>
             <li><span className="icon">✦</span> Personal snacks, medication, first-aid kit, painkillers & toiletries</li>
             <li><span className="icon">✦</span> Cash for the local family payment and personal extras</li>
           </ul>
@@ -1952,54 +2033,76 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               ))}
             </ul>
           </details>
-          <details className="packing-details">
-            <summary className="packing-summary">Getting There</summary>
+          {/* Not an accordion: "can I actually get there?" is a question people
+              ask before booking, and an answer nobody opens cannot reassure. */}
+          <div className="getting-there">
+            <p className="getting-there-heading">Getting there</p>
             <ol className="getting-there-steps">
               <li><strong>Fly into Ulaanbaatar</strong>Arrive at Chinggis Khaan International Airport.</li>
               <li><strong>Bus to Bat-Ulzii, Uvurkhangai</strong>About 8 hours on a public bus through open countryside.</li>
               <li><strong>Family pickup</strong>Your hosts meet you in Bat-Ulzii and bring you to the ger village.</li>
             </ol>
             <p className="getting-there-note">Once your bus is booked, our team coordinates the timing and pickup with you.</p>
-          </details>
-          <div style={{marginTop:'2rem', padding:'1.2rem', background:'rgba(200,169,110,0.06)', borderLeft:'2px solid var(--gold)', borderRadius:'var(--radius-soft)'}}>
-            <p style={{fontSize:'0.8rem', color:'var(--mist)', opacity:0.8, lineHeight:1.6}}>All participants must sign a liability waiver, provide proof of travel insurance, bring their own personal medical basics, and arrive mentally prepared for simple conditions, changing plans, physical discomfort, and group life in the wild.</p>
           </div>
+          <div style={{marginTop:'2rem', padding:'1.2rem', background:'rgba(200,169,110,0.06)', borderLeft:'2px solid var(--gold)', borderRadius:'var(--radius-soft)'}}>
+            {/* The waiver, the insurance and the medical kit are all in the list
+                directly above, so this says the one thing nothing else on the
+                page says: what the trip asks of you. Framed as appetite rather
+                than warning — it filters the same people either way. */}
+            <p style={{fontSize:'0.8rem', color:'var(--cream)', lineHeight:1.6}}><strong style={{fontWeight:400, color:'var(--gold)'}}>This is a real expedition.</strong> Plans shift with the weather, the horses and the land. Guests who love it come ready for simple conditions, long days and shared space — and leave with something no itinerary could promise.</p>
+          </div>
+        </div>
+        {/* Mid-page, right after the visitor has learned what the trip includes
+            and how they get there. The one after the testimonials sits beside
+            the booking section already, so it left this stretch uncovered. */}
+        <div className="midpage-cta">
+          <a href="#trip-details" onClick={scrollToTourDates}>Check dates &amp; reserve</a>
         </div>
       </section>
 
-      <section className="trust-conversion">
-        <div className="rob-photo reveal">
-          <Image src="/images/rob-riding-horse.jpg" alt="Robert Zaher riding a horse across the Mongolian valley" fill quality={72} sizes="(max-width: 900px) 100vw, 35vw" />
+      {/* TRUST */}
+      <section className="trust" id="trust">
+        <div className="trust-header reveal">
+          <span className="section-eyebrow">From Past Guests</span>
+          <h2 className="section-title">Built on<br /><em>Real Relationships</em></h2>
+          <p className="section-body" style={{margin:'0 auto'}}>Real people have already made the journey into this valley. These are early guest impressions from the same world you&apos;ll be stepping into: the vastness and freedom of the steppe, and a nomadic way of life still attuned to it.</p>
         </div>
-        <div className="trust-card-founder reveal reveal-delay-1">
-          <span className="section-eyebrow">Who You&apos;re Booking With</span>
-          <h2 className="section-title">Robert, the Family<br /><em>&amp; 8 Lakes Tours</em></h2>
-          <p>8 Lakes Tours is organised by Robert Zaher through a direct relationship with Ganbold&apos;s family in the Orkhon Valley. Online bookings, preparation, and payment communication are handled by 8 Lakes Tours, while the local family payment goes directly to your hosts in Mongolia.</p>
-          <p style={{marginTop:'1rem'}}>All tour enquiries go through <strong style={{color:'var(--cream)'}}>info@8lakestours.com</strong>.</p>
-          <div className="trust-actions">
-            <a className="trust-link" href="mailto:info@8lakestours.com">Email the tour team</a>
-            <a className="trust-link" href="https://www.instagram.com/robzaher108?igsh=OHdvdGp0ZW9ieHFv" target="_blank" rel="noopener noreferrer">Rob&apos;s Instagram</a>
-          </div>
+        <div className="testimonial-grid">
+          {TESTIMONIAL_CARDS.map(testimonial => (
+            <article className="testimonial-card reveal" key={testimonial.name}>
+              <button
+                type="button"
+                className="image-button testimonial-photo"
+                aria-label={`View larger image: ${testimonial.alt}`}
+                onClick={() => openLightbox(testimonial.src)}
+              >
+                <Image src={testimonial.src} alt={testimonial.alt} fill quality={76} sizes="(max-width: 900px) 100vw, 33vw" style={{ objectPosition: testimonial.objectPosition ?? 'center' }} />
+              </button>
+              <div className="testimonial-body">
+                <p className="testimonial-quote">“{testimonial.quote}”</p>
+                <p className="testimonial-name">{testimonial.name}</p>
+              </div>
+            </article>
+          ))}
         </div>
       </section>
 
       <div className="divider"><div className="divider-line"></div><div className="divider-ornament">✦</div><div className="divider-line"></div></div>
 
+
       {/* BOOKING */}
       <section className="booking" id="book">
+        <div className="booking-lead reveal">
+          <h2 className="section-title">Reserve your spot</h2>
+          <p className="section-body">The trip is $1,999 per person, and group rates apply for 3–8 guests.</p>
+        </div>
+
         <div className="reveal">
-          <span className="section-eyebrow">Reserve Your Spot</span>
-          <h2 className="section-title">Choose 2026<br /><em>or Plan 2027</em></h2>
-          <p className="section-body">Remaining 2026 departures stay visible while bookable, and you can select one and pay online straight away. 2027 small-group dates are being planned, and private June–September 2027 departures are open by request. The trip is $1,999 per person, and group rates apply for 3–8 guests. Our team confirms 2027 requests before payment.</p>
-          <div className="scarcity-pill">
-            <span style={{width:'7px', height:'7px', borderRadius:'50%', background:'var(--rust)', display:'inline-block', flexShrink:0}}></span>
-            <span>Small groups only — each departure capped at 8 guests</span>
-          </div>
           <div className="price-card" style={{marginTop:'2.5rem'}}>
-            <span className="price-badge">2026 Trips &amp; 2027 Requests — Limited Availability</span>
+            <span className="price-badge">Scheduled departures</span>
             <div className="price-amount">${BASE_PRICE_USD.toLocaleString('en-US')}</div>
             <div className="price-per">Per Person · 9 Days / 8 Nights · Group rates apply for 3–8 guests</div>
-            <div className="price-note">All official prices are in USD. Every currently available fixed 2026 departure can be booked and paid online for 1–8 guests. Groups of 1–8 book together and pay the exact group amount in one secure Stripe checkout. 2027 request options are personally confirmed before payment.</div>
+
             <div className="payment-split" aria-label="How the 8 Lakes Tours payment is split">
               <div className="payment-split-card">
                 <span className="payment-split-label">Pay online</span>
@@ -2033,7 +2136,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             <details className="payment-details">
               <summary className="payment-summary">How payment works</summary>
               <div className="payment-detail-body">
-                <p><strong>Online:</strong> reserves your place with 8 Lakes Tours. 2026 departures are paid in one Stripe checkout for your whole group (1–8 guests); our team confirms 2027 requests before payment.</p>
+                <p><strong>Online:</strong> reserves your place with 8 Lakes Tours. Scheduled departures are paid in one Stripe checkout for your whole group (1–8 guests); only a private custom date is confirmed before payment.</p>
                 <p><strong>Locally:</strong> clean USD cash paid directly to your host family, who can&apos;t reliably receive online transfers. Group discounts are split evenly between both payments.</p>
               </div>
             </details>
@@ -2062,33 +2165,12 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               </div>
             </div>
           </div>
-          <div className="tour-dates-card" id="tour-dates">
-            <p className="tour-dates-heading" style={{fontSize:'0.6rem', letterSpacing:'0.3em', textTransform:'uppercase', color:'var(--gold)', marginBottom:'1rem'}}>Available Trips &amp; 2027 Interest</p>
-            <div className="tour-date-list">
-              {tourDates.map(dateOption => (
-                <button
-                  type="button"
-                  className={`tour-date-row${dateOption.muted ? ' muted' : ''}${selectedTourDate === dateOption.date ? ' selected' : ''}`}
-                  key={dateOption.date}
-                  aria-pressed={selectedTourDate === dateOption.date}
-                  aria-label={`Select ${dateOption.date} and continue to the booking form`}
-                  onClick={() => chooseTourDate(dateOption.date)}
-                >
-                  <div>
-                    <p className="tour-date-title">{dateOption.date}</p>
-                    <p className="tour-date-detail">{dateOption.detail}</p>
-                  </div>
-                  <span className="tour-date-status">{dateOption.status}</span>
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
         <div className="reveal reveal-delay-1" id="application">
           <span className="section-eyebrow">Booking Details</span>
           <h2 className="section-title" style={{fontSize:'2rem', marginBottom:'1rem'}}>Secure<br /><em>Your Place</em></h2>
-          <p className="section-body" style={{fontSize:'0.9rem', marginBottom:'2rem'}}>Choose a fixed date or a 2027 request option and tell us who&apos;s coming. Bookings of 1–2 guests on a fixed date continue straight to payment after submitting. Scheduled groups of 1–8 pay the exact group amount in one checkout; private, custom, and 2027 requests are confirmed before payment.</p>
+          <p className="section-body" style={{fontSize:'0.9rem', marginBottom:'2rem'}}>Select a departure date and tell us who&apos;s coming. Every scheduled date books and pays the same way: groups of 1–8 pay the exact group amount in one checkout after submitting. Only private, custom dates are confirmed before payment.</p>
           <form ref={bookingFormRef} noValidate className="booking-form" onFocusCapture={markBookingFormStarted} onInput={event => { clearFieldValidation(event.target); scheduleDraftSave(event.currentTarget); }} onSubmit={async e => { e.preventDefault(); await submitBooking(e.currentTarget); }}>
             {validationErrors.length > 0 && <div className="booking-error-summary" role="alert" aria-labelledby="booking-error-summary-title"><strong id="booking-error-summary-title">Check the highlighted fields</strong><ul>{validationErrors.map(error => <li key={`${error.id}-${error.message}`}><button type="button" onClick={() => { const field = document.getElementById(error.id); field?.focus({ preventScroll: true }); field?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' }); }}>{error.message}</button></li>)}</ul></div>}
             <input type="hidden" name="display_currency" value={pricing.currency} />
@@ -2096,50 +2178,40 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             <input type="hidden" name="display_online_payment" value={pricing.onlinePayment} />
             <input type="hidden" name="display_local_family_payment" value={pricing.localFamilyPayment} />
             <fieldset className="form-fields" disabled={formSubmitted || formSubmitting}>
-            <div className="form-section">
-              <p className="form-section-title">Personal information</p>
-              <div className="form-grid compact-grid">
-                <div className="form-group"><label className="form-label" htmlFor="first_name">Passport/Legal First Name</label><input id="first_name" className="form-input" name="first_name" type="text" placeholder="First name" maxLength={100} required /></div>
-                <div className="form-group"><label className="form-label" htmlFor="last_name">Passport/Legal Last Name</label><input id="last_name" className="form-input" name="last_name" type="text" placeholder="Last name" maxLength={100} required /></div>
+            <div className="form-section" id="trip-details">
+              <p className="form-section-title">Your departure</p>
+              {/* One control for the whole decision. The seasons are groups
+                  inside it rather than two cards above the form, so the year
+                  is still obvious without a band of furniture around it. */}
+              <div className="form-group">
+                <label className="form-label" htmlFor="tour_date">Preferred Tour Date</label>
+                <select id="tour_date" className="form-select" name="tour_date" required value={selectedTourDate} onChange={e => { tourDateTouchedRef.current = true; setSelectedTourDate(e.target.value); }}>
+                  {!selectedTourDate && <option value="">Select date</option>}
+                  {SEASONS.map(season => {
+                    const departures = seasonDepartures[season.year];
+                    if (!departures.length) return null;
+                    return (
+                      <optgroup key={season.year} label={`${season.year} season`}>
+                        {departures.map(option => <option key={option.date} value={option.date}>{option.date}</option>)}
+                      </optgroup>
+                    );
+                  })}
+                </select>
               </div>
-              <div className="form-group"><label className="form-label" htmlFor="email">Email Address — Required for Confirmation</label><input id="email" className="form-input" name="email" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} maxLength={254} required /></div>
-              <div className="form-grid compact-grid">
-                <div className="form-group"><label className="form-label" htmlFor="phone">Phone Number</label><input id="phone" className="form-input" name="phone" type="tel" placeholder="+1 (555) 000-0000" maxLength={40} /></div>
-                <div className="form-group"><label className="form-label" htmlFor="nationality">Nationality</label><input id="nationality" className="form-input" name="nationality" type="text" placeholder="e.g. American" maxLength={80} required /></div>
-              </div>
-              <div className="form-grid compact-grid">
-                <DateOfBirthFields name="date_of_birth" label="Date of Birth" isLead />
-                <div className="form-group"><label className="form-label" htmlFor="gender">Gender</label><input id="gender" className="form-input" name="gender" type="text" placeholder="e.g. Female" maxLength={40} required /></div>
-              </div>
-              <div className="form-group"><label className="form-label" htmlFor="dietary_restrictions">Dietary Restrictions</label><input id="dietary_restrictions" className="form-input" name="dietary_restrictions" type="text" placeholder="None, vegetarian, allergies, serious dairy/lactose issues, etc." maxLength={1000} /></div>
-              <div className="form-group"><label className="form-label" htmlFor="emergency_contact">Emergency Contact (Name & Phone)</label><input id="emergency_contact" className="form-input" name="emergency_contact" type="text" placeholder="Name · Phone number" maxLength={200} /></div>
-            </div>
 
-            <div className="form-section">
-              <p className="form-section-title">Trip details</p>
-              <div className="form-grid compact-grid">
-                <div className="form-group">
-                  <label className="form-label" htmlFor="riding_experience">Riding Experience</label>
-                  <select id="riding_experience" className="form-select" name="riding_experience" required>
-                    <option value="">Select level</option>
-                    <option>Beginner — little to none</option>
-                    <option>Intermediate — comfortable riding</option>
-                    <option>Advanced — experienced rider</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label" htmlFor="tour_date">Preferred Tour Date</label>
-                  <select id="tour_date" className="form-select" name="tour_date" required value={selectedTourDate} onChange={e => { tourDateTouchedRef.current = true; setSelectedTourDate(e.target.value); }}>
-                    {!selectedTourDate && <option value="">Select date</option>}
-                    {tourDateOptions.map(dateOption => (
-                      <option key={dateOption} value={dateOption}>{dateOption}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+              {requestOnlyOption && (
+              <p className="custom-date-line">
+                Want dates of your own?{' '}
+                {/* A private date is a conversation, not an intake form: it needs
+                    the team to check the host family, horses and guide first, so
+                    send it to contact rather than preselecting a date to pay for. */}
+                <a href="/contact">Talk to us about a private group date</a>
+                {' '}— we&apos;ll confirm availability before any payment.
+              </p>
+            )}
               <div className="form-group">
                 <label className="form-label" htmlFor="guest_count">Guests booking together</label>
-                <select id="guest_count" className="form-select" name="guest_count" value={guestCount} onChange={e => { const next = clampGuestCount(e.target.value); setGuestCount(next); setTravellerAnnouncement(`${next} traveller section${next === 1 ? '' : 's'} ready.`); }}>
+                <select id="guest_count" className="form-select" name="guest_count" value={guestCount} onChange={e => { guestCountTouchedRef.current = true; const next = clampGuestCount(e.target.value); setGuestCount(next); setTravellerAnnouncement(`${next} traveller section${next === 1 ? '' : 's'} ready.`); }}>
                   {Array.from({ length: MAX_GROUP_SIZE }, (_, index) => index + 1).map(count => (
                     <option key={count} value={count}>{count} guest{count === 1 ? '' : 's'}</option>
                   ))}
@@ -2162,6 +2234,44 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
               <input type="hidden" name="online_payment_usd" value={groupPricing.onlinePaymentUsd} />
               <input type="hidden" name="local_family_payment_usd" value={groupPricing.localFamilyPaymentUsd} />
               <input type="hidden" name="total_trip_value_usd" value={groupPricing.totalTripValueUsd} />
+            </div>
+
+            <div className="form-section">
+              <p className="form-section-title">Personal information</p>
+              <div className="form-grid compact-grid">
+                <div className="form-group"><label className="form-label" htmlFor="first_name">Passport/Legal First Name</label><input id="first_name" className="form-input" name="first_name" type="text" placeholder="First name" maxLength={100} required /></div>
+                <div className="form-group"><label className="form-label" htmlFor="last_name">Passport/Legal Last Name</label><input id="last_name" className="form-input" name="last_name" type="text" placeholder="Last name" maxLength={100} required /></div>
+              </div>
+              <div className="form-group"><label className="form-label" htmlFor="email">Email Address</label><input id="email" className="form-input" name="email" type="email" placeholder="you@example.com" value={email} onChange={e => setEmail(e.target.value)} onBlur={validateEmailOnBlur} maxLength={254} required /></div>
+              <div className="form-grid compact-grid">
+                <div className="form-group"><label className="form-label" htmlFor="phone">Phone Number (Optional)</label><input id="phone" className="form-input" name="phone" type="tel" placeholder="+1 (555) 000-0000" maxLength={40} /></div>
+                <div className="form-group"><label className="form-label" htmlFor="nationality">Nationality</label><input id="nationality" className="form-input" name="nationality" type="text" placeholder="e.g. American" maxLength={80} required /></div>
+              </div>
+              <div className="form-grid compact-grid">
+                <DateOfBirthFields name="date_of_birth" label="Date of Birth" isLead />
+                <div className="form-group">
+                  <label className="form-label" htmlFor="gender">Gender</label>
+                  <select id="gender" className="form-select" name="gender" required>
+                    <option value="">Select gender</option>
+                    {GENDERS.map(gender => <option key={gender}>{gender}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="form-grid compact-grid">
+                <div className="form-group"><label className="form-label" htmlFor="dietary_restrictions">Dietary Restrictions (Optional)</label><input id="dietary_restrictions" className="form-input" name="dietary_restrictions" type="text" placeholder="None, vegetarian, allergies, serious dairy/lactose issues, etc." maxLength={1000} /></div>
+                <div className="form-group"><label className="form-label" htmlFor="emergency_contact">Emergency Contact — Name &amp; Phone (Optional)</label><input id="emergency_contact" className="form-input" name="emergency_contact" type="text" placeholder="Name · Phone number" maxLength={200} /></div>
+              </div>
+                <div className="form-group">
+                  <label className="form-label" htmlFor="riding_experience">Riding Experience</label>
+                  <select id="riding_experience" className="form-select" name="riding_experience" required>
+                    <option value="">Select level</option>
+                    <option>Beginner — little to none</option>
+                    <option>Intermediate — comfortable riding</option>
+                    <option>Advanced — experienced rider</option>
+                  </select>
+                </div>
+            </div>
+
               {Array.from({ length: guestCount - 1 }, (_, index) => {
                 const travellerNumber = index + 2;
                 const fieldPrefix = `travellers.${index + 1}`;
@@ -2187,10 +2297,16 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                           <option>Advanced — experienced rider</option>
                         </select>
                       </div>
-                      <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.gender`}>Gender</label><input id={`${fieldPrefix}.gender`} className="form-input" name={`travellers.${index + 1}.gender`} type="text" placeholder="e.g. Male" maxLength={40} required /></div>
+                      <div className="form-group">
+                        <label className="form-label" htmlFor={`${fieldPrefix}.gender`}>Gender</label>
+                        <select id={`${fieldPrefix}.gender`} className="form-select" name={`travellers.${index + 1}.gender`} required>
+                          <option value="">Select gender</option>
+                          {GENDERS.map(gender => <option key={gender}>{gender}</option>)}
+                        </select>
+                      </div>
                     </div>
                     <div className="form-grid compact-grid">
-                      <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.email`}>Email (Optional)</label><input id={`${fieldPrefix}.email`} className="form-input" name={`travellers.${index + 1}.email`} type="email" maxLength={254} /></div>
+                      <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.email`}>Email (Optional)</label><input id={`${fieldPrefix}.email`} className="form-input" name={`travellers.${index + 1}.email`} type="email" onBlur={validateEmailOnBlur} maxLength={254} /></div>
                       <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.phone`}>Phone (Optional)</label><input id={`${fieldPrefix}.phone`} className="form-input" name={`travellers.${index + 1}.phone`} type="tel" maxLength={40} /></div>
                     </div>
                     <div className="form-group"><label className="form-label" htmlFor={`${fieldPrefix}.dietary_notes`}>Dietary Notes (Optional)</label><input id={`${fieldPrefix}.dietary_notes`} className="form-input" name={`travellers.${index + 1}.dietary_notes`} type="text" maxLength={1000} /></div>
@@ -2203,9 +2319,16 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                   <span>I am the lead booker supplying my companions&apos; details for trip operations, and I have their permission to provide these details. My typed waiver below is my agreement only, not a waiver signed for any companion.</span>
                 </label>
               )}
-              <div className="form-group"><label className="form-label" htmlFor="how_heard">How did you hear about us?</label><input id="how_heard" className="form-input" name="how_heard" type="text" placeholder="Instagram, ChatGPT, friend, Google, retreat group, etc." maxLength={200} /></div>
-              <div className="form-group"><label className="form-label" htmlFor="notes">Special Notes or Questions</label><textarea id="notes" className="form-textarea" name="notes" placeholder="Anything else we should know?" maxLength={2000}></textarea></div>
+            <div className="form-section">
+              <p className="form-section-title">Anything else</p>
+              <div className="form-group"><label className="form-label" htmlFor="how_heard">How did you hear about us? (Optional)</label><input id="how_heard" className="form-input" name="how_heard" type="text" placeholder="Instagram, ChatGPT, friend, Google, retreat group, etc." maxLength={200} /></div>
+              <div className="form-group"><label className="form-label" htmlFor="notes">Special Notes or Questions (Optional)</label><textarea id="notes" className="form-textarea" name="notes" placeholder="Anything else we should know?" maxLength={2000}></textarea></div>
+            <label style={{display:'flex', gap:'0.7rem', alignItems:'flex-start', marginTop:'1rem', color:'var(--mist)', fontSize:'0.76rem', lineHeight:1.55, cursor:'pointer'}}>
+              <input type="checkbox" name="newsletter_opt_in" value="on" style={{marginTop:'0.2rem', accentColor:'var(--gold)'}} />
+              <span>Yes, email me occasional 8 Lakes Tours news, new dates, offers, deals, field notes, and business updates. This is optional and I can unsubscribe at any time.</span>
+            </label>
             </div>
+
 
             {/* Collapsible Waiver */}
             <div style={{border:'1px solid rgba(200,169,110,0.2)', borderRadius:'var(--radius-soft)', overflow:'hidden'}}>
@@ -2253,25 +2376,45 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                 placeholder="Your full name"
                 style={{width:'100%', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(200,169,110,0.3)', borderRadius:'var(--radius-soft)', padding:'0.7rem 1rem', color:'var(--cream)', fontSize:'0.95rem', fontFamily:"var(--font-cormorant), 'Cormorant Garamond', serif", fontStyle:'italic', outline:'none', boxSizing:'border-box'}}
               />
-              <p style={{fontSize:'0.7rem', color:'var(--mist)', opacity:0.5, marginTop:'0.4rem', lineHeight:1.5}}>By typing your name you confirm that you, as the lead booker, have read and agree to the liability waiver for yourself only. This does not create a companion waiver.</p>
+              <p style={{fontSize:'0.7rem', color:'var(--mist)', opacity:0.5, marginTop:'0.4rem', lineHeight:1.5}}>Sign with your full legal name, as the lead booker. This does not create a companion waiver.</p>
+              <label className="waiver-agree">
+                <input type="checkbox" name="waiver_agreed" value="on" required checked={waiverAgreed} onChange={event => setWaiverAgreed(event.target.checked)} />
+                <span>I have read the liability waiver above and agree to it for myself.</span>
+              </label>
             </div>
-            <label style={{display:'flex', gap:'0.7rem', alignItems:'flex-start', marginTop:'1rem', color:'var(--mist)', fontSize:'0.76rem', lineHeight:1.55, cursor:'pointer'}}>
-              <input type="checkbox" name="newsletter_opt_in" value="on" style={{marginTop:'0.2rem', accentColor:'var(--gold)'}} />
-              <span>Yes, email me occasional 8 Lakes Tours news, new dates, offers, deals, field notes, and business updates. This is optional and I can unsubscribe at any time.</span>
-            </label>
             </fieldset>
 
             {/* Submit booking to ops */}
             {!formSubmitted || formSubmitting ? (
-              <button
-                type="submit"
-                disabled={!hasRequiredContact || formSubmitting}
-                className="submit-btn"
-                style={{marginTop:'0.5rem', opacity: hasRequiredContact ? 1 : 0.4, transition:'opacity 0.3s', cursor: hasRequiredContact ? 'pointer' : 'not-allowed'}}
-              >
-                {formSubmitting && <span className="booking-save-spinner" aria-hidden="true" />}
-                {formSubmitting ? (requiresHumanConfirmation ? 'Sending your request…' : 'Preparing your secure checkout…') : awaitsGroupInvoice ? 'Request Your Group Invoice' : requiresHumanConfirmation ? 'Submit Availability Request' : `Book & pay $${groupPricing.onlinePaymentUsd.toLocaleString('en-US')} USD`}
-              </button>
+              <div className="pay-bar">
+                <button
+                  type="submit"
+                  disabled={!hasRequiredContact || formSubmitting}
+                  className="submit-btn"
+                >
+                  {formSubmitting
+                    ? <><span className="booking-save-spinner" aria-hidden="true" />{requiresHumanConfirmation ? 'Sending your request…' : 'Preparing your secure checkout…'}</>
+                    : awaitsGroupInvoice ? 'Request your group invoice'
+                    : requiresHumanConfirmation ? 'Submit availability request'
+                    : <>
+                        <svg className="submit-btn-lock" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                          <path d="M7 10V7a5 5 0 0 1 10 0v3" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                          <rect x="4" y="10" width="16" height="10" rx="2" fill="currentColor" />
+                        </svg>
+                        <span>Book &amp; pay</span>
+                        <span className="submit-btn-amount">${groupPricing.onlinePaymentUsd.toLocaleString('en-US')} USD</span>
+                      </>}
+                </button>
+                <p className="pay-bar-note">
+                  {!hasRequiredContact
+                    ? !emailIsValid ? 'Add your email above to continue.'
+                      : !signatureIsValid ? 'Sign with your full name above to continue.'
+                      : 'Tick the waiver agreement above to continue.'
+                    : requiresHumanConfirmation
+                      ? 'No payment is taken until we confirm your dates.'
+                      : <>Card details go straight to Stripe — 8 Lakes Tours never sees them. ${groupPricing.localFamilyPaymentUsd.toLocaleString('en-US')} cash is paid to the host family in Mongolia.</>}
+                </p>
+              </div>
             ) : (
               <div style={{marginTop:'0.5rem', padding:'0.9rem 1rem', background:'rgba(200,169,110,0.08)', border:'1px solid rgba(200,169,110,0.3)', borderRadius:'var(--radius-soft)', textAlign:'center'}}>
                 <p style={{fontSize:'0.7rem', letterSpacing:'0.2em', textTransform:'uppercase', color:'var(--gold)'}}>{awaitsGroupInvoice ? 'Request received — our team will email your invoice' : requiresHumanConfirmation ? 'Request received — our team will confirm availability before payment' : 'Payment pending — your place is not yet confirmed'}</p>
@@ -2281,64 +2424,62 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             <p role="status" aria-live="polite">{formSubmitting ? (requiresHumanConfirmation ? 'Sending your request…' : 'Preparing your secure checkout…') : formSubmitted && requiresHumanConfirmation ? 'Request received. Awaiting availability confirmation.' : ''}</p>
             {formError && <p className="form-error" role="alert">{formError}</p>}
 
-            <div className="payment-checkout-card">
-              <p className="checkout-eyebrow">Online Reservation Payment</p>
-              {awaitsGroupInvoice ? (
-                <p className="checkout-copy">
-                  Groups of 3–8 pay together on one invoice. Submit the form and our team will email one invoice for <strong>{formatApproxUsd(groupPricing.onlinePaymentUsd, pricing.currency)}</strong> covering all {groupPricing.guestCount} guests, so nobody has to pay separately.
+            {formSubmitted && (
+              <div className="payment-checkout-card">
+                <p className="checkout-eyebrow">Online Reservation Payment</p>
+                {awaitsGroupInvoice ? (
+                  <p className="checkout-copy">
+                    Groups of 3–8 pay together on one invoice. Submit the form and our team will email one invoice for <strong>{formatApproxUsd(groupPricing.onlinePaymentUsd, pricing.currency)}</strong> covering all {groupPricing.guestCount} guests, so nobody has to pay separately.
+                  </p>
+                ) : requiresHumanConfirmation ? (
+                  <p className="checkout-copy">
+                    Our team will confirm your date, horses, guide and host family, then email your secure payment link.
+                  </p>
+                ) : (
+                  <p className="checkout-copy">
+                    Submit the booking form with a valid email first, then pay <strong>{formatApproxUsd(groupPricing.onlinePaymentUsd, pricing.currency)} online</strong> for {groupPricing.guestCount} guest{groupPricing.guestCount === 1 ? '' : 's'} to reserve your place. The host-family cash portion is handled in Mongolia.
+                  </p>
+                )}
+                <p className="checkout-note">
+                  Prices are in USD. Your card may show a converted amount.
                 </p>
-              ) : requiresHumanConfirmation ? (
-                <p className="checkout-copy">
-                  Our team will confirm your date, horses, guide and host family, then email your secure payment link.
-                </p>
-              ) : (
-                <p className="checkout-copy">
-                  Submit the booking form with a valid email first, then pay <strong>{formatApproxUsd(groupPricing.onlinePaymentUsd, pricing.currency)} online</strong> for {groupPricing.guestCount} guest{groupPricing.guestCount === 1 ? '' : 's'} to reserve your place. The host-family cash portion is handled in Mongolia.
-                </p>
-              )}
-              <p className="checkout-note">
-                Prices are in USD. Your card may show a converted amount.
-              </p>
-              {!requiresHumanConfirmation ? (
-                <div
-                  className="checkout-button-wrap stripe-embed-wrap"
-                  aria-disabled={!canPay}
-                  onMouseDown={trackStripePaymentClick}
-                  onTouchStart={trackStripePaymentClick}
-                >
-                  <p className="stripe-preview-amount">${groupPricing.onlinePaymentUsd.toLocaleString('en-US')} USD <span>{groupPricing.guestCount} guest{groupPricing.guestCount === 1 ? '' : 's'}</span></p>
-                  <a
-                    className="stripe-link-fallback"
-                    href={checkoutFallbackHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                {!requiresHumanConfirmation ? (
+                  <div
+                    className="checkout-button-wrap stripe-embed-wrap"
                     aria-disabled={!canPay}
-                    tabIndex={canPay ? 0 : -1}
-                    onClick={event => {
-                      if (!canPay) event.preventDefault();
-                      else trackStripePaymentClick();
-                    }}
+                    onMouseDown={trackStripePaymentClick}
+                    onTouchStart={trackStripePaymentClick}
                   >
-                    Open Stripe checkout
-                  </a>
-                  {!canPay && (
-                    <div
-                      className="checkout-lock-overlay"
-                      onClick={e => { e.stopPropagation(); }}
-                    >
-                      <p>
-                        {!emailIsValid ? 'Please enter a valid email address above' : !signatureIsValid ? 'Please type your full name as a signature above' : 'Submit your booking before payment'}
+                    {canPay ? (
+                      <>
+                        <p className="stripe-preview-amount">${groupPricing.onlinePaymentUsd.toLocaleString('en-US')} USD <span>{groupPricing.guestCount} guest{groupPricing.guestCount === 1 ? '' : 's'}</span></p>
+                        <a
+                          className="stripe-link-fallback"
+                          href={checkoutFallbackHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={trackStripePaymentClick}
+                        >
+                          Open Stripe checkout
+                        </a>
+                      </>
+                    ) : (
+                      /* The message used to be an absolutely positioned overlay, so
+                         it printed on top of the amount. Nothing is payable yet, so
+                         show the reason in place of the preview rather than over it. */
+                      <p className="checkout-locked-note">
+                        {!emailIsValid ? 'Please enter a valid email address above' : !signatureIsValid ? 'Please sign with your full name above' : !waiverAgreed ? 'Please agree to the liability waiver above' : 'Submit your booking before payment'}
                       </p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="group-request-next-step">
-                  <strong>No charge yet.</strong>
-                  <span>You only pay once your date is confirmed.</span>
-                </div>
-              )}
-            </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="group-request-next-step">
+                    <strong>No charge yet.</strong>
+                    <span>You only pay once your date is confirmed.</span>
+                  </div>
+                )}
+              </div>
+            )}
             <p style={{fontSize:'0.72rem', color:'var(--mist)', opacity:0.58, textAlign:'center', lineHeight:1.6}}>{requiresHumanConfirmation ? 'We\'ll reply by email with availability.' : 'Your booking is confirmed once the online payment is completed. If anything needs checking, we\'ll contact you directly.'}</p>
             <p style={{fontSize:'0.7rem', color:'var(--mist)', opacity:0.4, textAlign:'center', lineHeight:1.6, marginTop:'0.5rem'}}>
               By submitting this form you agree to our{' '}
@@ -2355,7 +2496,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
       <section className="faq-section">
         <div style={{maxWidth:'760px', margin:'0 auto'}}>
           <div className="reveal" style={{marginBottom:'2.5rem'}}>
-            <span className="section-eyebrow">FAQ</span>
             <h2 className="section-title">Common<br /><em>Questions</em></h2>
           </div>
           {HOME_FAQS.map(({q, a}, i) => {
@@ -2471,7 +2611,6 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         </div>
         <div className="footer-note">
           <span>© 2026 8 Lakes Tours. All rights reserved.</span>
-          <span>Built for direct local family partnership in Mongolia.</span>
         </div>
       </footer>
 

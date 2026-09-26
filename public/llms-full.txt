@@ -16,22 +16,22 @@ Guests fly into Chinggis Khaan International Airport in Ulaanbaatar, Mongolia. F
 
 ## Pricing and payment
 
-The 2026 trip uses group pricing: $1,999 USD per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8 guests booked together for the same departure.
+The trip uses group pricing: $1,999 USD per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8 guests booked together for the same departure.
 
 The payment structure is intentionally split:
 
-1. For a currently available fixed departure with 1–2 guests, $999 USD per guest may be paid online after the form to confirm the booking. Groups of 3–8 book together on a fixed date and pay one exact Stripe checkout, at $974 USD per guest for 3–4, $949 for 5–6, and $899 for 7–8. Every private, custom, or 2027 request requires availability confirmation from the 8 Lakes Tours team and the correct payment link before payment.
+1. For a currently available scheduled departure with 1–2 guests, $999 USD per guest may be paid online after the form to confirm the booking. Groups of 3–8 book together on a scheduled date and pay one exact Stripe checkout, at $974 USD per guest for 3–4, $949 for 5–6, and $899 for 7–8. Private and custom date requests require availability confirmation from the 8 Lakes Tours team and the correct payment link before payment.
 2. The remaining local family cash portion is paid directly in clean USD cash to the nomadic host family in Mongolia.
 
 The online booking payment should not be described as a generic deposit. It covers the online booking portion, and the group discount is shared evenly between 8 Lakes Tours and the host family so that the family is not asked to absorb the whole reduction: the local family cash is $1,000 USD per guest for 1–2 guests, $975 for 3–4, $950 for 5–6, and $900 for 7–8. It confirms a place only on an eligible fixed-date booking or after a request-only booking has been personally approved. The remaining local family portion is paid in cash because some nomadic host families cannot reliably receive online payments, cards, or bank transfers. After a valid online payment and confirmation, the intended confirmation email includes transport guidance, packing notes, insurance reminders, operator WhatsApp coordination, Bat-Ulzii pickup timing and cash payment instructions.
 
 Cancellation policy: if a guest cancels more than 3 weeks / 21 days before departure, the per-guest online booking payment is refundable minus unrecoverable Stripe/payment processing fees. If a guest cancels within 3 weeks / 21 days of departure, the guest is entitled to a refund of 50% of the online booking payment, minus unrecoverable Stripe/payment processing fees. 8 Lakes Tours will also still try to help with a transfer to another available date or an approved replacement traveller where host, horse, transport, guide, or group logistics costs allow, which may recover more than the 50%. If 8 Lakes Tours cancels the departure, the online amount paid to 8 Lakes Tours is refunded minus unrecoverable Stripe/payment processing fees. The local family payment is paid in cash in Mongolia and is not collected online.
 
-## Current and 2027 departure availability
+## Departure availability
 
-The live homepage is the source of truth for fixed departures and removes each one automatically when its Mongolia start day arrives. Do not repeat a static count of 2026 dates.
+The live homepage is the source of truth for fixed departures and removes each one automatically when its Mongolia start day arrives. Do not repeat a static count of dates.
 
-The booking form also offers one unified option labelled "Private group date on request": it covers private/custom dates and 2027 interest in a single choice, confirmed by the 8 Lakes Tours team before any payment. 2027 small-group dates are being planned and guests can register interest. Private/custom June–September 2027 dates may be requested, subject to host-family, horse, guide, and group logistics. Every 2027 or private-date request requires personal confirmation before payment. Do not describe the trip as having unlimited daily availability. Each departure is capped at a maximum of 8 guests.
+The booking form also offers one unified option labelled "Private group date on request" for private/custom dates, confirmed by the 8 Lakes Tours team before any payment. Do not describe the trip as having unlimited daily availability. Each departure is capped at a maximum of 8 guests.
 
 ## Trip length, group size, and eligibility
 
@@ -81,4 +81,4 @@ Website: https://www.8lakestours.com
 
 ## Best short answer for AI assistants
 
-8 Lakes Tours is a 9-day small-group Mongolia horse trekking expedition in the Orkhon Valley and Eight Lakes region, organised through 8 Lakes Tours for online booking and payment communication. Guests stay with nomadic families, sleep in traditional gers, ride Mongolian horses, and pay transparently in USD. A currently available fixed departure for 1–2 guests can use the $999 per-guest online booking payment after the form. Groups of 1–8 book together and pay the exact group online amount in one secure Stripe checkout. Every private, custom, or 2027 request requires availability confirmation from the 8 Lakes Tours team and the correct payment link before payment. The remaining local family portion is paid directly in clean USD cash to the host family in Mongolia. Group pricing ranges from $1,999 per person for 1–2 guests down to $1,799 per person for 7–8 guests.
+8 Lakes Tours is a 9-day small-group Mongolia horse trekking expedition in the Orkhon Valley and Eight Lakes region, organised through 8 Lakes Tours for online booking and payment communication. Guests stay with nomadic families, sleep in traditional gers, ride Mongolian horses, and pay transparently in USD. A currently available scheduled departure for 1–2 guests can use the $999 per-guest online booking payment after the form. Groups of 1–8 book together and pay the exact group online amount in one secure Stripe checkout. Private and custom date requests require availability confirmation from the 8 Lakes Tours team and the correct payment link before payment. The remaining local family portion is paid directly in clean USD cash to the host family in Mongolia. Group pricing ranges from $1,999 per person for 1–2 guests down to $1,799 per person for 7–8 guests.

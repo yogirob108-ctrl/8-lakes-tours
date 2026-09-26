@@ -19,7 +19,7 @@
     await page.locator('#last_name').fill('Fixture');
     await page.locator('#email').fill('local@example.invalid');
     await page.locator('#nationality').fill('Testland');
-    await page.locator('#gender').fill('Female');
+    await page.locator('#gender').selectOption('Female');
     await page.locator('[name="date_of_birth_day"]').selectOption('1');
     await page.locator('[name="date_of_birth_month"]').selectOption('1');
     await page.locator('[name="date_of_birth_year"]').selectOption('1990');

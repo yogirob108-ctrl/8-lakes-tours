@@ -11,20 +11,28 @@ test('fresh form defaults to the earliest truly available scheduled departure', 
 });
 
 test('the default ignores request-only options and elapsed departures', () => {
+  // The 2026 season now ends in October, so mid-November rolls to 2027.
   const now = new Date('2026-11-13T10:00:00Z');
-  assert.equal(getDefaultTourDate(TOUR_DATES, now), 'November 18 – 26, 2026');
+  assert.equal(getDefaultTourDate(TOUR_DATES, now), 'May 4 – 12, 2027');
   assert.equal(getDefaultTourDate([
     { date: 'Elapsed', startDate: '2026-01-01' },
     { date: REQUEST_ONLY_OPTION_DATE, requiresConfirmation: true, availableUntil: '2099-01-01' },
   ], now), '');
 });
 
-test('no bookable departure means no invented default and explicit request fallback stays', () => {
-  // Mid-2027: every 2026 departure has expired, only the explicit request option remains.
-  const now = new Date('2027-06-01T10:00:00Z');
+test('mid-2027 keeps selling the rest of the 2027 season', () => {
+  // Every 2026 departure has expired; the remaining 2027 dates stay bookable.
+  const now = new Date('2027-06-02T10:00:00Z');
   const visible = getVisibleTourDates(TOUR_DATES, now);
+  assert.equal(getDefaultTourDate(TOUR_DATES, now), 'June 15 – 23, 2027');
+  assert.equal(visible.every(option => !option.startDate || option.startDate.startsWith('2027')), true);
+  assert.equal(visible.some(option => option.date === REQUEST_ONLY_OPTION_DATE), true);
+});
+
+test('past the last departure there is no invented default and the request option is gone', () => {
+  const now = new Date('2027-11-01T10:00:00Z');
   assert.equal(getDefaultTourDate(TOUR_DATES, now), '');
-  assert.deepEqual(visible.map(option => option.date), [REQUEST_ONLY_OPTION_DATE], 'unified request option remains the explicit fallback');
+  assert.deepEqual(getVisibleTourDates(TOUR_DATES, now).map(option => option.date), []);
 });
 
 test('request options consolidate into one private group date on request', () => {
@@ -35,7 +43,7 @@ test('request options consolidate into one private group date on request', () =>
   for (const legacy of ['2026 Private Group Date', '2027 Private Group Date', '2027 Small-Group Departures']) {
     assert.equal(TOUR_DATES.some(option => option.date === legacy), false, `${legacy} must no longer be a selectable option`);
   }
-  assert.equal(requestOptions[0].availableUntil, '2027-09-30');
+  assert.equal(requestOptions[0].availableUntil, '2027-10-19');
   assert.equal(requestOptions[0].startDate, undefined, 'request option is never a departure');
 });
 
@@ -80,14 +88,14 @@ test('restore honours a saved draft date or private choice but never overrides a
   assert.match(client, /if \(!tourDateTouchedRef\.current && draftTourDate\) setSelectedTourDate\(draftTourDate\)/, 'untouched default yields to a real saved choice; a user edit is never overwritten');
 });
 
-test('public AI references describe the unified request option', async () => {
+test('public AI references describe the unified request option without year selling', async () => {
   const [summary, full] = await Promise.all([
     readFile(new URL('../public/llms.txt', import.meta.url), 'utf8'),
     readFile(new URL('../public/llms-full.txt', import.meta.url), 'utf8'),
   ]);
   for (const source of [summary, full]) {
     assert.match(source, /Private group date on request/);
-    assert.match(source, /2027/);
+    assert.doesNotMatch(source, /202[67]/);
     assert.match(source, /confirm.*before payment|before payment.*confirm/i);
   }
 });

@@ -66,7 +66,7 @@ export default function GalleryClient({ images }: { images: GalleryImage[] }) {
         {visibleImages.map((image, index) => (
           <button
             type="button"
-            className={`gallery-card ${image.orientation}`}
+            className={`gallery-card ${image.orientation}${image.width / image.height >= 1.7 ? ' wide' : ''}`}
             key={image.src}
             onClick={() => openLightbox(index)}
             aria-label={`Open image: ${image.alt}`}
@@ -77,7 +77,7 @@ export default function GalleryClient({ images }: { images: GalleryImage[] }) {
               width={image.width}
               height={image.height}
               quality={72}
-              sizes="(max-width: 700px) 50vw, (max-width: 1100px) 33vw, 25vw"
+              sizes={image.width / image.height >= 1.7 ? '(max-width: 700px) 100vw, (max-width: 1100px) 66vw, 25vw' : '(max-width: 700px) 50vw, (max-width: 1100px) 33vw, 25vw'}
             />
           </button>
         ))}

@@ -98,7 +98,11 @@ export default function GalleryPage() {
         .lightbox-next { right: 1rem; }
 
         .gallery-footer { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; padding: 2rem 3rem; border-top: 1px solid rgba(200,169,110,0.15); color: rgba(212,207,196,0.5); font-size: 0.75rem; }
-        @media (max-width: 1100px) { .gallery-grid { grid-template-columns: repeat(3, 1fr); } }
+        @media (max-width: 1100px) {
+          .gallery-grid { grid-template-columns: repeat(3, 1fr); grid-auto-flow: dense; }
+          /* Panoramas squeezed into one narrow column lose half the view. */
+          .gallery-card.wide { grid-column: span 2; }
+        }
         @media (max-width: 700px) {
           .gallery-hero { min-height: 52vh; padding: 6rem 1.25rem 2.5rem; }
           .gallery-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

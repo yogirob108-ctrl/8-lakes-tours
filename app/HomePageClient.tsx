@@ -318,7 +318,7 @@ const TESTIMONIAL_CARDS = [
               src: '/images/testimonial-irik-clawson-sunset.jpg',
               alt: 'Robert Zaher smiling on horseback beside a river valley',
               quote: 'Endless riding from one plain to the next, across the Steppe, by the lakes…. Magical. What more is there in life?',
-              objectPosition: 'center',
+              objectPosition: '62% center',
             },
             {
               name: 'Milou · AU',
@@ -1335,7 +1335,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .midpage-cta a:hover { background: var(--gold); color: var(--dark); }
         .testimonial-grid { max-width: 1120px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
         .testimonial-card { background: rgba(245,240,232,0.04); border: 1px solid rgba(200,169,110,0.18); border-radius: var(--radius-card); overflow: hidden; }
-        .testimonial-photo { position: relative; height: 360px; overflow: hidden; display: block; width: 100%; }
+        .testimonial-photo { position: relative; aspect-ratio: 4 / 5; overflow: hidden; display: block; width: 100%; }
         .testimonial-photo img { object-fit: cover; }
         .testimonial-body { padding: 1.6rem; }
         .testimonial-quote { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 1.45rem; line-height: 1.45; color: var(--cream); font-style: italic; }
@@ -1389,7 +1389,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .main-album-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; }
         .main-album-item:hover img { transform: scale(1.04); }
         .image-button { all: unset; display: block; width: 100%; height: 100%; position: relative; cursor: zoom-in; }
-        .image-button.testimonial-photo { height: 360px; }
+        .image-button.testimonial-photo { height: auto; aspect-ratio: 4 / 5; }
         .image-button.partnership-inline-photo { height: auto; aspect-ratio: 1870 / 3072; max-width: 30rem; }
         .image-button:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
         .lightbox { position: fixed; inset: 0; z-index: 1000; background: rgba(14,12,9,0.96); display: flex; align-items: center; justify-content: center; padding: 1.5rem; cursor: zoom-out; overscroll-behavior: contain; touch-action: none; }
@@ -1733,9 +1733,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           .midpage-cta { grid-column: 1 / -1; display: flex; justify-content: center; margin-top: 3rem; }
         .midpage-cta a { display: inline-block; padding: 0.95rem 2.4rem; border: 1px solid var(--gold); border-radius: var(--radius-soft); color: var(--gold); font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase; text-decoration: none; transition: background 0.25s ease, color 0.25s ease; }
         .midpage-cta a:hover { background: var(--gold); color: var(--dark); }
-        .testimonial-grid { grid-template-columns: 1fr; }
-          .testimonial-photo { height: 280px; }
-          .image-button.testimonial-photo { height: 280px; }
+        .testimonial-grid { grid-template-columns: 1fr; max-width: 34rem; }
           .itinerary-grid { grid-template-columns: 1fr; }
           .itin-tag { font-size: 0.75rem; }
           .itin-title { font-size: 2rem; }
@@ -2076,7 +2074,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                 aria-label={`View larger image: ${testimonial.alt}`}
                 onClick={() => openLightbox(testimonial.src)}
               >
-                <Image src={testimonial.src} alt={testimonial.alt} fill quality={76} sizes="(max-width: 900px) 100vw, 33vw" style={{ objectPosition: testimonial.objectPosition ?? 'center' }} />
+                <Image src={testimonial.src} alt={testimonial.alt} fill quality={76} sizes="(max-width: 600px) 100vw, (max-width: 900px) 544px, 33vw" style={{ objectPosition: testimonial.objectPosition ?? 'center' }} />
               </button>
               <div className="testimonial-body">
                 <p className="testimonial-quote">“{testimonial.quote}”</p>

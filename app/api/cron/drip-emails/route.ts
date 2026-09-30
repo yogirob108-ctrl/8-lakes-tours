@@ -1,14 +1,15 @@
 import Stripe from 'stripe';
 import { timingSafeEqual } from 'node:crypto';
 import { NextResponse } from 'next/server';
-import { arrivalCoordinationCustomerEmail, finalChecklistCustomerEmail, getInternalEmailRecipients, insuranceReminderCustomerEmail, paymentConfirmedCustomerEmail, preparationCustomerEmail, sendEmail } from '@/lib/email';
+import { arrivalCoordinationCustomerEmail, finalChecklistCustomerEmail, getInternalEmailRecipients, insuranceReminderCustomerEmail, paymentConfirmedCustomerEmail, postTripReferralCustomerEmail, preparationCustomerEmail, sendEmail } from '@/lib/email';
+import { daysSinceTourEnd, selectPostTripCandidate } from '@/lib/post-trip-email.mjs';
 import { getLifecycleEmailSchedule } from '@/lib/lifecycle-email-schedule.mjs';
 import { getDryRun, reconcileStripeProviderEvidence, selectPacedLifecycleCandidate } from '@/lib/public-lifecycle.mjs';
 import { collectStripeLifecycleEvidence } from '@/lib/stripe-lifecycle-evidence.mjs';
 import { isSupabaseAdminConfigured } from '@/lib/ops-config';
 import { createSupabaseAdminClient } from '@/lib/supabase-admin';
 
-const LIFECYCLE_KEYS = ['payment_confirmed', 'preparation_packing', 'insurance_final_check', 'arrival_coordination', 'final_checklist'];
+const LIFECYCLE_KEYS = ['payment_confirmed', 'preparation_packing', 'insurance_final_check', 'arrival_coordination', 'final_checklist', 'post_trip_referral'];
 type TemplateKey = typeof LIFECYCLE_KEYS[number];
 type BookingRow = { id:string; public_reference:string; customer_id:string|null; tour_date:string|null; status:string; online_due_usd:number|null; online_paid_usd:number|null; family_cash_due_usd:number|null; customer?: {first_name?:string|null;email?:string|null}|{first_name?:string|null;email?:string|null}[]|null };
 type DispatchClaim = { should_send:boolean; event_id?:string; idempotency_key?:string; reason?:string };
@@ -29,6 +30,7 @@ function message(template: TemplateKey, booking: BookingRow) {
   if (template === 'preparation_packing') return preparationCustomerEmail(input);
   if (template === 'insurance_final_check') return insuranceReminderCustomerEmail(input);
   if (template === 'arrival_coordination') return arrivalCoordinationCustomerEmail(input);
+  if (template === 'post_trip_referral') return postTripReferralCustomerEmail(input);
   return finalChecklistCustomerEmail(input);
 }
 
@@ -59,9 +61,22 @@ export async function GET(request: Request) {
     if (targetedReference) bookingQuery = bookingQuery.eq('public_reference', targetedReference);
     const { data: bookings, error } = await bookingQuery.limit(200);
     if (error) throw error;
+    // Finished trips are fetched separately so they can never crowd upcoming
+    // departures out of the capped query above. The post-trip email needs the
+    // database migration that admits 'post_trip_referral' and completed
+    // bookings, so it stays off until POST_TRIP_EMAIL_ENABLED is set.
+    const postTripEnabled = process.env.POST_TRIP_EMAIL_ENABLED === 'true';
+    let completedBookings: BookingRow[] = [];
+    if (postTripEnabled) {
+      let completedQuery = db.from('bookings').select('id, public_reference, customer_id, tour_date, status, online_due_usd, online_paid_usd, family_cash_due_usd, customer:customers(first_name, email)').eq('status','completed').gte('updated_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString());
+      if (targetedReference) completedQuery = completedQuery.eq('public_reference', targetedReference);
+      const { data: completed, error: completedError } = await completedQuery.limit(200);
+      if (completedError) throw completedError;
+      completedBookings = (completed || []) as BookingRow[];
+    }
     const { data: approvedBindings, error: bindingsError } = await db.from('approved_payment_bindings').select('booking_id, provider_object_id').eq('provider','stripe');
     if (bindingsError) throw bindingsError;
-    const rows = (bookings || []) as BookingRow[];
+    const rows = [...((bookings || []) as BookingRow[]), ...completedBookings];
     if (!process.env.STRIPE_SECRET_KEY) throw new Error('stripe_unavailable');
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { maxNetworkRetries: 0, timeout: 5000 });
     const provider = await collectStripeLifecycleEvidence({ stripe, pageBudget: 90 });
@@ -76,7 +91,9 @@ export async function GET(request: Request) {
     const results: Array<Record<string,unknown>> = [];
     for (const booking of rows) {
       const schedule = getLifecycleEmailSchedule({ now:new Date(), tourDate:booking.tour_date });
-      const template = selectPacedLifecycleCandidate({ verifiedStripe:verified.has(booking.public_reference), daysUntilDeparture:schedule.daysUntilDeparture, sentTemplates:existing.get(booking.id)||new Set() }) as TemplateKey|null;
+      const sentTemplates = existing.get(booking.id)||new Set<string>();
+      const template = (selectPacedLifecycleCandidate({ verifiedStripe:verified.has(booking.public_reference), daysUntilDeparture:schedule.daysUntilDeparture, sentTemplates })
+        ?? selectPostTripCandidate({ enabled:postTripEnabled, verifiedStripe:verified.has(booking.public_reference), daysSinceEnd:daysSinceTourEnd(booking.tour_date), sentTemplates })) as TemplateKey|null;
       if (!template) {
         const reconciliationResult = (reconciliation as Array<Record<string, unknown>>).find(row => row.reference===booking.public_reference);
         results.push(reconciliationResult || { reference:booking.public_reference, status:'scan_incomplete_unknown' });

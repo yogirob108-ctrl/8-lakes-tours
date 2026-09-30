@@ -600,6 +600,51 @@ info@8lakestours.com`;
   };
 }
 
+export const REFERRAL_REWARD_USD = 100;
+
+export function postTripReferralCustomerEmail(input: LifecycleEmailInput) {
+  const name = firstName(input.firstName);
+  const reward = usd(REFERRAL_REWARD_USD);
+  const text = `Hi ${name},
+
+Thank you for riding the steppe with us. We hope the horses, the family and all that open country are still with you.
+
+Two small things, only if you enjoyed it:
+
+Tell us about your trip. Reply with a few lines, in your own words. With your OK, we would love to share them with future riders.
+
+Bring a friend: ${reward} each. When a friend books any departure, they pay ${reward} less on the in-person portion to the host family, and we send ${reward} back to you once their booking is confirmed. They just write your name in the notes when they book at www.8lakestours.com.
+
+${DASH_RULE_TEXT}
+
+Booking reference: ${input.reference}
+
+Thank you again for coming all this way.
+
+Robert Zaher
+8 Lakes Tours
+www.8lakestours.com
+info@8lakestours.com`;
+
+  const body = [
+    p(`Hi ${escapeHtml(name)},`),
+    p(`Thank you for riding the steppe with us. We hope the horses, the family and all that open country are still with you.`),
+    p(`Two small things, only if you enjoyed it:`),
+    p(`<strong>Tell us about your trip.</strong> Reply with a few lines, in your own words. With your OK, we would love to share them with future riders.`),
+    p(`<strong>Bring a friend: ${reward} each.</strong> When a friend books any departure, they pay ${reward} less on the in-person portion to the host family, and we send ${reward} back to you once their booking is confirmed. They just write your name in the notes when they book at <a href="https://www.8lakestours.com" style="color:#1155cc">www.8lakestours.com</a>.`),
+    sectionRuleHtml(),
+    detailsHtml([['Booking reference', escapeHtml(input.reference)]]),
+    p(`Thank you again for coming all this way.`),
+    signoffHtml(),
+  ].join('\n');
+
+  return {
+    subject: `Thank you for riding with us, ${name}`,
+    text,
+    html: wrap(`Thank you for riding with 8 Lakes Tours, plus ${reward} each when a friend books.`, body),
+  };
+}
+
 export function leadInternalEmail(input: { name: string; email: string; source: string; interest: string }) {
   const name = input.name || 'Subscriber';
   const text = `New newsletter subscriber\n\nName: ${name}\nEmail: ${input.email}\nInterest: ${input.interest}\nSource: ${input.source}`;

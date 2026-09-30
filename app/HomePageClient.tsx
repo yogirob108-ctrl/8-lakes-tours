@@ -491,16 +491,15 @@ function DateOfBirthFields({ name, label, isLead = false }: { name: string; labe
 }
 
 const SEASONS = [
-  { year: '2026', label: 'This season' },
   { year: '2027', label: 'Next season' },
 ] as const;
 
 export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
-  const lateSeasonDepartures = tourDates.filter(option => option.startDate && option.startDate >= '2026-09-01');
+  const scheduledDepartures = tourDates.filter(option => option.startDate && !option.requiresConfirmation);
   // Scheduled departures split by season for the two pickers; the request-only
   // option has no startDate and is offered separately beneath them.
   const seasonDepartures = useMemo(() => {
-    const grouped: Record<string, TourDateOption[]> = { 2026: [], 2027: [] };
+    const grouped: Record<string, TourDateOption[]> = { 2027: [] };
     for (const option of tourDates) {
       if (!option.startDate || option.requiresConfirmation) continue;
       grouped[getSeasonYear(option)]?.push(option);
@@ -1061,7 +1060,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           priceCurrency: 'USD',
           availability: 'https://schema.org/LimitedAvailability',
           validFrom: '2026-01-01',
-          validThrough: '2027-09-30',
+          validThrough: '2027-10-19',
         },
         provider: {
           '@type': 'Organization',
@@ -1845,11 +1844,11 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         </div>
       </div>
 
-      {lateSeasonDepartures.length > 0 && <section className="offer-strip" aria-label="Late-season 2026 expedition availability and price summary">
+      {scheduledDepartures.length > 0 && <section className="offer-strip" aria-label="2027 season availability and price summary">
         <div>
-          <p className="offer-strip-kicker">Still hoping to ride this season?</p>
-          <h2 className="offer-strip-title">Book September–October 2026</h2>
-          <p className="offer-strip-note">Late-season places are open now.</p>
+          <p className="offer-strip-kicker">Now booking</p>
+          <h2 className="offer-strip-title">The 2027 season, May–October</h2>
+          <p className="offer-strip-note">Fortnightly departures in small groups of up to 8.</p>
         </div>
         <div className="offer-strip-facts">
           <div className="offer-fact"><strong>{pricing.tourPrice}</strong><span>Total per person</span><small className="offer-fact-note">Group rates apply</small></div>

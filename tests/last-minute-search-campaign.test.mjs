@@ -40,24 +40,21 @@ function parseCsv(source) {
   return rows;
 }
 
-test('homepage gives late-season visitors a clear September–October booking path', async () => {
+test('homepage sells the 2027 season only; late 2026 departures are closed, not deleted', async () => {
   const [source, tourDatesSource] = await Promise.all([
     readFile(new URL('../app/HomePageClient.tsx', import.meta.url), 'utf8'),
     readFile(new URL('../lib/tour-dates.mjs', import.meta.url), 'utf8'),
   ]);
 
-  assert.match(source, /lateSeasonDepartures\.length > 0/);
-  assert.match(source, /Book September–October 2026/);
-  assert.doesNotMatch(source, /lateSeasonDateLabel/);
+  assert.match(source, /scheduledDepartures\.length > 0/);
+  assert.match(source, /The 2027 season, May–October/);
+  assert.doesNotMatch(source, /Book September–October 2026|lateSeasonDepartures|year: '2026'/);
   assert.doesNotMatch(source, /September places available|last places|only \d+ places/i);
 
-  for (const date of [
-    'September 14 – 22, 2026',
-    'September 23 – October 1, 2026',
-    'October 7 – 15, 2026',
-    'October 21 – 29, 2026',
-  ]) {
-    assert.match(tourDatesSource, new RegExp(`${date}[^\\n]+status: 'Open · max 8'`));
+  // Bookings already made on these dates must still resolve, so the entries
+  // stay in the list and are hidden from sale instead.
+  for (const date of ['October 7 – 15, 2026', 'October 21 – 29, 2026']) {
+    assert.match(tourDatesSource, new RegExp(`${date}[^\\n]+closed: true`));
   }
   assert.doesNotMatch(tourDatesSource, /startDate:[^\n]+requiresConfirmation: true/);
 });

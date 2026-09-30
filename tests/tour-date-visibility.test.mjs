@@ -41,3 +41,12 @@ test('FAQ does not advertise a fixed count that becomes stale', async () => {
 
   assert.doesNotMatch(source, /shows seven fixed 2026 departures/i);
 });
+
+test('closed departures never show, even before they start', () => {
+  const dates = [
+    { date: 'October 7 – 15, 2026', startDate: '2026-10-07', closed: true },
+    { date: 'May 4 – 12, 2027', startDate: '2027-05-04' },
+  ];
+  const visible = getVisibleTourDates(dates, new Date('2026-09-30T00:00:00Z'));
+  assert.deepEqual(visible.map(option => option.date), ['May 4 – 12, 2027']);
+});

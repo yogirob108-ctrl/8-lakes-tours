@@ -1317,7 +1317,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .strip-item:hover img { transform: scale(1.04); }
         .partnership { background: var(--ink); display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
         .partnership-text { padding: 6rem; display: flex; flex-direction: column; justify-content: center; }
-        .partnership-inline-photo { display: none !important; position: relative; width: 100%; height: auto; aspect-ratio: 1.46; margin: 2rem 0; overflow: hidden; border: 1px solid rgba(200,169,110,0.22); border-radius: var(--radius-photo); }
+        .partnership-inline-photo { display: none !important; position: relative; width: 100%; max-width: 30rem; height: auto; aspect-ratio: 1870 / 3072; margin: 2rem auto; overflow: hidden; border: 1px solid rgba(200,169,110,0.22); border-radius: var(--radius-photo); }
         .partnership-inline-photo img { object-fit: cover; filter: saturate(0.88) contrast(1.04) brightness(0.9); }
         .partnership-quote { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 1.6rem; font-style: italic; font-weight: 300; color: var(--cream); line-height: 1.6; border-left: 2px solid var(--gold); padding-left: 2rem; margin: 2.5rem 0; }
         .partnership-img { position: relative; overflow: hidden; min-height: 600px; border-left: 1px solid rgba(200,169,110,0.18); background: #0f0f0d; }
@@ -1390,7 +1390,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .main-album-item:hover img { transform: scale(1.04); }
         .image-button { all: unset; display: block; width: 100%; height: 100%; position: relative; cursor: zoom-in; }
         .image-button.testimonial-photo { height: 360px; }
-        .image-button.partnership-inline-photo { height: auto; aspect-ratio: 1.46; }
+        .image-button.partnership-inline-photo { height: auto; aspect-ratio: 1870 / 3072; max-width: 30rem; }
         .image-button:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
         .lightbox { position: fixed; inset: 0; z-index: 1000; background: rgba(14,12,9,0.96); display: flex; align-items: center; justify-content: center; padding: 1.5rem; cursor: zoom-out; overscroll-behavior: contain; touch-action: none; }
         .lightbox-frame { position: relative; width: min(96vw, 1800px); height: min(86vh, 1100px); display: flex; align-items: center; justify-content: center; }
@@ -1774,7 +1774,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
           .gallery-handoff .btn-ghost { width: 100%; justify-content: center; text-align: center; }
           .divider { padding: 0 2rem; }
           .partnership-text { padding: 4rem 2rem; }
-          .partnership-inline-photo { display: block !important; margin: 2.4rem 0 2.8rem; }
+          .partnership-inline-photo { display: block !important; margin: 2.4rem auto 2.8rem; }
           .partnership-inline-photo + .section-body { margin-top: 0.35rem; }
           .partnership-img { display: none; }
           .form-grid { grid-template-columns: 1fr; }
@@ -1902,7 +1902,7 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             aria-label="View larger image: Robert with the host family and their horses, all in traditional deels on the Mongolian steppe"
             onClick={() => openLightbox('/images/host-family-horses-deels.jpg')}
           >
-            <Image src="/images/host-family-portrait.jpg" alt="Robert with the host family and their horses, all in traditional deels on the Mongolian steppe" fill quality={72} sizes="100vw" />
+            <Image src="/images/host-family-portrait.jpg" alt="Robert with the host family and their horses, all in traditional deels on the Mongolian steppe" fill quality={72} sizes="(max-width: 520px) 100vw, 480px" />
           </button>
           <p className="section-body">I met Ganbold while travelling through Mongolia on horseback. I meant to pass through, but his family opened their ger to me, as nomadic families have done for travellers for generations. We didn&apos;t speak the same language, but we shared an appreciation for the steppe and the way of life out there, and it didn&apos;t take long to feel like family. We rode together, cooked, drank tea and laughed a lot.</p>
           <p className="section-body" style={{marginTop:'1.2rem'}}>Suma, Ganbold&apos;s son, loves horses. He has ridden and worked with them his whole life, and he still herds his own horses and yaks across this valley. He likes guiding too, taking people out and showing them the land he grew up in. When the idea of bringing small groups here came up, he was up for it straight away.</p>

@@ -4,6 +4,7 @@ import { track } from '@vercel/analytics';
 import { type FocusEvent, type FormEvent, type MouseEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { GROUP_INVOICE, manualPaymentReason, normalizeTourDateSelection } from '@/lib/tour-booking.mjs';
 import { getDefaultTourDate, getSeasonYear } from '@/lib/tour-dates.mjs';
+import { CALL_OFFER_HREF } from '@/lib/call-offer.mjs';
 import { isValidBookingEmail } from '@/lib/email-validation.mjs';
 import { BASE_LOCAL_FAMILY_PAYMENT_USD, BASE_ONLINE_PAYMENT_USD, BASE_PRICE_USD, GROUP_PRICING_TIERS, MAX_GROUP_SIZE, clampGuestCount, getGroupPricing } from '@/lib/group-pricing.mjs';
 import { GENDERS, normalizeBookingTravellers } from '@/lib/booking-travellers.mjs';
@@ -1473,6 +1474,8 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
         .ask-card p { color: rgba(212,207,196,0.78); font-size: 0.82rem; line-height: 1.6; margin-bottom: 0.75rem; }
         .ask-card a { display: inline-flex; color: var(--gold); border-bottom: 1px solid rgba(200,169,110,0.45); text-decoration: none; font-size: 0.68rem; letter-spacing: 0.16em; text-transform: uppercase; }
         .ask-card a:hover { color: var(--cream); border-color: var(--cream); }
+        .ask-card-links { display: flex; flex-wrap: wrap; gap: 0.6rem 1.4rem; }
+        .contact-card-call { grid-column: 1 / -1; }
         .ask-card-alt { margin-top: 0.95rem; padding-top: 0.95rem; border-top: 1px solid rgba(200,169,110,0.16); }
         .price-spec-list { display:flex; flex-direction:column; gap:0.8rem; margin-top:1.5rem; }
         .price-spec-row { display:flex; justify-content:space-between; gap:1rem; min-width:0; font-size:0.8rem; color:var(--mist); padding:0.6rem 0; border-bottom:1px solid rgba(245,240,232,0.07); }
@@ -2154,8 +2157,11 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
             </div>
             <div className="ask-card">
               <h3>Not sure if this fits?</h3>
-              <p>Ask before paying. We&apos;re happy to check riding level, food restrictions, route expectations, dates, or whether this is the right kind of adventure for you.</p>
-              <a href="mailto:info@8lakestours.com?subject=Question%20before%20booking%208%20Lakes%20Tours">Ask a question first</a>
+              <p>Ask before paying, or talk it through with Robert on a free 15-minute call. We&apos;re happy to check riding level, food restrictions, route expectations, dates, or whether this is the right kind of adventure for you.</p>
+              <div className="ask-card-links">
+                <a href={CALL_OFFER_HREF}>Book a free 15-minute call</a>
+                <a href="mailto:info@8lakestours.com?subject=Question%20before%20booking%208%20Lakes%20Tours">Ask a question first</a>
+              </div>
               <div className="ask-card-alt">
                 <p>Prefer to stay with the host family and ride daily, without the full camping trek to Eight Lakes? We can plan a custom riding stay around your dates.</p>
                 <a href="mailto:info@8lakestours.com?subject=Custom%20host-family%20riding%20stay">Ask about a riding-only stay</a>
@@ -2548,6 +2554,13 @@ export default function Home({ tourDates }: { tourDates: TourDateOption[] }) {
                 <span className="contact-card-text">
                   <span className="contact-card-label">Instagram</span>
                   <span className="contact-card-value">@8lakestours</span>
+                </span>
+              </a>
+              <a className="contact-card contact-card-call" href={CALL_OFFER_HREF}>
+                <span className="contact-card-icon" aria-hidden="true">☏</span>
+                <span className="contact-card-text">
+                  <span className="contact-card-label">Free 15-minute call</span>
+                  <span className="contact-card-value">Talk it through with Robert before you book</span>
                 </span>
               </a>
             </div>

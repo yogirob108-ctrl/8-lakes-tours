@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import SiteNav from '../components/SiteNav';
 import HeroVideo from '../components/HeroVideo';
+import { CALL_OFFER_HREF } from '@/lib/call-offer.mjs';
 
 export const metadata: Metadata = {
   title: 'Contact',
@@ -86,6 +87,11 @@ export default function Page() {
         <section style={{ marginTop: '2.5rem' }}>
           <h2 style={h2Style}>Email</h2>
           <p style={pStyle}><a href="mailto:info@8lakestours.com" style={{ color: '#c8a96e' }}>info@8lakestours.com</a></p>
+        </section>
+        <section style={{ marginTop: '2.5rem' }} id="call">
+          <h2 style={h2Style}>Free 15-minute call</h2>
+          <p style={pStyle}>Not sure the trip is right for you? Talk it through with Robert before you book: riding level, food, getting there, what the days are really like. Send a few times that suit you and we&apos;ll set up a call by phone, WhatsApp or Zoom.</p>
+          <p style={{...pStyle, marginTop: '1rem'}}><a href={CALL_OFFER_HREF} style={{ color: '#c8a96e' }}>Book a free 15-minute call →</a></p>
         </section>
         <section style={{ marginTop: '2.5rem' }}>
           <h2 style={h2Style}>Instagram</h2>

@@ -410,7 +410,7 @@ async function handleCheckoutSessionPaid(session: Stripe.Checkout.Session) {
   }
   const paymentIntentId = getPaymentIntentId(session.payment_intent);
   const supabase = createSupabaseAdminClient();
-  const bookingSelect = 'id, public_reference, status, online_paid_usd, online_due_usd, family_cash_due_usd, tour_date, guest_count, notes, customer_id, customer:customers(first_name, last_name, email)';
+  const bookingSelect = 'id, public_reference, status, online_paid_usd, online_due_usd, tour_date, guest_count, notes, customer_id, customer:customers(first_name, last_name, email)';
 
   const existingPayment = await findExistingStripePayment({
     sessionId: session.id,
@@ -809,7 +809,6 @@ async function handleCheckoutSessionPaid(session: Stripe.Checkout.Session) {
           firstName,
           tourDate: booking.tour_date || 'TBC',
           amountUsd: amountToRecord,
-          familyCashDueUsd: booking.family_cash_due_usd,
         });
         if (!await authorizeDispatch('customer')) return finishManualReview();
         const emailResult = await sendEmail({

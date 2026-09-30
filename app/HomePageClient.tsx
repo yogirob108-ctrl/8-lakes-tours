@@ -5,6 +5,7 @@ import { type FocusEvent, type FormEvent, type MouseEvent, useEffect, useMemo, u
 import { GROUP_INVOICE, manualPaymentReason, normalizeTourDateSelection } from '@/lib/tour-booking.mjs';
 import { getDefaultTourDate, getSeasonYear } from '@/lib/tour-dates.mjs';
 import { CALL_OFFER_HREF } from '@/lib/call-offer.mjs';
+import HeroVideo from './components/HeroVideo';
 import { PRICE_HOLD_DEADLINE_LABEL } from '@/lib/price-hold.mjs';
 import { isValidBookingEmail } from '@/lib/email-validation.mjs';
 import { BASE_LOCAL_FAMILY_PAYMENT_USD, BASE_ONLINE_PAYMENT_USD, BASE_PRICE_USD, GROUP_PRICING_TIERS, MAX_GROUP_SIZE, clampGuestCount, getGroupPricing } from '@/lib/group-pricing.mjs';
@@ -536,7 +537,6 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
   const stripeClickTrackedRef = useRef(false);
   const formSubmittingRef = useRef(false);
   const submissionKeyRef = useRef<string | null>(null);
-  const heroVideoRef = useRef<HTMLVideoElement | null>(null);
   const draftTimerRef = useRef<number | null>(null);
   const draftOwnershipRef = useRef<{ draft_id: string; credential: string } | null>(null);
   const bookingFormRef = useRef<HTMLFormElement | null>(null);
@@ -614,21 +614,9 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
     restoreCompanions();
   };
 
-  // The poster image is the LCP element; the drone loop only loads once the page is
-  // up, and never for reduced-motion or data-saver visitors.
-  useEffect(() => {
-    const video = heroVideoRef.current;
-    if (!video) return;
-    const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || connection?.saveData) return;
-    const start = () => {
-      video.preload = 'auto';
-      video.play().catch(() => {});
-    };
-    if (document.readyState === 'complete') start();
-    else window.addEventListener('load', start, { once: true });
-    return () => window.removeEventListener('load', start);
-  }, []);
+  // The poster image is the LCP element; HeroVideo loads the drone loop only once the
+  // page is up, never for reduced-motion or data-saver visitors, and dissolves it into
+  // itself at the loop instead of cutting.
 
   useEffect(() => {
     const hashParams = new URLSearchParams(window.location.hash.slice(1));
@@ -1183,8 +1171,7 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
           will-change: transform;
         }
         .hero-bg img, .hero-video { object-fit: cover; object-position: center 45%; }
-        .hero-video { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 1.8s ease; }
-        .hero-video.is-playing { opacity: 1; }
+        .hero-video { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; }
         @keyframes droneDrift {
           from { transform: scale(1.08) translate3d(-1.2%, 1.4%, 0); }
           to { transform: scale(1.14) translate3d(1.4%, -1.1%, 0); }
@@ -1821,19 +1808,14 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
             quality={82}
             sizes="100vw"
           />
-          <video
-            ref={heroVideoRef}
+          <HeroVideo
             className="hero-video"
-            muted
-            loop
-            playsInline
-            preload="none"
-            aria-hidden="true"
-            onPlaying={event => event.currentTarget.classList.add('is-playing')}
-          >
-            <source src="/videos/orkhon-valley-drone-loop-mobile.mp4?v=9" type="video/mp4" media="(max-width: 900px)" />
-            <source src="/videos/orkhon-valley-drone-loop.mp4?v=9" type="video/mp4" />
-          </video>
+            desktopSrc="/videos/orkhon-valley-drone-loop.mp4?v=9"
+            mobileSrc="/videos/orkhon-valley-drone-loop-mobile.mp4?v=9"
+            dissolveAtLoop
+            fadeInSeconds={1.8}
+            loopFadeSeconds={2}
+          />
         </div>
         <div className="hero-overlay"></div>
         <div className="hero-content">

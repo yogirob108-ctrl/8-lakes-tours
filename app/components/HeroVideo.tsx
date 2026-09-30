@@ -6,7 +6,7 @@ import { useEffect, useRef } from 'react';
 // the video itself downloads nothing until the page has finished loading, and
 // it fades in only once it is actually playing. Skipped entirely for
 // reduced-motion and data-saver visitors.
-export default function HeroVideo({ className, desktopSrc, mobileSrc, label, dissolveAtLoop = false }: {
+export default function HeroVideo({ className, desktopSrc, mobileSrc, label, dissolveAtLoop = false, fadeInSeconds = 0, loopFadeSeconds = 1.2 }: {
   className: string;
   desktopSrc: string;
   mobileSrc: string;
@@ -19,6 +19,12 @@ export default function HeroVideo({ className, desktopSrc, mobileSrc, label, dis
   // incoming pass be already playing and decoded before the outgoing one goes,
   // so both sides of the seam are moving.
   dissolveAtLoop?: boolean;
+  // With dissolveAtLoop the opacity is driven frame by frame, so a CSS
+  // transition cannot soften the first appearance over the poster. This eases
+  // the whole layer in over the given seconds instead; 0 keeps the old snap.
+  fadeInSeconds?: number;
+  // Length of the loop crossfade; slow footage reads better with a longer one.
+  loopFadeSeconds?: number;
 }) {
   const primaryRef = useRef<HTMLVideoElement | null>(null);
   const secondaryRef = useRef<HTMLVideoElement | null>(null);
@@ -48,7 +54,7 @@ export default function HeroVideo({ className, desktopSrc, mobileSrc, label, dis
     if (!dissolveAtLoop || !a || !b) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    const FADE_SECONDS = 1.2;
+    const FADE_SECONDS = loopFadeSeconds;
     // Eased rather than linear so the outgoing pass leaves full opacity gently
     // instead of stepping off it.
     const smoothstep = (t: number) => t * t * (3 - 2 * t);
@@ -58,12 +64,19 @@ export default function HeroVideo({ className, desktopSrc, mobileSrc, label, dis
     let back = b;
     let frame = 0;
     let cued = false;
+    let startedAt = 0;
+    // Both passes scale by the arrival ramp, so the intro fade and the loop
+    // crossfade compose instead of fighting over the same opacity.
+    const arrival = () => fadeInSeconds > 0 && startedAt
+      ? smoothstep(clamp((performance.now() - startedAt) / (fadeInSeconds * 1000)))
+      : 1;
+    const show = (video: HTMLVideoElement, value: number) => { video.style.opacity = String(value * arrival()); };
 
     const handOver = () => {
       front.pause();
       front.currentTime = 0;
       front.style.opacity = '0';
-      back.style.opacity = '1';
+      show(back, 1);
       [front, back] = [back, front];
       cued = false;
     };
@@ -74,7 +87,7 @@ export default function HeroVideo({ className, desktopSrc, mobileSrc, label, dis
       if (!Number.isFinite(duration) || duration <= FADE_SECONDS * 2) return;
       const remaining = duration - currentTime;
       if (remaining > FADE_SECONDS) {
-        front.style.opacity = '1';
+        show(front, 1);
         return;
       }
       // Start the incoming pass a full fade before the outgoing one ends, so it
@@ -85,15 +98,16 @@ export default function HeroVideo({ className, desktopSrc, mobileSrc, label, dis
         back.play().catch(() => {});
       }
       const eased = smoothstep(clamp(1 - remaining / FADE_SECONDS));
-      front.style.opacity = String(1 - eased);
-      back.style.opacity = String(eased);
+      show(front, 1 - eased);
+      show(back, eased);
       // `ended` can be late by a frame or two; swap as soon as the tail is spent
       // so the finished element never lingers at a visible opacity.
       if (front.ended || remaining <= 0.02) handOver();
     };
 
     const onPlaying = () => {
-      front.style.opacity = '1';
+      startedAt = performance.now();
+      show(front, 1);
       back.style.opacity = '0';
       if (!frame) frame = requestAnimationFrame(tick);
     };
@@ -107,7 +121,7 @@ export default function HeroVideo({ className, desktopSrc, mobileSrc, label, dis
       a.style.opacity = '';
       b.style.opacity = '';
     };
-  }, [dissolveAtLoop]);
+  }, [dissolveAtLoop, fadeInSeconds, loopFadeSeconds]);
 
   const sources = (
     <>

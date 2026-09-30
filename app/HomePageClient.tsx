@@ -212,7 +212,7 @@ const DISPLAY_EXCHANGE_RATES: Record<CurrencyCode, number> = {
 };
 
 const PACKING_LIST = [
-  'Warm sleeping bag rated for cold steppe nights',
+  'Optional: your own sleeping bag, mat or tent — warm camping gear is provided, so only bring yours if you prefer it',
   'Enough layers to handle all seasons in one trip — pack warmer rather than lighter',
   'Comfortable riding boots or sturdy hiking boots',
   'Light camp shoes or flip-flops',
@@ -2014,6 +2014,7 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
             <li><span className="icon">✦</span> 3 traditional Mongolian meals per day</li>
             <li><span className="icon">✦</span> Guided 4-day horseback trek</li>
             <li><span className="icon">✦</span> Horses, saddles &amp; tack, and local expert guides</li>
+            <li><span className="icon">✦</span> Camping gear for the trek: tents, sleeping mats, warm sleeping bags &amp; camp cooking kit. You&apos;re welcome to bring your own if you prefer</li>
             <li><span className="icon">✦</span> Cultural immersion activities</li>
           </ul>
         </div>
@@ -2023,7 +2024,7 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
           <ul className="included-list not">
             <li><span className="icon">✦</span> International flights</li>
             <li><span className="icon">✦</span> Travel insurance (required) — <a href="https://www.worldnomads.com" target="_blank" rel="noopener noreferrer" style={{color:'var(--gold)'}}>World Nomads</a></li>
-            <li><span className="icon">✦</span> Warm sleeping bag & personal camping comfort items</li>
+            <li><span className="icon">✦</span> Personal camping comforts, like a pillow or sleeping-bag liner. Camping gear is provided, but you can bring your own sleeping bag or tent</li>
             <li><span className="icon">✦</span> Warm layers, waterproof shell & sturdy boots</li>
             <li><span className="icon">✦</span> Personal snacks, medication, first-aid kit, painkillers & toiletries</li>
             <li><span className="icon">✦</span> Cash for the local family payment and personal extras</li>

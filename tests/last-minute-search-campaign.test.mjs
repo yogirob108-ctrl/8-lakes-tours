@@ -47,7 +47,7 @@ test('homepage sells the 2027 season only; late 2026 departures are closed, not 
   ]);
 
   assert.match(source, /scheduledDepartures\.length > 0/);
-  assert.match(source, /The 2027 season, May–October/);
+  assert.match(source, /The 2027 season, May–September/);
   assert.doesNotMatch(source, /Book September–October 2026|lateSeasonDepartures|year: '2026'/);
   assert.doesNotMatch(source, /September places available|last places|only \d+ places/i);
 

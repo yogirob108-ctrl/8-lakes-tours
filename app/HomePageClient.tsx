@@ -1062,7 +1062,7 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
           priceCurrency: 'USD',
           availability: 'https://schema.org/LimitedAvailability',
           validFrom: '2026-01-01',
-          validThrough: '2027-10-19',
+          validThrough: '2027-09-21',
         },
         provider: {
           '@type': 'Organization',
@@ -1853,7 +1853,7 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
       {scheduledDepartures.length > 0 && <section className="offer-strip" aria-label="2027 season availability and price summary">
         <div>
           <p className="offer-strip-kicker">Now booking</p>
-          <h2 className="offer-strip-title">The 2027 season, May–October</h2>
+          <h2 className="offer-strip-title">The 2027 season, May–September</h2>
           <p className="offer-strip-note">Fortnightly departures in small groups of up to 8.{priceHoldActive && <> <strong className="offer-strip-hold">Today&apos;s prices are held for bookings made by {PRICE_HOLD_DEADLINE_LABEL}.</strong></>}</p>
         </div>
         <div className="offer-strip-facts">

@@ -115,7 +115,7 @@ test('the 2026 private-date option remains available through November', () => {
   const privateDate = TOUR_DATES.find(option => option.date === REQUEST_ONLY_OPTION_DATE);
 
   assert.ok(privateDate);
-  assert.equal(privateDate.availableUntil, '2027-10-19');
+  assert.equal(privateDate.availableUntil, '2027-09-21', 'private dates close with the last 2027 departure');
   assert.equal(privateDate.availableUntil > '2026-11-30', true, 'private/custom dates stay requestable beyond November 2026');
   assert.equal(privateDate.requiresConfirmation, true);
   assert.equal(isRequestOnlyTourDate('2026 Private Group Date'), true, 'the 2026 private label still resolves through normalization');

@@ -43,7 +43,7 @@ test('request options consolidate into one private group date on request', () =>
   for (const legacy of ['2026 Private Group Date', '2027 Private Group Date', '2027 Small-Group Departures']) {
     assert.equal(TOUR_DATES.some(option => option.date === legacy), false, `${legacy} must no longer be a selectable option`);
   }
-  assert.equal(requestOptions[0].availableUntil, '2027-10-19');
+  assert.equal(requestOptions[0].availableUntil, '2027-09-21');
   assert.equal(requestOptions[0].startDate, undefined, 'request option is never a departure');
 });
 

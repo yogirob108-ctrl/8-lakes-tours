@@ -11,8 +11,9 @@ import { isSupabaseAdminConfigured } from '@/lib/ops-config';
 import { createSupabaseAdminClient } from '@/lib/supabase-admin';
 
 const LIFECYCLE_KEYS = ['payment_confirmed', 'preparation_packing', 'insurance_final_check', 'arrival_coordination', 'final_checklist', 'post_trip_referral'];
+const POST_TRIP_STATUSES = new Set(['confirmed', 'prep_sent', 'ready_for_departure', 'completed']);
 type TemplateKey = typeof LIFECYCLE_KEYS[number];
-type BookingRow = { id:string; public_reference:string; customer_id:string|null; tour_date:string|null; status:string; online_due_usd:number|null; online_paid_usd:number|null; family_cash_due_usd:number|null; customer?: {first_name?:string|null;email?:string|null}|{first_name?:string|null;email?:string|null}[]|null };
+type BookingRow = { id:string; public_reference:string; customer_id:string|null; tour_date:string|null; status:string; online_due_usd:number|null; online_paid_usd:number|null; family_cash_due_usd:number|null; departure?: {end_date?:string|null}|{end_date?:string|null}[]|null; customer?: {first_name?:string|null;email?:string|null}|{first_name?:string|null;email?:string|null}[]|null };
 type DispatchClaim = { should_send:boolean; event_id?:string; idempotency_key?:string; reason?:string };
 
 export const runtime = 'nodejs';
@@ -69,29 +70,25 @@ export async function GET(request: Request) {
       post_trip_public_owner: postTripPublicOwner === true,
     };
     const readBookings = async (statuses: string[]) => fetchAllPages(async (from: number, to: number) => {
-      let bookingQuery = db.from('bookings').select('id, public_reference, customer_id, tour_date, status, online_due_usd, online_paid_usd, family_cash_due_usd, customer:customers(first_name, email)').in('status', statuses);
+      let bookingQuery = db.from('bookings').select('id, public_reference, customer_id, tour_date, status, online_due_usd, online_paid_usd, family_cash_due_usd, departure:departures(end_date), customer:customers(first_name, email)').in('status', statuses);
       if (targetedReference) bookingQuery = bookingQuery.eq('public_reference', targetedReference);
       const { data, error } = await bookingQuery.order('id', { ascending: true }).range(from, to);
       if (error) throw error;
       return data || [];
     });
-    // Finished trips are fetched separately so they can never crowd upcoming
-    // departures out of a paginated active query. An authenticated dry-run may
-    // preview this one template without changing the production sender gate.
+    // All lifecycle-compatible paid statuses are read together. A post-trip
+    // candidate is based on a definitive end date, not an operator changing a
+    // historical booking to `completed`.
     const postTripEnabled = process.env.POST_TRIP_EMAIL_ENABLED === 'true';
     const postTripPreview = dryRun && url.searchParams.get('post_trip_preview') === '1';
     const postTripEligible = postTripEnabled || postTripPreview;
-    const bookings = await readBookings(['awaiting_payment','confirmed','prep_sent','ready_for_departure']);
-    let completedBookings: BookingRow[] = [];
-    if (postTripEligible) {
-      completedBookings = await readBookings(['completed']) as BookingRow[];
-    }
+    const bookings = await readBookings(['awaiting_payment','confirmed','prep_sent','ready_for_departure','completed']);
+    const rows = (bookings || []) as BookingRow[];
     const approvedBindings = await fetchAllPages(async (from: number, to: number) => {
       const { data, error } = await db.from('approved_payment_bindings').select('booking_id, provider_object_id').eq('provider','stripe').order('booking_id', { ascending: true }).range(from, to);
       if (error) throw error;
       return data || [];
     });
-    const rows = [...((bookings || []) as BookingRow[]), ...completedBookings];
     if (!process.env.STRIPE_SECRET_KEY) throw new Error('stripe_unavailable');
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { maxNetworkRetries: 0, timeout: 5000 });
     const provider = await collectStripeLifecycleEvidence({ stripe, pageBudget: 90 });
@@ -117,8 +114,9 @@ export async function GET(request: Request) {
     for (const booking of rows) {
       const schedule = getLifecycleEmailSchedule({ now:new Date(), tourDate:booking.tour_date });
       const sentTemplates = existing.get(booking.id)||new Set<string>();
+      const departure = Array.isArray(booking.departure) ? booking.departure[0] : booking.departure;
       const template = (selectPacedLifecycleCandidate({ verifiedStripe:verified.has(booking.public_reference), daysUntilDeparture:schedule.daysUntilDeparture, sentTemplates })
-        ?? (booking.status === 'completed' ? selectPostTripCandidate({ enabled:postTripEligible, verifiedStripe:verified.has(booking.public_reference), daysSinceEnd:daysSinceTourEnd(booking.tour_date), sentTemplates }) : null)) as TemplateKey|null;
+        ?? (POST_TRIP_STATUSES.has(booking.status) ? selectPostTripCandidate({ enabled:postTripEligible, verifiedStripe:verified.has(booking.public_reference), daysSinceEnd:daysSinceTourEnd(booking.tour_date, new Date(), undefined, departure?.end_date), sentTemplates }) : null)) as TemplateKey|null;
       if (!template) {
         const reconciliationResult = (reconciliation as Array<Record<string, unknown>>).find(row => row.reference===booking.public_reference);
         results.push(reconciliationResult || { reference:booking.public_reference, status:'scan_incomplete_unknown' });

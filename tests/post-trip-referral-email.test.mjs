@@ -38,18 +38,30 @@ test('the email states the agreed $100 each way and how to claim it', async () =
   assert.match(source, /write your name in the notes when they book/);
 });
 
-test('the daily job keeps finished trips out of the capped upcoming query and behind the flag', async () => {
+test('the daily job keeps finished trips out of the capped upcoming query and supports a dry-run-only preview', async () => {
   const source = await readFile(new URL('../app/api/cron/drip-emails/route.ts', import.meta.url), 'utf8');
   assert.match(source, /process\.env\.POST_TRIP_EMAIL_ENABLED === 'true'/);
+  assert.match(source, /postTripPreview = dryRun && url\.searchParams\.get\('post_trip_preview'\) === '1'/);
+  assert.match(source, /postTripEligible = postTripEnabled \|\| postTripPreview/);
   assert.match(source, /\.in\('status',\['awaiting_payment','confirmed','prep_sent','ready_for_departure'\]\)/);
-  assert.match(source, /if \(postTripEnabled\) \{[\s\S]*\.eq\('status','completed'\)/);
+  assert.match(source, /if \(postTripEligible\) \{[\s\S]*\.eq\('status','completed'\)/);
+});
+
+test('a recorded legacy post-trip follow-up suppresses the new referral candidate before dry-run output', async () => {
+  const source = await readFile(new URL('../app/api/cron/drip-emails/route.ts', import.meta.url), 'utf8');
+  assert.match(source, /\.in\('template_key',\[\.\.\.LIFECYCLE_KEYS, 'post_trip_followup'\]\)/);
+  assert.match(source, /event\.template_key === 'post_trip_followup' \? 'post_trip_referral' : event\.template_key/);
 });
 
 test('the migration only adds the post-trip key and leaves pre-trip eligibility untouched', async () => {
   const sql = await readFile(new URL('../supabase/migrations/20261001000000_post_trip_referral_email.sql', import.meta.url), 'utf8');
   assert.match(sql, /'final_checklist','post_trip_referral'\)\)/);
   assert.match(sql, /p_template_key<>'post_trip_referral' and b\.status not in \('awaiting_payment','confirmed','prep_sent','ready_for_departure'\)/);
-  assert.match(sql, /p_template_key='post_trip_referral' and b\.status not in \('confirmed','prep_sent','ready_for_departure','completed'\)/);
+  assert.match(sql, /p_template_key='post_trip_referral' and b\.status<>'completed'/);
+  assert.match(sql, /when 'post_trip_referral' then 'post_trip_followup'/);
+  assert.doesNotMatch(sql, /email_events set status='queued',claim_token=p_claim_token::text/);
+  assert.doesNotMatch(sql, /true,p_claim_token::text,p_now,jsonb_build_object\('queued',true\)/);
+  assert.doesNotMatch(sql, /lifecycle_email_token=p_claim_token::text,lifecycle_email_claimed_at/);
   assert.match(sql, /revoke all on function public\.claim_lifecycle_email_dispatch[^;]+from public,anon,authenticated;/);
   assert.match(sql, /grant execute on function public\.claim_lifecycle_email_dispatch[^;]+to service_role;/);
   assert.doesNotMatch(sql, /\b(update|delete|insert into) public\.bookings\b(?![^;]*lifecycle_email_token)/i);

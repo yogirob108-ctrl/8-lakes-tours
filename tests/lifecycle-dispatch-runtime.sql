@@ -32,5 +32,21 @@ begin
  update public.bookings set status='cancelled' where id=b;
  y:=public.claim_lifecycle_email_dispatch(b,c,'final_checklist','lifecycle-runtime@example.invalid','Three','body','runtime',gen_random_uuid(),clock_timestamp()+interval '1 day');
  if (y->>'should_send')::boolean or y->>'reason'<>'booking_ineligible' then raise exception 'cancelled booking claimed lifecycle email'; end if;
+ -- The referral key is completed-only. Existing manual post-trip follow-up
+ -- attestations use a distinct historic key but fence the same milestone.
+ insert into public.customers(first_name,last_name,email) values('Post','Trip','post-trip-runtime@example.invalid') returning id into c;
+ insert into public.bookings(customer_id,project_id,public_reference,tour_date,status,online_due_usd,online_paid_usd)
+ values(c,p,'POST-TRIP-RUNTIME','Scheduled fixture','completed',999,999) returning id into b;
+ y:=public.claim_lifecycle_email_dispatch(b,c,'preparation_packing','post-trip-runtime@example.invalid','Pretrip','body','runtime',gen_random_uuid(),clock_timestamp()+interval '2 days');
+ if (y->>'should_send')::boolean or y->>'reason'<>'booking_ineligible' then raise exception 'pre-trip key reached completed booking: %',y; end if;
+ x:=public.claim_lifecycle_email_dispatch(b,c,'post_trip_referral','post-trip-runtime@example.invalid','Referral','body','runtime',tok,clock_timestamp()+interval '2 days');
+ if not (x->>'should_send')::boolean then raise exception 'completed booking did not claim referral: %',x; end if;
+ insert into public.customers(first_name,last_name,email) values('Manual','Post','manual-post-runtime@example.invalid') returning id into c;
+ insert into public.bookings(customer_id,project_id,public_reference,tour_date,status,online_due_usd,online_paid_usd)
+ values(c,p,'MANUAL-POST-TRIP-RUNTIME','Scheduled fixture','completed',999,999) returning id into b;
+ insert into public.email_events(booking_id,customer_id,template_key,to_email,subject,body_snapshot,sent_by,status)
+ values(b,c,'post_trip_followup','manual-post-runtime@example.invalid','Manual follow-up','','gmail-manual','sent');
+ y:=public.claim_lifecycle_email_dispatch(b,c,'post_trip_referral','manual-post-runtime@example.invalid','Referral','body','runtime',gen_random_uuid(),clock_timestamp()+interval '3 days');
+ if (y->>'should_send')::boolean or y->>'reason'<>'lifecycle_already_attested' then raise exception 'manual post-trip follow-up did not fence referral: %',y; end if;
 end $$;
 rollback;

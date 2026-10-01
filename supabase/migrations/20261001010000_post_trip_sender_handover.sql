@@ -33,7 +33,9 @@ begin
  select * into b from public.bookings where id=p_booking_id and customer_id=p_customer_id for update;
  if not found or b.status<>'completed' or b.status='cancelled' then return jsonb_build_object('should_send',false,'reason','booking_ineligible'); end if;
  select * into control from public.post_trip_sender_control where singleton=true for update;
- if control.active_owner<>p_owner then return jsonb_build_object('should_send',false,'reason','post_trip_sender_not_owner'); end if;
+ -- Missing/corrupt control must default-deny; SQL's NULL comparison would
+ -- otherwise fall through and authorize the legacy sender.
+ if not found or control.active_owner is distinct from p_owner then return jsonb_build_object('should_send',false,'reason','post_trip_sender_not_owner'); end if;
  if exists(select 1 from public.email_events where booking_id=b.id and template_key in ('post_trip_followup','post_trip_referral') and status in ('sent','delivered')) then return jsonb_build_object('should_send',false,'reason','lifecycle_already_attested'); end if;
  if exists(select 1 from public.email_events where booking_id=b.id and template_key in ('post_trip_followup','post_trip_referral') and status='queued') then return jsonb_build_object('should_send',false,'reason','unresolved_post_trip_provider_outcome'); end if;
  insert into public.email_events(booking_id,customer_id,template_key,to_email,subject,body_snapshot,sent_by,status,is_canonical,claim_token,claimed_at,raw_response)
@@ -45,7 +47,7 @@ create or replace function public.mark_post_trip_email_provider_attempted(p_book
 returns boolean language plpgsql security definer set search_path to '' as $$
 begin
  perform public.checkout_service_role();
- update public.email_events set provider_attempted_at=p_now where id=p_event_id and booking_id=p_booking_id and template_key='post_trip_followup' and status='queued' and claim_token=p_claim_token;
+ update public.email_events set provider_attempted_at=p_now where id=p_event_id and booking_id=p_booking_id and template_key='post_trip_followup' and status='queued' and claim_token=p_claim_token::text;
  return found;
 end $$;
 
@@ -53,8 +55,8 @@ create or replace function public.complete_post_trip_email_dispatch(p_booking_id
 returns boolean language plpgsql security definer set search_path to '' as $$
 begin
  perform public.checkout_service_role();
- if not p_sent and not p_definite_failure then update public.email_events set raw_response=coalesce(p_raw_response,'{}'::jsonb)||jsonb_build_object('reconciliation_required',true),provider_completed_at=p_now where id=p_event_id and booking_id=p_booking_id and template_key='post_trip_followup' and status='queued' and claim_token=p_claim_token; return found; end if;
- update public.email_events set status=case when p_sent then 'sent'::public.email_event_status else 'failed'::public.email_event_status end,provider_message_id=p_provider_message_id,provider_completed_at=p_now,raw_response=coalesce(p_raw_response,'{}'::jsonb),claim_token=null,claimed_at=null where id=p_event_id and booking_id=p_booking_id and template_key='post_trip_followup' and status='queued' and claim_token=p_claim_token;
+ if not p_sent and not p_definite_failure then update public.email_events set raw_response=coalesce(p_raw_response,'{}'::jsonb)||jsonb_build_object('reconciliation_required',true),provider_completed_at=p_now where id=p_event_id and booking_id=p_booking_id and template_key='post_trip_followup' and status='queued' and claim_token=p_claim_token::text; return found; end if;
+ update public.email_events set status=case when p_sent then 'sent'::public.email_event_status else 'failed'::public.email_event_status end,provider_message_id=p_provider_message_id,provider_completed_at=p_now,raw_response=coalesce(p_raw_response,'{}'::jsonb),claim_token=null,claimed_at=null where id=p_event_id and booking_id=p_booking_id and template_key='post_trip_followup' and status='queued' and claim_token=p_claim_token::text;
  return found;
 end $$;
 revoke all on function public.claim_post_trip_email_dispatch(text,uuid,uuid,text,text,text,text,text,uuid,timestamptz),public.mark_post_trip_email_provider_attempted(uuid,uuid,uuid,timestamptz),public.complete_post_trip_email_dispatch(uuid,uuid,uuid,boolean,boolean,text,jsonb,timestamptz) from public,anon,authenticated;
@@ -64,7 +66,7 @@ grant execute on function public.claim_post_trip_email_dispatch(text,uuid,uuid,t
 -- Do not activate public ownership until the public deployment and recipient review are complete.
 create or replace function public.post_trip_public_owner_allows()
 returns boolean language sql security definer set search_path to '' as $$
- select active_owner='public' from public.post_trip_sender_control where singleton=true
+ select coalesce((select active_owner='public' from public.post_trip_sender_control where singleton=true),false)
 $$;
 revoke all on function public.post_trip_public_owner_allows() from public,anon,authenticated;
 grant execute on function public.post_trip_public_owner_allows() to service_role;
@@ -93,7 +95,8 @@ begin
   end if;
   if p_template_key='post_trip_referral' then
     select * into control from public.post_trip_sender_control where singleton=true for update;
-    if control.active_owner<>'public' then
+    -- Default-deny when the singleton has not been inserted or is malformed.
+    if not found or control.active_owner is distinct from 'public' then
       return jsonb_build_object('should_send',false,'reason','post_trip_sender_not_owner');
     end if;
   end if;
@@ -132,7 +135,7 @@ begin
     if d.status='sent' then return jsonb_build_object('should_send',false,'reason','lifecycle_already_sent_utc_day'); end if;
     if d.status='failed' and d.template_key=p_template_key and d.provider_attempted_at is not null then
       update public.lifecycle_email_dispatches set status='queued',claim_token=p_claim_token,claimed_at=p_now,provider_attempted_at=null,provider_completed_at=null,updated_at=clock_timestamp() where booking_id=b.id and utc_day=day_utc;
-      update public.email_events set status='queued',claim_token=p_claim_token,claimed_at=p_now,provider_attempted_at=null,provider_completed_at=null,provider_message_id=null,raw_response=jsonb_build_object('retrying',true) where id=d.email_event_id and status='failed';
+      update public.email_events set status='queued',claim_token=p_claim_token::text,claimed_at=p_now,provider_attempted_at=null,provider_completed_at=null,provider_message_id=null,raw_response=jsonb_build_object('retrying',true) where id=d.email_event_id and status='failed';
       if not found then raise exception 'lifecycle retry event conflict'; end if;
     else
       return jsonb_build_object('should_send',false,'reason','lifecycle_day_claim_unavailable');
@@ -143,7 +146,7 @@ begin
     insert into public.lifecycle_email_dispatches(booking_id,utc_day,template_key,email_event_id,status,claim_token,claimed_at)
     values(b.id,day_utc,p_template_key,eid,'queued',p_claim_token,p_now);
   end if;
-  update public.bookings set lifecycle_email_token=p_claim_token,lifecycle_email_claimed_at=p_now,lifecycle_email_provider_attempted_at=null where id=b.id;
+  update public.bookings set lifecycle_email_token=p_claim_token::text,lifecycle_email_claimed_at=p_now,lifecycle_email_provider_attempted_at=null where id=b.id;
   select email_event_id into eid from public.lifecycle_email_dispatches where booking_id=b.id and utc_day=day_utc;
   return jsonb_build_object('should_send',true,'event_id',eid,'idempotency_key','8l-lifecycle-'||eid::text);
 end $function$
@@ -161,16 +164,16 @@ begin
  if not p_sent and not p_definite_failure then
    update public.lifecycle_email_dispatches set status='reconciliation_required',provider_completed_at=p_now,updated_at=clock_timestamp() where booking_id=p_booking_id and email_event_id=p_event_id and status='queued' and claim_token=p_claim_token;
    if not found then return false; end if;
-   update public.email_events set raw_response=coalesce(p_raw_response,'{}'::jsonb)||jsonb_build_object('reconciliation_required',true),provider_completed_at=p_now where id=p_event_id and status='queued' and claim_token=p_claim_token;
-   update public.bookings set lifecycle_email_token=null,lifecycle_email_claimed_at=null,lifecycle_email_provider_attempted_at=null where id=p_booking_id and lifecycle_email_token=p_claim_token;
+   update public.email_events set raw_response=coalesce(p_raw_response,'{}'::jsonb)||jsonb_build_object('reconciliation_required',true),provider_completed_at=p_now where id=p_event_id and status='queued' and claim_token=p_claim_token::text;
+   update public.bookings set lifecycle_email_token=null,lifecycle_email_claimed_at=null,lifecycle_email_provider_attempted_at=null where id=p_booking_id and lifecycle_email_token=p_claim_token::text;
    return true;
  end if;
  final_status:=case when p_sent then 'sent' else 'failed' end;
  update public.lifecycle_email_dispatches set status=final_status,provider_completed_at=p_now,updated_at=clock_timestamp() where booking_id=p_booking_id and email_event_id=p_event_id and status='queued' and claim_token=p_claim_token;
  if not found then return false; end if;
- update public.email_events set status=final_status::public.email_event_status,provider_message_id=p_provider_message_id,provider_completed_at=p_now,raw_response=coalesce(p_raw_response,'{}'::jsonb),claim_token=null,claimed_at=null where id=p_event_id and status='queued' and claim_token=p_claim_token;
+ update public.email_events set status=final_status::public.email_event_status,provider_message_id=p_provider_message_id,provider_completed_at=p_now,raw_response=coalesce(p_raw_response,'{}'::jsonb),claim_token=null,claimed_at=null where id=p_event_id and status='queued' and claim_token=p_claim_token::text;
  if not found then raise exception 'lifecycle completion email event conflict'; end if;
- update public.bookings set lifecycle_email_token=null,lifecycle_email_claimed_at=null,lifecycle_email_provider_attempted_at=null where id=p_booking_id and lifecycle_email_token=p_claim_token;
+ update public.bookings set lifecycle_email_token=null,lifecycle_email_claimed_at=null,lifecycle_email_provider_attempted_at=null where id=p_booking_id and lifecycle_email_token=p_claim_token::text;
  if not found then raise exception 'lifecycle completion booking lease lost'; end if;
  return true;
 end $$;

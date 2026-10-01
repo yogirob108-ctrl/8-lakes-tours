@@ -32,8 +32,11 @@ begin
  update public.bookings set status='cancelled' where id=b;
  y:=public.claim_lifecycle_email_dispatch(b,c,'final_checklist','lifecycle-runtime@example.invalid','Three','body','runtime',gen_random_uuid(),clock_timestamp()+interval '1 day');
  if (y->>'should_send')::boolean or y->>'reason'<>'booking_ineligible' then raise exception 'cancelled booking claimed lifecycle email'; end if;
- -- The referral key is completed-only. Existing manual post-trip follow-up
- -- attestations use a distinct historic key but fence the same milestone.
+ -- The referral key is completed-only. The release defaults to the legacy
+ -- owner, so this isolated fixture explicitly performs a handover before it
+ -- tests the public claimant. Historic manual follow-up attestations fence
+ -- the same milestone.
+ perform public.set_post_trip_sender_owner('public');
  insert into public.customers(first_name,last_name,email) values('Post','Trip','post-trip-runtime@example.invalid') returning id into c;
  insert into public.bookings(customer_id,project_id,public_reference,tour_date,status,online_due_usd,online_paid_usd)
  values(c,p,'POST-TRIP-RUNTIME','Scheduled fixture','completed',999,999) returning id into b;

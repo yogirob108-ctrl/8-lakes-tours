@@ -38,3 +38,10 @@ The shared claimant takes the booking lock and, for post-trip, the single sender
 ## Hermes reminder job
 
 Local scheduler metadata shows job `003e29361e29` is enabled, scheduled every five minutes, with 1,437 completed runs and last status `ok` at 2026-10-01T14:25:22+02:00. Local historical logs show silent successful runs. This is local metadata/history only; it is not a Vercel deployment claim.
+
+## Release handoff — 2026-10-01
+
+- PR #74 is merged. The production database has the exact `20261002010000` successor applied; its post-trip status guard admits non-cancelled `confirmed`, `prep_sent`, `ready_for_departure`, and `completed` bookings. Paid/refund eligibility remains in the sender’s Stripe reconciliation. The owner row remains `legacy`; `POST_TRIP_EMAIL_ENABLED` remains false.
+- Authenticated production dry-run at release confirmed one current candidate: `8L-M8MCN` (`post_trip_referral`), with no send. `8L-CRBP3K8` and `8L-GDFH3` become date-eligible on 2026-10-04; `8L-CWDP2` remains excluded pending payment-evidence resolution. Yearless legacy labels remain excluded.
+- Do not enable public ownership or the post-trip flag in this release. When Rob has Vercel flag access, perform the separately authorized activation no earlier than **2026-10-04 08:00 UTC**: read back `POST_TRIP_EMAIL_ENABLED=true`, public owner, and the same authenticated dry-run before allowing a non-dry run.
+- Migration history still lacks exact semantic catalog entries for the older Oct 1 objects. No old DDL was replayed and no history metadata was repaired; this remains a metadata-reconciliation gap.

@@ -107,7 +107,7 @@ export async function GET(request: Request) {
       const schedule = getLifecycleEmailSchedule({ now:new Date(), tourDate:booking.tour_date });
       const sentTemplates = existing.get(booking.id)||new Set<string>();
       const template = (selectPacedLifecycleCandidate({ verifiedStripe:verified.has(booking.public_reference), daysUntilDeparture:schedule.daysUntilDeparture, sentTemplates })
-        ?? selectPostTripCandidate({ enabled:postTripEligible, verifiedStripe:verified.has(booking.public_reference), daysSinceEnd:daysSinceTourEnd(booking.tour_date), sentTemplates })) as TemplateKey|null;
+        ?? (booking.status === 'completed' ? selectPostTripCandidate({ enabled:postTripEligible, verifiedStripe:verified.has(booking.public_reference), daysSinceEnd:daysSinceTourEnd(booking.tour_date), sentTemplates }) : null)) as TemplateKey|null;
       if (!template) {
         const reconciliationResult = (reconciliation as Array<Record<string, unknown>>).find(row => row.reference===booking.public_reference);
         results.push(reconciliationResult || { reference:booking.public_reference, status:'scan_incomplete_unknown' });

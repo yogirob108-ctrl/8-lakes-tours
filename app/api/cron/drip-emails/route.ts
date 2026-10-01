@@ -6,6 +6,7 @@ import { daysSinceTourEnd, selectPostTripCandidate } from '@/lib/post-trip-email
 import { getLifecycleEmailSchedule } from '@/lib/lifecycle-email-schedule.mjs';
 import { getDryRun, reconcileStripeProviderEvidence, selectPacedLifecycleCandidate } from '@/lib/public-lifecycle.mjs';
 import { collectStripeLifecycleEvidence } from '@/lib/stripe-lifecycle-evidence.mjs';
+import { chunkValues, fetchAllPages } from '@/lib/paginated-read.mjs';
 import { isSupabaseAdminConfigured } from '@/lib/ops-config';
 import { createSupabaseAdminClient } from '@/lib/supabase-admin';
 
@@ -67,26 +68,29 @@ export async function GET(request: Request) {
       post_trip_email_enabled: process.env.POST_TRIP_EMAIL_ENABLED === 'true',
       post_trip_public_owner: postTripPublicOwner === true,
     };
-    let bookingQuery = db.from('bookings').select('id, public_reference, customer_id, tour_date, status, online_due_usd, online_paid_usd, family_cash_due_usd, customer:customers(first_name, email)').in('status',['awaiting_payment','confirmed','prep_sent','ready_for_departure']);
-    if (targetedReference) bookingQuery = bookingQuery.eq('public_reference', targetedReference);
-    const { data: bookings, error } = await bookingQuery.limit(200);
-    if (error) throw error;
+    const readBookings = async (statuses: string[]) => fetchAllPages(async (from: number, to: number) => {
+      let bookingQuery = db.from('bookings').select('id, public_reference, customer_id, tour_date, status, online_due_usd, online_paid_usd, family_cash_due_usd, customer:customers(first_name, email)').in('status', statuses);
+      if (targetedReference) bookingQuery = bookingQuery.eq('public_reference', targetedReference);
+      const { data, error } = await bookingQuery.order('id', { ascending: true }).range(from, to);
+      if (error) throw error;
+      return data || [];
+    });
     // Finished trips are fetched separately so they can never crowd upcoming
-    // departures out of the capped query above. An authenticated dry-run may
+    // departures out of a paginated active query. An authenticated dry-run may
     // preview this one template without changing the production sender gate.
     const postTripEnabled = process.env.POST_TRIP_EMAIL_ENABLED === 'true';
     const postTripPreview = dryRun && url.searchParams.get('post_trip_preview') === '1';
     const postTripEligible = postTripEnabled || postTripPreview;
+    const bookings = await readBookings(['awaiting_payment','confirmed','prep_sent','ready_for_departure']);
     let completedBookings: BookingRow[] = [];
     if (postTripEligible) {
-      let completedQuery = db.from('bookings').select('id, public_reference, customer_id, tour_date, status, online_due_usd, online_paid_usd, family_cash_due_usd, customer:customers(first_name, email)').eq('status','completed').gte('updated_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString());
-      if (targetedReference) completedQuery = completedQuery.eq('public_reference', targetedReference);
-      const { data: completed, error: completedError } = await completedQuery.limit(200);
-      if (completedError) throw completedError;
-      completedBookings = (completed || []) as BookingRow[];
+      completedBookings = await readBookings(['completed']) as BookingRow[];
     }
-    const { data: approvedBindings, error: bindingsError } = await db.from('approved_payment_bindings').select('booking_id, provider_object_id').eq('provider','stripe');
-    if (bindingsError) throw bindingsError;
+    const approvedBindings = await fetchAllPages(async (from: number, to: number) => {
+      const { data, error } = await db.from('approved_payment_bindings').select('booking_id, provider_object_id').eq('provider','stripe').order('booking_id', { ascending: true }).range(from, to);
+      if (error) throw error;
+      return data || [];
+    });
     const rows = [...((bookings || []) as BookingRow[]), ...completedBookings];
     if (!process.env.STRIPE_SECRET_KEY) throw new Error('stripe_unavailable');
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { maxNetworkRetries: 0, timeout: 5000 });
@@ -96,12 +100,19 @@ export async function GET(request: Request) {
     // `post_trip_followup` is the established manual Gmail-attestation key.
     // Treat it as the same post-trip milestone before previewing or claiming
     // the new referral email, while retaining the original audit key in DB.
-    const { data: events, error: eventsError } = await db.from('email_events').select('booking_id, template_key, status').in('booking_id',rows.map(row=>row.id)).in('template_key',[...LIFECYCLE_KEYS, 'post_trip_followup']);
-    if (eventsError) throw eventsError;
+    const events = [];
+    for (const bookingIds of chunkValues(rows.map(row => row.id))) {
+      const page = await fetchAllPages(async (from: number, to: number) => {
+        const { data, error } = await db.from('email_events').select('booking_id, template_key, status').in('booking_id', bookingIds).in('template_key',[...LIFECYCLE_KEYS, 'post_trip_followup']).order('id', { ascending: true }).range(from, to);
+        if (error) throw error;
+        return data || [];
+      });
+      events.push(...page);
+    }
     const existing = new Map<string, Set<string>>();
     // Queued rows are deliberately not treated as sent: the durable dispatcher
     // will return their unresolved state and block every subsequent template.
-    for (const event of events || []) if (event.booking_id && ['sent','delivered'].includes(event.status)) { const set=existing.get(event.booking_id)||new Set<string>(); set.add(event.template_key === 'post_trip_followup' ? 'post_trip_referral' : event.template_key); existing.set(event.booking_id,set); }
+    for (const event of events) if (event.booking_id && ['sent','delivered'].includes(event.status)) { const set=existing.get(event.booking_id)||new Set<string>(); set.add(event.template_key === 'post_trip_followup' ? 'post_trip_referral' : event.template_key); existing.set(event.booking_id,set); }
     const results: Array<Record<string,unknown>> = [];
     for (const booking of rows) {
       const schedule = getLifecycleEmailSchedule({ now:new Date(), tourDate:booking.tour_date });

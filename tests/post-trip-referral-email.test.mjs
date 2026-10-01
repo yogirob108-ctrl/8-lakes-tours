@@ -38,13 +38,14 @@ test('the email states the agreed $100 each way and how to claim it', async () =
   assert.match(source, /write your name in the notes when they book/);
 });
 
-test('the daily job keeps finished trips out of the capped upcoming query and supports a dry-run-only preview', async () => {
+test('the daily job keeps finished trips separate from the paginated upcoming query and supports a dry-run-only preview', async () => {
   const source = await readFile(new URL('../app/api/cron/drip-emails/route.ts', import.meta.url), 'utf8');
   assert.match(source, /process\.env\.POST_TRIP_EMAIL_ENABLED === 'true'/);
   assert.match(source, /postTripPreview = dryRun && url\.searchParams\.get\('post_trip_preview'\) === '1'/);
   assert.match(source, /postTripEligible = postTripEnabled \|\| postTripPreview/);
-  assert.match(source, /\.in\('status',\['awaiting_payment','confirmed','prep_sent','ready_for_departure'\]\)/);
-  assert.match(source, /if \(postTripEligible\) \{[\s\S]*\.eq\('status','completed'\)/);
+  assert.match(source, /readBookings\(\['awaiting_payment','confirmed','prep_sent','ready_for_departure'\]\)/);
+  assert.match(source, /if \(postTripEligible\) \{[\s\S]*readBookings\(\['completed'\]\)/);
+  assert.match(source, /fetchAllPages/);
 });
 
 test('a recorded legacy post-trip follow-up suppresses the new referral candidate before dry-run output', async () => {

@@ -57,6 +57,16 @@ export async function GET(request: Request) {
   }
   try {
     const db = createSupabaseAdminClient();
+    // Expose only evaluated booleans to authenticated dry-runs. This makes the
+    // release state auditable when Vercel environment management is unavailable;
+    // neither secret values nor the owner-control row itself are returned.
+    const { data: postTripPublicOwner, error: postTripOwnerError } = await db.rpc('post_trip_public_owner_allows');
+    if (postTripOwnerError) throw postTripOwnerError;
+    const liveFlags = {
+      public_lifecycle_send_enabled: process.env.PUBLIC_LIFECYCLE_SEND_ENABLED === 'true',
+      post_trip_email_enabled: process.env.POST_TRIP_EMAIL_ENABLED === 'true',
+      post_trip_public_owner: postTripPublicOwner === true,
+    };
     let bookingQuery = db.from('bookings').select('id, public_reference, customer_id, tour_date, status, online_due_usd, online_paid_usd, family_cash_due_usd, customer:customers(first_name, email)').in('status',['awaiting_payment','confirmed','prep_sent','ready_for_departure']);
     if (targetedReference) bookingQuery = bookingQuery.eq('public_reference', targetedReference);
     const { data: bookings, error } = await bookingQuery.limit(200);
@@ -145,6 +155,6 @@ export async function GET(request: Request) {
       }
       results.push({ reference:booking.public_reference, status:result.sent?'sent':'failed', template });
     }
-    return NextResponse.json({ ok:true, dry_run:dryRun, stripe:'reachable', checked:rows.length, scan_complete:provider.scanComplete, ...(provider.scanIncompleteReason ? { scan_incomplete_reason:provider.scanIncompleteReason } : {}), ...(provider.scanIncompleteCollection ? { scan_incomplete_collection:provider.scanIncompleteCollection } : {}), results }, { headers });
+    return NextResponse.json({ ok:true, dry_run:dryRun, stripe:'reachable', live_flags:liveFlags, checked:rows.length, scan_complete:provider.scanComplete, ...(provider.scanIncompleteReason ? { scan_incomplete_reason:provider.scanIncompleteReason } : {}), ...(provider.scanIncompleteCollection ? { scan_incomplete_collection:provider.scanIncompleteCollection } : {}), results }, { headers });
   } catch { return NextResponse.json({ ok:false, error:'lifecycle_run_incomplete' }, { status:503, headers }); }
 }

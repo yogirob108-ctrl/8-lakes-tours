@@ -1,9 +1,9 @@
 -- Post-trip thank-you and referral email (template 'post_trip_referral').
 --
--- Additive only: the lifecycle claim is reproduced exactly from
--- 20260924010000_external_email_attestations.sql with one new template key,
--- and that key alone may reach a 'completed' booking. Every pre-trip template
--- keeps its original key list and booking-status eligibility. No rows change.
+-- Captured from the live claim function on 2026-10-01, then amended only for
+-- the new key, completed-only eligibility, and the established manual
+-- `post_trip_followup` alias. Every pre-trip key and eligibility branch stays
+-- unchanged. No rows change.
 --
 -- The website only selects this template when POST_TRIP_EMAIL_ENABLED=true, so
 -- apply this migration first, read the function back, then set the flag.
@@ -30,7 +30,7 @@ begin
   -- template keeps its original eligibility unchanged.
   if not found or b.status='cancelled'
     or (p_template_key<>'post_trip_referral' and b.status not in ('awaiting_payment','confirmed','prep_sent','ready_for_departure'))
-    or (p_template_key='post_trip_referral' and b.status not in ('confirmed','prep_sent','ready_for_departure','completed')) then
+    or (p_template_key='post_trip_referral' and b.status<>'completed') then
     return jsonb_build_object('should_send',false,'reason','booking_ineligible');
   end if;
   -- A successful customer email recorded by either automatic delivery or the
@@ -48,7 +48,7 @@ begin
           when 'insurance_final_check' then 'insurance_reminder'
           when 'arrival_coordination' then 'arrival_details'
           when 'final_checklist' then 'final_checklist'
-          when 'post_trip_referral' then 'post_trip_referral'
+          when 'post_trip_referral' then 'post_trip_followup'
         end
       )
   ) then

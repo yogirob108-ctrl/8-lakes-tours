@@ -62,12 +62,13 @@ export async function GET(request: Request) {
     const { data: bookings, error } = await bookingQuery.limit(200);
     if (error) throw error;
     // Finished trips are fetched separately so they can never crowd upcoming
-    // departures out of the capped query above. The post-trip email needs the
-    // database migration that admits 'post_trip_referral' and completed
-    // bookings, so it stays off until POST_TRIP_EMAIL_ENABLED is set.
+    // departures out of the capped query above. An authenticated dry-run may
+    // preview this one template without changing the production sender gate.
     const postTripEnabled = process.env.POST_TRIP_EMAIL_ENABLED === 'true';
+    const postTripPreview = dryRun && url.searchParams.get('post_trip_preview') === '1';
+    const postTripEligible = postTripEnabled || postTripPreview;
     let completedBookings: BookingRow[] = [];
-    if (postTripEnabled) {
+    if (postTripEligible) {
       let completedQuery = db.from('bookings').select('id, public_reference, customer_id, tour_date, status, online_due_usd, online_paid_usd, family_cash_due_usd, customer:customers(first_name, email)').eq('status','completed').gte('updated_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString());
       if (targetedReference) completedQuery = completedQuery.eq('public_reference', targetedReference);
       const { data: completed, error: completedError } = await completedQuery.limit(200);
@@ -82,18 +83,21 @@ export async function GET(request: Request) {
     const provider = await collectStripeLifecycleEvidence({ stripe, pageBudget: 90 });
     const reconciliation = reconcileStripeProviderEvidence({ bookings:rows.map(row=>({id:row.id,reference:row.public_reference,amount_cents:Number(row.online_due_usd)*100,currency:'usd',customer_email:customer(row).email})), evidence:provider.evidence, approvedBindings:(approvedBindings||[]) as Array<{booking_id:string;provider_object_id:string}>, scanComplete:provider.scanComplete });
     const verified = new Set((reconciliation as Array<{ reference:string; status:string }>).filter((row:{reference:string;status:string})=>row.status==='verified_paid').map((row:{reference:string;status:string})=>row.reference));
-    const { data: events, error: eventsError } = await db.from('email_events').select('booking_id, template_key, status').in('booking_id',rows.map(row=>row.id)).in('template_key',LIFECYCLE_KEYS);
+    // `post_trip_followup` is the established manual Gmail-attestation key.
+    // Treat it as the same post-trip milestone before previewing or claiming
+    // the new referral email, while retaining the original audit key in DB.
+    const { data: events, error: eventsError } = await db.from('email_events').select('booking_id, template_key, status').in('booking_id',rows.map(row=>row.id)).in('template_key',[...LIFECYCLE_KEYS, 'post_trip_followup']);
     if (eventsError) throw eventsError;
     const existing = new Map<string, Set<string>>();
     // Queued rows are deliberately not treated as sent: the durable dispatcher
     // will return their unresolved state and block every subsequent template.
-    for (const event of events || []) if (event.booking_id && ['sent','delivered'].includes(event.status)) { const set=existing.get(event.booking_id)||new Set<string>(); set.add(event.template_key); existing.set(event.booking_id,set); }
+    for (const event of events || []) if (event.booking_id && ['sent','delivered'].includes(event.status)) { const set=existing.get(event.booking_id)||new Set<string>(); set.add(event.template_key === 'post_trip_followup' ? 'post_trip_referral' : event.template_key); existing.set(event.booking_id,set); }
     const results: Array<Record<string,unknown>> = [];
     for (const booking of rows) {
       const schedule = getLifecycleEmailSchedule({ now:new Date(), tourDate:booking.tour_date });
       const sentTemplates = existing.get(booking.id)||new Set<string>();
       const template = (selectPacedLifecycleCandidate({ verifiedStripe:verified.has(booking.public_reference), daysUntilDeparture:schedule.daysUntilDeparture, sentTemplates })
-        ?? selectPostTripCandidate({ enabled:postTripEnabled, verifiedStripe:verified.has(booking.public_reference), daysSinceEnd:daysSinceTourEnd(booking.tour_date), sentTemplates })) as TemplateKey|null;
+        ?? selectPostTripCandidate({ enabled:postTripEligible, verifiedStripe:verified.has(booking.public_reference), daysSinceEnd:daysSinceTourEnd(booking.tour_date), sentTemplates })) as TemplateKey|null;
       if (!template) {
         const reconciliationResult = (reconciliation as Array<Record<string, unknown>>).find(row => row.reference===booking.public_reference);
         results.push(reconciliationResult || { reference:booking.public_reference, status:'scan_incomplete_unknown' });

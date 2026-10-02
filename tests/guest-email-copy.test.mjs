@@ -17,3 +17,11 @@ test('newsletter welcome only promises the price hold while it runs, and offers 
   assert.match(source, /const priceHold = isPriceHoldActive\(now\)/);
   assert.match(source, /free 15-minute call by phone, WhatsApp, or Zoom/);
 });
+
+test('WhatsApp goes to booked guests only, never newsletter signups', () => {
+  assert.equal(source.match(/\$\{WHATSAPP_LINE_TEXT\}/g)?.length, 6);
+  assert.equal(source.match(/p\(WHATSAPP_LINE_HTML\)/g)?.length, 6);
+  const welcome = source.slice(source.indexOf('export function leadCustomerEmail('));
+  assert.doesNotMatch(welcome.slice(0, welcome.indexOf('\n}\n')), /WHATSAPP/);
+  assert.match(source, /https:\/\/wa\.me\/18582317131/);
+});

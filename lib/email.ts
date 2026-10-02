@@ -9,6 +9,11 @@ const OPS_URL = process.env.OPS_BASE_URL || 'https://adventure-therapy-ops.verce
 const TOTAL_PRICE_USD = '$1,999';
 const ONLINE_PAYMENT_USD = '$999';
 const FAMILY_CASH_USD = '$1,000';
+// Booked guests only: a direct line to Robert for quick, personal questions.
+const WHATSAPP_DISPLAY = '+1 858 231 7131';
+const WHATSAPP_URL = 'https://wa.me/18582317131';
+const WHATSAPP_LINE_TEXT = `WhatsApp is the quickest way to reach me: ${WHATSAPP_DISPLAY} (${WHATSAPP_URL})`;
+const WHATSAPP_LINE_HTML = `WhatsApp is the quickest way to reach me: <a href="${WHATSAPP_URL}" style="color:#1155cc">${WHATSAPP_DISPLAY}</a>`;
 
 // Email visual direction: minimal, plain, like a real person writing from Gmail.
 // White background, system font, left aligned short paragraphs, restrained width.
@@ -383,6 +388,8 @@ Next we send preparation notes, packing guidance, insurance reminders, and arriv
 
 If anything comes up before then, just reply to this email.
 
+${WHATSAPP_LINE_TEXT}
+
 Robert Zaher
 8 Lakes Tours
 www.8lakestours.com
@@ -401,6 +408,7 @@ info@8lakestours.com`;
     p(`The remaining ${escapeHtml(familyCash)} goes directly to the host family in Mongolia, in clean USD cash.`),
     p(`Next we send preparation notes, packing guidance, insurance reminders, and arrival coordination before departure.`),
     p(`If anything comes up before then, just reply to this email.`),
+    p(WHATSAPP_LINE_HTML),
     signoffHtml(),
   ].join('\n');
 
@@ -443,6 +451,8 @@ ${DASH_RULE_TEXT}
 
 Any last questions, just reply to this email.
 
+${WHATSAPP_LINE_TEXT}
+
 Robert Zaher
 8 Lakes Tours
 www.8lakestours.com
@@ -466,6 +476,7 @@ info@8lakestours.com`;
     p(`<strong>Insurance:</strong> please make sure you have travel insurance that covers horseback riding or adventure activity and emergency evacuation.`),
     sectionRuleHtml(),
     p(`Any last questions, just reply to this email.`),
+    p(WHATSAPP_LINE_HTML),
     signoffHtml(),
   ].join('\n');
 
@@ -495,6 +506,8 @@ Also check that your passport, flights, warm layers, personal medication, first-
 
 Any last questions, just reply to this email.
 
+${WHATSAPP_LINE_TEXT}
+
 Robert Zaher
 8 Lakes Tours
 www.8lakestours.com
@@ -511,6 +524,7 @@ info@8lakestours.com`;
     p(`Please make sure your travel insurance is active and covers <strong>horseback riding or adventure activity, medical treatment, emergency evacuation, and repatriation</strong>. Not every standard policy includes horseback riding, so it is worth double checking that part.`),
     p(`Also check that your passport, flights, warm layers, personal medication, first-aid basics, and ${escapeHtml(familyCash)} clean USD cash for the host family are sorted.`),
     p(`Any last questions, just reply to this email.`),
+    p(WHATSAPP_LINE_HTML),
     signoffHtml(),
   ].join('\n');
 
@@ -538,6 +552,8 @@ The countryside bus does not run every day, so ask your Ulaanbaatar hostel or ho
 
 Keep your travel insurance, passport, warm layers, and clean USD cash for the host family ready.
 
+${WHATSAPP_LINE_TEXT}
+
 Robert Zaher
 8 Lakes Tours
 www.8lakestours.com
@@ -554,6 +570,7 @@ info@8lakestours.com`;
     p(`Please reply with your Ulaanbaatar arrival details and your Bat-Ulzii bus date and time once booked, so we can coordinate the host-family pickup.`),
     p(`The countryside bus does not run every day, so ask your Ulaanbaatar hostel or hotel to help book it. Once your bus timing is confirmed, I will coordinate the pickup from Bat-Ulzii. Please do not assume the pickup is final until it is confirmed in writing.`),
     p(`Keep your travel insurance, passport, warm layers, and clean USD cash for the host family ready.`),
+    p(WHATSAPP_LINE_HTML),
     signoffHtml(),
   ].join('\n');
 
@@ -579,6 +596,8 @@ Passport, insurance covering riding and emergency evacuation, flights and bus, w
 
 If anything has changed, just reply.
 
+${WHATSAPP_LINE_TEXT}
+
 Robert Zaher
 8 Lakes Tours
 www.8lakestours.com
@@ -594,6 +613,7 @@ info@8lakestours.com`;
     sectionRuleHtml(),
     p(`Passport, insurance covering riding and emergency evacuation, flights and bus, warm layers, medication, and clean USD cash for the host family.`),
     p(`If anything has changed, just reply.`),
+    p(WHATSAPP_LINE_HTML),
     signoffHtml(),
   ].join('\n');
 
@@ -625,6 +645,8 @@ Booking reference: ${input.reference}
 
 Thank you again for coming all this way.
 
+${WHATSAPP_LINE_TEXT}
+
 Robert Zaher
 8 Lakes Tours
 www.8lakestours.com
@@ -639,6 +661,7 @@ info@8lakestours.com`;
     sectionRuleHtml(),
     detailsHtml([['Booking reference', escapeHtml(input.reference)]]),
     p(`Thank you again for coming all this way.`),
+    p(WHATSAPP_LINE_HTML),
     signoffHtml(),
   ].join('\n');
 

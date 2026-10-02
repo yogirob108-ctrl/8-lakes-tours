@@ -443,7 +443,7 @@ Food: meals are traditional host-family food, meat- and dairy-heavy, with fresh 
 
 Getting from Ulaanbaatar to Bat-Ulzii: this part needs a little planning. Arrive in Ulaanbaatar at least two days before your tour date so there is time to sort the countryside bus and any schedule changes. Book a hostel or hotel in Ulaanbaatar and ask them to help book your bus ticket to Bat-Ulzii. These buses do not run every day, so please do not leave it until the last minute. Once your bus is booked, send us the details and we will coordinate the host-family pickup on the Bat-Ulzii side.
 
-Getting around Ulaanbaatar: taxis are readily available, and the UBCab app works like Uber. For scooters and bicycles, the tapa. app works well and accepts international cards: https://apps.apple.com/app/id1563199559
+Getting around Ulaanbaatar: taxis are readily available, and the UBCab app works like Uber: https://apps.apple.com/app/id863109199. For scooters and bicycles, the tapa. app works well and accepts international cards: https://apps.apple.com/app/id1563199559
 
 Insurance: please make sure you have travel insurance that covers horseback riding or adventure activity and emergency evacuation.
 
@@ -472,7 +472,7 @@ info@8lakestours.com`;
     p(`<strong>Facilities:</strong> once outside the city, expect simple outhouse squat toilets rather than Western flush toilets, and no regular showers. Bring wet wipes for cleaning hands and body between river washes.`),
     p(`<strong>Food:</strong> meals are traditional host-family food, meat- and dairy-heavy, with fresh milk tea, yoghurt, cheese, and other local foods. Strict vegan or serious dairy-free needs are difficult in this remote setting.`),
     p(`<strong>Getting from Ulaanbaatar to Bat-Ulzii:</strong> this part needs a little planning. Arrive in Ulaanbaatar at least <strong>two days before your tour date</strong> so there is time to sort the countryside bus and any schedule changes. Book a hostel or hotel in Ulaanbaatar and ask them to help book your bus ticket to Bat-Ulzii. These buses do not run every day, so please do not leave it until the last minute. Once your bus is booked, send us the details and we will coordinate the host-family pickup on the Bat-Ulzii side.`),
-    p(`<strong>Getting around Ulaanbaatar:</strong> taxis are readily available, and the UBCab app works like Uber. For scooters and bicycles, the <a href="https://apps.apple.com/app/id1563199559" style="color:#1155cc">tapa. app</a> works well and accepts international cards.`),
+    p(`<strong>Getting around Ulaanbaatar:</strong> taxis are readily available, and the <a href="https://apps.apple.com/app/id863109199" style="color:#1155cc">UBCab app</a> works like Uber. For scooters and bicycles, the <a href="https://apps.apple.com/app/id1563199559" style="color:#1155cc">tapa. app</a> works well and accepts international cards.`),
     p(`<strong>Insurance:</strong> please make sure you have travel insurance that covers horseback riding or adventure activity and emergency evacuation.`),
     sectionRuleHtml(),
     p(`Any last questions, just reply to this email.`),

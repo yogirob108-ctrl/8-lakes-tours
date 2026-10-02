@@ -23,6 +23,7 @@ function loadEmailModule(repoPath) {
   }).outputText
     .replace(/require\("@\/lib\/final-checklist-content\.mjs"\)/g, `require("${repoPath}/lib/final-checklist-content.mjs")`)
     .replace(/require\("\.\/tour-booking\.mjs"\)/g, `require("${repoPath}/lib/tour-booking.mjs")`)
+    .replace(/require\("\.\/price-hold\.mjs"\)/g, `require("${repoPath}/lib/price-hold.mjs")`)
     .replace(/require\("resend"\)/g, '({ Resend: function(){} })');
   const m = { exports: {} };
   new Function('module', 'exports', 'require', code)(m, m.exports, (x) => nodeRequire(x));

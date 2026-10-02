@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { GROUP_INVOICE } from './tour-booking.mjs';
+import { isPriceHoldActive, PRICE_HOLD_DEADLINE_LABEL } from './price-hold.mjs';
 
 const DEFAULT_FROM = '8 Lakes Tours <info@8lakestours.com>';
 const DEFAULT_INTERNAL_RECIPIENTS = ['8lakestours@gmail.com'];
@@ -426,6 +427,8 @@ ${DASH_RULE_TEXT}
 
 Packing: pack for all seasons, even in summer. Steppe weather moves quickly between warm sun, cold wind, rain, and very cold nights. Bring warm layers, waterproof outerwear, comfortable riding clothes, warm socks, a hat, gloves, and basic toiletries.
 
+Camping gear: tents, sleeping mats, warm sleeping bags, and camp cooking kit are provided for the trek. If you would rather use your own sleeping bag, mat, or tent, you are welcome to bring it.
+
 Facilities: once outside the city, expect simple outhouse squat toilets rather than Western flush toilets, and no regular showers. Bring wet wipes for cleaning hands and body between river washes.
 
 Food: meals are traditional host-family food, meat- and dairy-heavy, with fresh milk tea, yoghurt, cheese, and other local foods. Strict vegan or serious dairy-free needs are difficult in this remote setting.
@@ -455,6 +458,7 @@ info@8lakestours.com`;
     ]),
     sectionRuleHtml(),
     p(`<strong>Packing:</strong> pack for all seasons, even in summer. Steppe weather moves quickly between warm sun, cold wind, rain, and very cold nights. Bring warm layers, waterproof outerwear, comfortable riding clothes, warm socks, a hat, gloves, and basic toiletries.`),
+    p(`<strong>Camping gear:</strong> tents, sleeping mats, warm sleeping bags, and camp cooking kit are provided for the trek. If you would rather use your own sleeping bag, mat, or tent, you are welcome to bring it.`),
     p(`<strong>Facilities:</strong> once outside the city, expect simple outhouse squat toilets rather than Western flush toilets, and no regular showers. Bring wet wipes for cleaning hands and body between river washes.`),
     p(`<strong>Food:</strong> meals are traditional host-family food, meat- and dairy-heavy, with fresh milk tea, yoghurt, cheese, and other local foods. Strict vegan or serious dairy-free needs are difficult in this remote setting.`),
     p(`<strong>Getting from Ulaanbaatar to Bat-Ulzii:</strong> this part needs a little planning. Arrive in Ulaanbaatar at least <strong>two days before your tour date</strong> so there is time to sort the countryside bus and any schedule changes. Book a hostel or hotel in Ulaanbaatar and ask them to help book your bus ticket to Bat-Ulzii. These buses do not run every day, so please do not leave it until the last minute. Once your bus is booked, send us the details and we will coordinate the host-family pickup on the Bat-Ulzii side.`),
@@ -530,7 +534,7 @@ ${DASH_RULE_TEXT}
 
 Please reply with your Ulaanbaatar arrival details and your Bat-Ulzii bus date and time once booked, so we can coordinate the host-family pickup.
 
-The countryside bus does not run every day, so ask your Ulaanbaatar hostel or hotel to help book it. Once your bus timing is confirmed, Robert will coordinate the pickup from Bat-Ulzii. Please do not assume the pickup is final until it is confirmed in writing.
+The countryside bus does not run every day, so ask your Ulaanbaatar hostel or hotel to help book it. Once your bus timing is confirmed, I will coordinate the pickup from Bat-Ulzii. Please do not assume the pickup is final until it is confirmed in writing.
 
 Keep your travel insurance, passport, warm layers, and clean USD cash for the host family ready.
 
@@ -548,7 +552,7 @@ info@8lakestours.com`;
     ]),
     sectionRuleHtml(),
     p(`Please reply with your Ulaanbaatar arrival details and your Bat-Ulzii bus date and time once booked, so we can coordinate the host-family pickup.`),
-    p(`The countryside bus does not run every day, so ask your Ulaanbaatar hostel or hotel to help book it. Once your bus timing is confirmed, Robert will coordinate the pickup from Bat-Ulzii. Please do not assume the pickup is final until it is confirmed in writing.`),
+    p(`The countryside bus does not run every day, so ask your Ulaanbaatar hostel or hotel to help book it. Once your bus timing is confirmed, I will coordinate the pickup from Bat-Ulzii. Please do not assume the pickup is final until it is confirmed in writing.`),
     p(`Keep your travel insurance, passport, warm layers, and clean USD cash for the host family ready.`),
     signoffHtml(),
   ].join('\n');
@@ -665,14 +669,20 @@ export function leadInternalEmail(input: { name: string; email: string; source: 
   };
 }
 
-export function leadCustomerEmail(input: { name: string }) {
+export function leadCustomerEmail(input: { name: string }, now = new Date()) {
   const greetingName = input.name ? firstName(input.name) : '';
-  const greeting = greetingName ? `Hi ${escapeHtml(greetingName)},` : 'Hi,';
   const subject = 'Welcome to the 8 Lakes Tours newsletter';
-  const text = `${greetingName ? `Hi ${greetingName},` : 'Hi,'}\n\nThanks for joining the 8 Lakes Tours newsletter. We send occasional updates about Mongolia horse trekking, new departure dates, offers, deals, blog posts, field notes, and news from the business.\n\nNo booking has been made from this signup. If you ever want to reserve a place, you can do that on the website: ${SITE_URL}/#application\n\nYou can opt out any time by replying to this email.\n\nRob Zaher\n8 Lakes Tours\nwww.8lakestours.com\ninfo@8lakestours.com`;
+  // Only promised while the hold runs, so a late signup never reads an expired offer.
+  const priceHold = isPriceHoldActive(now)
+    ? `If you are thinking about riding next season, today's prices are held for bookings made by ${PRICE_HOLD_DEADLINE_LABEL}.`
+    : '';
+  const callOffer = 'Want to talk it through first? Reply to this email and we can set up a free 15-minute call by phone, WhatsApp, or Zoom.';
+  const text = `${greetingName ? `Hi ${greetingName},` : 'Hi,'}\n\nThanks for joining the 8 Lakes Tours newsletter. We send occasional updates about Mongolia horse trekking, new departure dates, offers, deals, blog posts, field notes, and news from the business.\n\n${priceHold ? `${priceHold}\n\n` : ''}${callOffer}\n\nNo booking has been made from this signup. If you ever want to reserve a place, you can do that on the website: ${SITE_URL}/#application\n\nYou can opt out any time by replying to this email.\n\nRobert Zaher\n8 Lakes Tours\nwww.8lakestours.com\ninfo@8lakestours.com`;
   const body = [
-    p(greeting),
+    p(greetingName ? `Hi ${escapeHtml(greetingName)},` : 'Hi,'),
     p(`Thanks for joining the 8 Lakes Tours newsletter. We send occasional updates about Mongolia horse trekking, new departure dates, offers, deals, blog posts, field notes, and news from the business.`),
+    ...(priceHold ? [p(escapeHtml(priceHold))] : []),
+    p(escapeHtml(callOffer)),
     p(`No booking has been made from this signup. If you ever want to reserve a place, you can do that on the website: <a href="${SITE_URL}/#application" style="color:#1155cc">${SITE_URL}/#application</a>`),
     p(`You can opt out any time by replying to this email.`),
     signoffHtml(),

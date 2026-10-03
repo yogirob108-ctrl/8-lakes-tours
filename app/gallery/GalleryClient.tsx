@@ -1,18 +1,12 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { GalleryImage } from './gallery-data';
 
-type Filter = 'all' | 'portrait' | 'landscape';
-
 export default function GalleryClient({ images }: { images: GalleryImage[] }) {
-  const [filter, setFilter] = useState<Filter>('all');
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
-  const visibleImages = useMemo(() => {
-    if (filter === 'all') return images;
-    return images.filter(image => image.orientation === filter);
-  }, [filter, images]);
+  const visibleImages = images;
   const lightboxImage = lightboxIndex === null ? null : visibleImages[lightboxIndex];
 
   const openLightbox = useCallback((index: number) => setLightboxIndex(index), []);
@@ -68,24 +62,11 @@ export default function GalleryClient({ images }: { images: GalleryImage[] }) {
 
   return (
     <>
-      <div className="gallery-controls" aria-label="Gallery filters">
-        {(['all', 'landscape', 'portrait'] as Filter[]).map(option => (
-          <button
-            key={option}
-            type="button"
-            className={`filter-button ${filter === option ? 'active' : ''}`}
-            onClick={() => { setFilter(option); setLightboxIndex(null); }}
-          >
-            {option === 'all' ? `All ${images.length}` : `${option} ${images.filter(image => image.orientation === option).length}`}
-          </button>
-        ))}
-      </div>
-
       <div className="gallery-grid">
         {visibleImages.map((image, index) => (
           <button
             type="button"
-            className={`gallery-card ${image.orientation}`}
+            className={`gallery-card ${image.orientation}${image.width / image.height >= 1.7 ? ' wide' : ''}`}
             key={image.src}
             onClick={() => openLightbox(index)}
             aria-label={`Open image: ${image.alt}`}
@@ -96,7 +77,7 @@ export default function GalleryClient({ images }: { images: GalleryImage[] }) {
               width={image.width}
               height={image.height}
               quality={72}
-              sizes="(max-width: 700px) 50vw, (max-width: 1100px) 33vw, 25vw"
+              sizes={image.width / image.height >= 1.7 ? '(max-width: 700px) 100vw, (max-width: 1100px) 66vw, 25vw' : '(max-width: 700px) 50vw, (max-width: 1100px) 33vw, 25vw'}
             />
           </button>
         ))}

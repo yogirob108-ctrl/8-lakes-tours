@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "test": "node --test tests/*.test.mjs",
-    "test:browser": "node --test tests/checkout-csp.browser.mjs",
+    "test:browser": "node --test tests/*.browser.mjs",
+    "test:browser:forms": "node tests/controlled-selects.browser.cjs",
     "lint": "eslint"
   },
   "dependencies": {

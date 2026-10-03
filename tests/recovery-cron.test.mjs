@@ -17,6 +17,7 @@ function harness(postSubmitEnabled='true',preSubmitEnabled='false') {
  if(name==='@/lib/supabase-admin')return {createSupabaseAdminClient:()=>({})};
  if(name==='@/lib/booking-checkout')return {recoveryUrl:()=>''};
  if(name==='@/lib/email')return {sendEmail:()=>{throw Error('must not send');}};
+ if(name==='@/lib/capacity-reconciliation.mjs')return {runCapacityReconciliation:async({dryRun})=>{calls.push(['capacity',dryRun]);return {scanned:0,released_expired:0,released_cancelled_refunded:0};}};
  if(name==='@/lib/abandoned-checkout.mjs')return {runAbandonedCheckoutRecovery:async({allowedDates})=>{calls.push(['booking',allowedDates]);return {sent:0};}};
  if(name==='@/lib/pre-submit-draft-recovery.mjs')return {runPreSubmitDraftRecovery:async({dryRun})=>{calls.push(['draft',dryRun]);return {eligible:0,sent:0,failed:0,suppressed:0};}};
  throw Error(name);
@@ -25,6 +26,6 @@ function harness(postSubmitEnabled='true',preSubmitEnabled='false') {
 }
 test('cron rejects missing credentials',async()=>{const h=harness();assert.equal((await h.run('')).status,401);assert.equal(h.calls.length,0);});
 test('post-submit cron requires explicit rollout enablement',async()=>{const h=harness('false','false');assert.equal((await h.run()).status,200);assert.equal(h.calls.length,0);});
-test('enabled post-submit cron never calls pre-submit draft recovery unless its separate flag is enabled',async()=>{const h=harness('true','false');assert.equal((await h.run()).status,200);assert.deepEqual(h.calls.map(([kind])=>kind),['booking']);});
+test('enabled post-submit cron reconciles capacity before it considers reminder queue work',async()=>{const h=harness('true','false');assert.equal((await h.run()).status,200);assert.deepEqual(h.calls.map(([kind])=>kind),['capacity','booking']);});
 test('enabled cron uses only current approved scheduled inventory',async()=>{const h=harness();assert.equal((await h.run()).status,200);const bookingCall=h.calls.find(([kind])=>kind==='booking');assert.ok(bookingCall[1].length);for(const date of bookingCall[1])assert.equal(booking.canAutomaticallyConfirmBooking(date,1),true);});
-test('authenticated dry run evaluates post-submit and pre-submit queues without sending regardless of rollout flags',async()=>{const h=harness('false','false');assert.equal((await h.run('Bearer local-only','https://example.invalid?dry_run=1')).status,200);assert.deepEqual(h.calls.map(([kind])=>kind),['draft','booking']);});
+test('authenticated dry run evaluates post-submit capacity and both reminder queues without sending regardless of rollout flags',async()=>{const h=harness('false','false');assert.equal((await h.run('Bearer local-only','https://example.invalid?dry_run=1')).status,200);assert.deepEqual(h.calls.map(([kind])=>kind),['draft','capacity','booking']);});

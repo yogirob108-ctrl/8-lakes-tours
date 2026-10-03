@@ -29,7 +29,7 @@ function attributionNote(attribution: Record<string, string>) {
   const labels: Record<string, string> = {
     source: 'UTM source', medium: 'UTM medium', campaign: 'UTM campaign', term: 'UTM term', content: 'UTM content',
     gclid: 'Google click ID', fbclid: 'Meta click ID', ttclid: 'TikTok click ID', msclkid: 'Microsoft click ID',
-    referrer: 'Referrer', landing_url: 'Landing URL', current_url: 'Current URL', ga_client_id: 'GA client ID',
+    referrer: 'Referrer', landing_url: 'Landing URL', current_url: 'Current URL', ga_client_id: 'GA client ID', ga_session_id: 'GA session ID',
   };
   const lines = Object.entries(labels).flatMap(([key, label]) => attribution[key] ? [`${label}: ${attribution[key]}`] : []);
   return lines.length ? ['--- Attribution ---', ...lines].join('\n') : '';

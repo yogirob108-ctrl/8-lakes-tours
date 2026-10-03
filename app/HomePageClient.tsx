@@ -2087,7 +2087,7 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
           <div className="price-card" style={{marginTop:'2.5rem'}}>
             <span className="price-badge">Scheduled departures</span>
             <div className="price-amount">${BASE_PRICE_USD.toLocaleString('en-US')}</div>
-            <div className="price-per">Per Person · 9 Days / 8 Nights · Group rates apply for 3–8 guests</div>
+            <div className="price-per">Per Person · 9 Days / 8 Nights</div>
             {priceHoldActive && <p className="price-hold">Book by {PRICE_HOLD_DEADLINE_LABEL} to lock in today&apos;s prices for 2027.</p>}
 
             <div className="payment-split" aria-label="How the 8 Lakes Tours payment is split">

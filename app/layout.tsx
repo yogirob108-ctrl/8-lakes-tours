@@ -123,6 +123,7 @@ export const metadata: Metadata = {
     google: "k5qDX-okMY6hJL4MNVs5Pv0ZkTIPI-uWg9bl-TigS4o",
     other: {
       "p:domain_verify": "ca65fe08ef13a1c45a4935cc5d46c33a",
+      "msvalidate.01": "1111709448E6DDB53AF95F5F5509D579",
     },
   },
 };

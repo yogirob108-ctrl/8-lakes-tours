@@ -625,6 +625,7 @@ info@8lakestours.com`;
 }
 
 export const REFERRAL_REWARD_USD = 100;
+export const GOOGLE_REVIEW_URL = 'https://g.page/r/CXxsi41trR1yEAE/review';
 
 export function postTripReferralCustomerEmail(input: LifecycleEmailInput) {
   const name = firstName(input.firstName);
@@ -636,6 +637,9 @@ Thank you for riding the steppe with us. We hope the horses, the family and all 
 A few small things, only if you enjoyed it:
 
 Tell us about your trip. Reply with a few lines in your own words, plus your favourite photo of yourself on the steppe. With your OK, we would love to share them with future riders.
+
+Leave us a Google review. If you have two minutes, a few words on Google helps more than anything else: ${GOOGLE_REVIEW_URL}
+We are a small project, and every review helps the next rider find us, which means more steady work for the family who hosted you.
 
 Share your photos. Post them and tag us on Instagram @8lakestours, or just send them over. We love seeing the trip through your eyes.
 
@@ -659,6 +663,7 @@ info@8lakestours.com`;
     p(`Thank you for riding the steppe with us. We hope the horses, the family and all that open country are still with you.`),
     p(`A few small things, only if you enjoyed it:`),
     p(`<strong>Tell us about your trip.</strong> Reply with a few lines in your own words, plus your favourite photo of yourself on the steppe. With your OK, we would love to share them with future riders.`),
+    p(`<strong>Leave us a Google review.</strong> If you have two minutes, <a href="${GOOGLE_REVIEW_URL}" style="color:#1155cc">a few words on Google</a> helps more than anything else. We are a small project, and every review helps the next rider find us, which means more steady work for the family who hosted you.`),
     p(`<strong>Share your photos.</strong> Post them and tag us on Instagram <a href="https://www.instagram.com/8lakestours" style="color:#1155cc">@8lakestours</a>, or just send them over. We love seeing the trip through your eyes.`),
     p(`<strong>Bring a friend: ${reward} each.</strong> When a friend books any departure, they pay ${reward} less on the in-person portion to the host family, and we send ${reward} back to you once their booking is confirmed. They just write your name in the notes when they book at <a href="https://www.8lakestours.com" style="color:#1155cc">www.8lakestours.com</a>.`),
     sectionRuleHtml(),

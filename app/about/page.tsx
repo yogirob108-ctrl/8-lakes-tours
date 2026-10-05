@@ -73,7 +73,7 @@ export default function Page() {
         url: 'https://www.8lakestours.com',
         email: 'info@8lakestours.com',
         founder: { '@type': 'Person', name: 'Robert Zaher', sameAs: 'https://www.instagram.com/robzaher108' },
-        sameAs: ['https://www.instagram.com/8lakestours', 'https://www.instagram.com/robzaher108'],
+        sameAs: ['https://www.instagram.com/8lakestours', 'https://www.instagram.com/robzaher108', 'https://www.pinterest.com/8lakestours', 'https://maps.google.com/?cid=8222919180686158972'],
         areaServed: { '@type': 'Country', name: 'Mongolia' },
       },
     ],

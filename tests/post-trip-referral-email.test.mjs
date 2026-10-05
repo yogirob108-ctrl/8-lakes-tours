@@ -57,6 +57,13 @@ test('the email states the agreed $100 each way and how to claim it', async () =
   assert.match(source, /write your name in the notes when they book/);
 });
 
+test('the thank-you asks for a Google review with the profile link, in text and HTML', async () => {
+  const source = await readFile(new URL('../lib/email.ts', import.meta.url), 'utf8');
+  assert.match(source, /export const GOOGLE_REVIEW_URL = 'https:\/\/g\.page\/r\/CXxsi41trR1yEAE\/review';/);
+  assert.equal(source.match(/Leave us a Google review\./g)?.length, 2);
+  assert.equal(source.match(/more steady work for the family who hosted you/g)?.length, 2);
+});
+
 test('the daily job reads automatic post-trip statuses with a linked departure end date and supports a dry-run-only preview', async () => {
   const source = await readFile(new URL('../app/api/cron/drip-emails/route.ts', import.meta.url), 'utf8');
   assert.match(source, /process\.env\.POST_TRIP_EMAIL_ENABLED === 'true'/);

@@ -9,9 +9,11 @@ const datesUrl = new URL('../lib/tour-dates.mjs', import.meta.url);
 const llmsUrl = new URL('../public/llms.txt', import.meta.url);
 const llmsFullUrl = new URL('../public/llms-full.txt', import.meta.url);
 
-const foundingRatePromotion = /founding\s*(rate|price)|book\s*(a\s*)?2027[^.]*2026|2027[^.]*2026[^.]*price|pay\s*2026\s*prices/i;
+// Guards against the retired "book 2027 during 2026 to keep the founding rate"
+// pitch. The dated 2027 founding-rate line (lib/price-hold.mjs) is allowed.
+const foundingRatePromotion = /book\s*(a\s*)?2027[^.]*2026|2027[^.]*2026[^.]*price|pay\s*2026\s*prices|founding\s*rate[^.]*2026\s*season/i;
 
-test('published booking copy has no founding-rate promotion', async () => {
+test('published booking copy has no retired 2026-season founding-rate pitch', async () => {
   const [homepage, paidLanding, faq, dates, llms, llmsFull] = await Promise.all([
     readFile(homepageUrl, 'utf8'),
     readFile(paidLandingUrl, 'utf8'),

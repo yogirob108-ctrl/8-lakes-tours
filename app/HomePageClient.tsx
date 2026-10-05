@@ -6,7 +6,7 @@ import { GROUP_INVOICE, manualPaymentReason, normalizeTourDateSelection } from '
 import { getDefaultTourDate, getSeasonYear } from '@/lib/tour-dates.mjs';
 import { CALL_OFFER_HREF } from '@/lib/call-offer.mjs';
 import HeroVideo from './components/HeroVideo';
-import { PRICE_HOLD_DEADLINE_LABEL } from '@/lib/price-hold.mjs';
+import { foundingRateLine, foundingRateShortLine } from '@/lib/price-hold.mjs';
 import { isValidBookingEmail } from '@/lib/email-validation.mjs';
 import { BASE_LOCAL_FAMILY_PAYMENT_USD, BASE_ONLINE_PAYMENT_USD, BASE_PRICE_USD, GROUP_PRICING_TIERS, MAX_GROUP_SIZE, clampGuestCount, getGroupPricing } from '@/lib/group-pricing.mjs';
 import { GENDERS, normalizeBookingTravellers } from '@/lib/booking-travellers.mjs';
@@ -1283,6 +1283,7 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
         .offer-fact span { display: block; margin-top: 0.2rem; color: rgba(212,207,196,0.68); font-size: 0.58rem; line-height: 1.45; letter-spacing: 0.16em; text-transform: uppercase; }
         .offer-fact-note { display: block; margin-top: 0.15rem; color: var(--gold); font-size: 0.62rem; font-style: italic; letter-spacing: 0.04em; opacity: 0.85; }
         .offer-strip-hold { color: var(--gold); font-weight: 400; }
+        .pay-bar-founding { margin: 0; color: var(--gold); font-size: 0.78rem; letter-spacing: 0.04em; line-height: 1.5; text-align: center; }
         .price-hold { margin: -0.4rem 0 1.2rem; color: var(--gold); font-size: 0.78rem; letter-spacing: 0.04em; line-height: 1.5; }
         .offer-strip-cta { display: inline-flex; justify-content: center; align-items: center; white-space: nowrap; background: var(--gold); border: 1px solid var(--gold); border-radius: var(--radius-soft); color: var(--dark); text-decoration: none; font-size: 0.7rem; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700; padding: 0.9rem 1.2rem; transition: background 0.3s ease, border-color 0.3s ease, transform 0.3s ease; }
         .offer-strip-cta:hover { background: var(--cream); border-color: var(--cream); transform: translateY(-1px); }
@@ -1836,7 +1837,7 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
         <div>
           <p className="offer-strip-kicker">Now booking</p>
           <h2 className="offer-strip-title">The 2027 season, May–September</h2>
-          <p className="offer-strip-note">Fortnightly departures in small groups of up to 8.{priceHoldActive && <> <strong className="offer-strip-hold">Today&apos;s prices are held for bookings made by {PRICE_HOLD_DEADLINE_LABEL}.</strong></>}</p>
+          <p className="offer-strip-note">Fortnightly departures in small groups of up to 8.{priceHoldActive && <> <strong className="offer-strip-hold">{foundingRateLine(BASE_PRICE_USD)}</strong></>}</p>
         </div>
         <div className="offer-strip-facts">
           <div className="offer-fact"><strong>{pricing.tourPrice}</strong><span>Total per person</span><small className="offer-fact-note">Group rates apply</small></div>
@@ -2088,7 +2089,7 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
             <span className="price-badge">Scheduled departures</span>
             <div className="price-amount">${BASE_PRICE_USD.toLocaleString('en-US')}</div>
             <div className="price-per">Per Person · 9 Days / 8 Nights</div>
-            {priceHoldActive && <p className="price-hold">Book by {PRICE_HOLD_DEADLINE_LABEL} to lock in today&apos;s prices for 2027.</p>}
+            {priceHoldActive && <p className="price-hold">{foundingRateLine(BASE_PRICE_USD)}</p>}
 
             <div className="payment-split" aria-label="How the 8 Lakes Tours payment is split">
               <div className="payment-split-card">
@@ -2377,6 +2378,9 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
             {/* Submit booking to ops */}
             {!formSubmitted || formSubmitting ? (
               <div className="pay-bar">
+                {priceHoldActive && !awaitsGroupInvoice && !requiresHumanConfirmation && groupPricing.perPersonUsd === BASE_PRICE_USD && (
+                  <p className="pay-bar-founding">{foundingRateShortLine()}</p>
+                )}
                 <button
                   type="submit"
                   disabled={!hasRequiredContact || formSubmitting}

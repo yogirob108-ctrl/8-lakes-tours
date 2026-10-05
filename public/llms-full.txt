@@ -18,6 +18,8 @@ Guests fly into Chinggis Khaan International Airport in Ulaanbaatar, Mongolia. F
 
 The trip uses group pricing: $1,999 USD per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8 guests booked together for the same departure.
 
+Founding rate: $1,999 per person for bookings made by 31 December. From 1 January the price rises to $2,199 per person.
+
 The payment structure is intentionally split:
 
 1. For a currently available scheduled departure with 1–2 guests, $999 USD per guest may be paid online after the form to confirm the booking. Groups of 3–8 book together on a scheduled date and pay one exact Stripe checkout, at $974 USD per guest for 3–4, $949 for 5–6, and $899 for 7–8. Private and custom date requests require availability confirmation from the 8 Lakes Tours team and the correct payment link before payment.

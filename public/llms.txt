@@ -16,6 +16,7 @@ Key facts:
 - Age: standard trek is 16+ with a parent/guardian; younger children are not encouraged for the full trek, but custom stay-only family setups with shorter horse rides can be arranged
 - Riding level: beginners welcome; reasonable fitness recommended
 - Group pricing: $1,999 USD per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8 guests booked together
+- Founding rate: $1,999 per person for bookings made by 31 December. From 1 January the price rises to $2,199 per person.
 - Online booking payment: $899–$999 USD per guest paid through Stripe / 8 Lakes Tours ($999 for 1–2 guests, $974 for 3–4, $949 for 5–6, $899 for 7–8)
 - Local family payment: remaining group-rate cash portion paid directly in clean USD cash to the nomadic host family in Mongolia
 - Departure availability: the live homepage is the source of truth and automatically removes fixed departures when their Mongolia start day arrives

@@ -1204,6 +1204,8 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
           from { opacity: 0; transform: translateY(30px); }
           to { opacity: 1; transform: translateY(0); }
         }
+        .hero-heading { margin: 0; font-weight: inherit; }
+        .hero-heading > span { display: block; }
         .hero-eyebrow {
           font-size: 0.7rem; letter-spacing: 0.35em; text-transform: uppercase;
           color: #fff; margin-bottom: 1.2rem; font-weight: 400; text-shadow: 0 1px 6px rgba(0,0,0,0.7), 0 2px 16px rgba(0,0,0,0.5);
@@ -1820,11 +1822,13 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
         </div>
         <div className="hero-overlay"></div>
         <div className="hero-content">
-          <p className="hero-eyebrow">Mongolian Horse Trekking · Orkhon Valley &amp; Eight Lakes</p>
-          <h1 className="hero-title">Ride Into the<br /><em>Endless Steppe</em></h1>
+          <h1 className="hero-heading">
+            <span className="hero-eyebrow">Mongolia Horse Trekking · Orkhon Valley &amp; Eight Lakes</span>
+            <span className="hero-title">Ride Into the<br /><em>Endless Steppe</em></span>
+          </h1>
           <p className="hero-sub">
-            <span className="mobile-line">Nine days on horseback across the vastness of the steppe, living alongside nomadic families. Small groups, beginner and intermediate riders welcome.</span>
-            <span className="desktop-line">Nine days on horseback through the vastness of the Orkhon Valley and Eight Lakes, living alongside nomadic families whose way of life is still attuned to the steppe. Small groups, local horsemen, beginner and intermediate riders welcome.</span>
+            <span className="mobile-line">Nine days of horseback riding in Mongolia, across the vastness of the steppe, living alongside nomadic families. Small groups, beginner and intermediate riders welcome.</span>
+            <span className="desktop-line">Nine days of horseback riding in Mongolia, through the vastness of the Orkhon Valley and Eight Lakes, living alongside nomadic families whose way of life is still attuned to the steppe. Small groups, local horsemen, beginner and intermediate riders welcome.</span>
           </p>
           <div className="hero-actions">
             <a href="#application" className="btn-primary">Reserve Online</a>

@@ -32,10 +32,10 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://www.8lakestours.com"),
   applicationName: "8 Lakes Tours",
   title: {
-    default: "Mongolian Horse Trekking in the Eight Lakes | 8 Lakes Tours",
+    default: "Mongolia Horse Trekking & Horseback Riding | 8 Lakes Tours",
     template: "%s | 8 Lakes Tours",
   },
-  description: "A 9-day Mongolian horse trekking expedition through the Eight Lakes and Orkhon Valley — ride with a nomadic host family, sleep in traditional gers. Beginners welcome.",
+  description: "Horseback riding in Mongolia: a 9-day horse trek through the Orkhon Valley to the Eight Lakes with a nomadic family. Ger stays, small groups, beginners welcome.",
   authors: [{ name: "8 Lakes Tours", url: "https://www.8lakestours.com" }],
   creator: "8 Lakes Tours",
   publisher: "8 Lakes Tours",
@@ -71,7 +71,7 @@ export const metadata: Metadata = {
     },
   },
   openGraph: {
-    title: "Mongolian Horse Trekking in the Eight Lakes | 8 Lakes Tours",
+    title: "Mongolia Horse Trekking & Horseback Riding | 8 Lakes Tours",
     description: "Mongolian horse trekking through the Naiman Nuur region and Orkhon Valley on a 9-day immersive journey hosted by a Mongolian nomadic family. Ethical, authentic, unforgettable.",
     type: "website",
     locale: "en_US",
@@ -88,7 +88,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Mongolian Horse Trekking in the Eight Lakes | 8 Lakes Tours",
+    title: "Mongolia Horse Trekking & Horseback Riding | 8 Lakes Tours",
     description: "A 9-day Mongolian horse trekking expedition through Mongolia's Eight Lakes region. Stay with a nomadic family, ride the steppe, experience real Mongolian life.",
     images: ["/images/og-8-lakes-horseback-2026.jpg"],
   },

@@ -3,10 +3,15 @@ import Link from 'next/link';
 import SiteNav from '../components/SiteNav';
 import HeroVideo from '../components/HeroVideo';
 import FaqAccordion from './FaqAccordion';
+import { BASE_LOCAL_FAMILY_PAYMENT_USD, BASE_ONLINE_PAYMENT_USD, BASE_PRICE_USD, GROUP_PRICING_TIERS } from '@/lib/group-pricing.mjs';
+import { PRICE_AFTER_HOLD_USD, PRICE_HOLD_DEADLINE_LABEL, PRICE_INCREASE_DATE_LABEL, isPriceHoldActive } from '@/lib/price-hold.mjs';
+
+// The cost guide switches its founding-rate wording off after New Year.
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: 'FAQ',
-  description: 'Frequently asked questions about 8 Lakes Tours, Mongolian horse trekking, pricing, cash payments to nomadic host families, insurance, and booking.',
+  description: 'Frequently asked questions about 8 Lakes Tours and Mongolian horse trekking, plus planning guides: the best time to ride in Mongolia, what a horse trek costs, whether you need riding experience, and the Orkhon Valley vs Khövsgöl vs the Gobi.',
   alternates: { canonical: 'https://www.8lakestours.com/faq' },
   openGraph: {
     title: '8 Lakes Tours FAQ',
@@ -57,18 +62,87 @@ const FAQ_ITEMS = [
   ['How do I contact 8 Lakes Tours?', "Use the booking form on the website or email info@8lakestours.com. Instagram is available at @8lakestours, and Rob's personal Instagram is @robzaher108."],
 ] as const;
 
+const usd = (amount: number) => `$${amount.toLocaleString('en-US')}`;
+
+type Guide = { id: string; title: string; paragraphs: string[] };
+
+function planningGuides(priceHoldActive: boolean): Guide[] {
+  const groupTiers = GROUP_PRICING_TIERS.slice(1).map(tier => usd(tier.perPersonUsd));
+  const priceParagraph = priceHoldActive
+    ? `Our 9-day trip is ${usd(BASE_PRICE_USD)} per person for one or two guests if you book by ${PRICE_HOLD_DEADLINE_LABEL}. From ${PRICE_INCREASE_DATE_LABEL} the price is ${usd(PRICE_AFTER_HOLD_USD)}. Groups of three to eight booking together currently pay less per person: ${groupTiers.slice(0, -1).join(', ')} or ${groupTiers[groupTiers.length - 1]}, depending on group size.`
+    : `Our 9-day trip is ${usd(BASE_PRICE_USD)} per person for one or two guests, with lower group rates for three to eight guests booking together.`;
+
+  return [
+    {
+      id: 'best-time-to-go',
+      title: 'When is the best time to go horse trekking in Mongolia?',
+      paragraphs: [
+        'The riding season runs from late spring to early autumn. We run departures every two weeks from May to September. Outside those months it is too cold for days in the saddle and nights in a tent.',
+        'May and early June: the steppe is waking up. Days are mild, nights are cold, and the grass is only starting to come back. It is quiet, with very few other travellers around.',
+        'June: my favourite month. The valleys turn green, the evenings are long and golden, and it is usually drier than July and August. If you are coming to take photos or film, come in June.',
+        'July: the warmest month and the busiest for travel in Mongolia. Naadam, the national festival of horse racing, wrestling and archery, happens in mid-July. It is also the wettest stretch of summer, so expect afternoon storms.',
+        'August: still warm and green, with rain on and off. The grass is at its tallest and the horses are strong after a summer of grazing.',
+        'September: the larch forests turn gold, the nights get properly cold and the crowds are gone. Snow can come early in the mountains toward the end of the month. Our last departure of the season leaves on 21 September.',
+        'Whatever month you pick, pack for all four seasons. Steppe weather can go from hot sun to cold wind and rain in one afternoon.',
+      ],
+    },
+    {
+      id: 'how-much-does-it-cost',
+      title: 'How much does a horse trek in Mongolia cost?',
+      paragraphs: [
+        priceParagraph,
+        `You pay ${usd(BASE_ONLINE_PAYMENT_USD)} per guest online when you book. The other ${usd(BASE_LOCAL_FAMILY_PAYMENT_USD)} is paid in US dollar cash straight to the host family when you arrive, because most nomadic families cannot easily receive bank transfers.`,
+        'That covers everything once you are with us: your ger stay, all your meals, horses, local guides, camping gear for the trek, and pickup from Bat-Ulzii.',
+        'It does not cover flights to Ulaanbaatar, the bus from Ulaanbaatar to Bat-Ulzii, a visa if your passport needs one, travel insurance (which you must have, and it has to cover horse riding), or anything you buy for yourself. Most people also spend a night or two in Ulaanbaatar on either end.',
+        `Worked out per day, ${usd(BASE_PRICE_USD)} comes to about ${usd(Math.round(BASE_PRICE_USD / 9))} a day for your food, your bed, your horse and your guide.`,
+      ],
+    },
+    {
+      id: 'riding-experience',
+      title: 'Do I need riding experience to ride in Mongolia?',
+      paragraphs: [
+        'No. Most of our guests are beginners or ride a few times a year. The local horsemen teach you the basics before the trek starts and ride with you the whole way.',
+        'Mongolian horses are smaller than most Western horses. They are tough and sure-footed, and they know the ground far better than you do.',
+        'Fitness matters more than experience. On the trek you are in the saddle for several hours a day, and there is a lot of trotting. A few lessons at home before you come will make the first days much more comfortable, especially practising the trot. Expect sore legs for the first couple of days. It passes.',
+        'You never have to do more than you want to. If you need a rest, you can stay back with the family for a quieter day.',
+        'Riders aged 16 and over can join the trek with a parent or guardian if the fit is right. For families with younger children we can set up a stay with the host family and shorter rides instead.',
+      ],
+    },
+    {
+      id: 'orkhon-khovsgol-gobi',
+      title: 'Orkhon Valley, Khövsgöl or the Gobi: where should you ride?',
+      paragraphs: [
+        'These are the three places most people look at for a trip to Mongolia, and they are very different.',
+        'Lake Khövsgöl is in the far north near the Russian border: a huge, clear lake surrounded by forest. It is beautiful, and it is one of the most visited places in the country, so in July you will share it with plenty of other travellers and tourist camps. Getting there means a flight to Mörön or a long drive.',
+        'The Gobi is desert country in the south, with sand dunes, rock canyons and huge empty plains. It is more of a camel and jeep trip than a horse trip, and summer days get very hot.',
+        'The Orkhon Valley is in central Mongolia. It is a UNESCO World Heritage site, a wide river valley where nomadic families have grazed their herds for centuries. From there we ride up into the hills to the Eight Lakes (Naiman Nuur), a remote cluster of lakes among larch forest.',
+        'If you want desert, go to the Gobi. If you want a famous lake with plenty of places to stay, Khövsgöl is great. If you want to spend most of your days on horseback and live with a nomadic family while you do it, I would go to central Mongolia, and that is where we ride.',
+      ],
+    },
+  ];
+}
+
 export default function Page() {
+  const guides = planningGuides(isPriceHoldActive());
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
     '@id': 'https://www.8lakestours.com/faq#faq',
     url: 'https://www.8lakestours.com/faq',
     inLanguage: 'en',
-    mainEntity: FAQ_ITEMS.map(([question, answer]) => ({
-      '@type': 'Question',
-      name: question,
-      acceptedAnswer: { '@type': 'Answer', text: answer },
-    })),
+    mainEntity: [
+      ...FAQ_ITEMS.map(([question, answer]) => ({
+        '@type': 'Question',
+        name: question,
+        acceptedAnswer: { '@type': 'Answer', text: answer },
+      })),
+      ...guides.map(guide => ({
+        '@type': 'Question',
+        name: guide.title,
+        url: `https://www.8lakestours.com/faq#${guide.id}`,
+        acceptedAnswer: { '@type': 'Answer', text: guide.paragraphs.join(' ') },
+      })),
+    ],
   };
 
   return (
@@ -88,6 +162,16 @@ export default function Page() {
         .page-hero-copy h1 { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: clamp(2.8rem, 8vw, 5rem); font-weight: 300; line-height: 0.98; color: #f5f0e8; margin: 0; }
         .page-hero-copy .page-hero-intro { margin: 1.4rem auto 0; max-width: 660px; font-size: 1rem; line-height: 1.8; color: rgba(212,207,196,0.86); }
         @media (max-width: 900px) { .page-hero { min-height: 48vh; padding: 6rem 1.25rem 2.25rem; } }
+        .guides { margin-top: 4.5rem; padding-top: 3rem; border-top: 1px solid rgba(200,169,110,0.15); }
+        .guides-eyebrow { font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: #c8a96e; margin: 0 0 0.8rem; }
+        .guides-title { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: clamp(2rem, 5vw, 2.8rem); font-weight: 300; color: #f5f0e8; margin: 0 0 1.2rem; line-height: 1.1; }
+        .guides-toc { list-style: none; padding: 0; margin: 0 0 1rem; display: grid; gap: 0.5rem; }
+        .guides-toc a { color: #c8a96e; text-decoration: none; font-size: 0.95rem; line-height: 1.5; }
+        .guides-toc a:hover { text-decoration: underline; }
+        .guide { padding-top: 2.6rem; scroll-margin-top: 5rem; }
+        .guide h3 { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: clamp(1.5rem, 4vw, 1.9rem); font-weight: 400; color: #f5f0e8; margin: 0 0 1rem; line-height: 1.2; }
+        .guide p { font-size: 0.98rem; line-height: 1.85; margin: 0 0 1rem; color: rgba(212,207,196,0.9); }
+        .guide-cta { display: inline-block; margin-top: 0.4rem; }
       `}</style>
       <header className="page-hero">
         <div className="page-hero-media" role="img" aria-label="Close-up of a Mongolian horse&apos;s mane and eye">
@@ -102,6 +186,20 @@ export default function Page() {
       </header>
       <div style={{...wrapperStyle, paddingTop: '3.5rem'}}>
         <FaqAccordion items={FAQ_ITEMS} />
+        <section className="guides" aria-labelledby="planning-guides">
+          <p className="guides-eyebrow">Planning your ride</p>
+          <h2 className="guides-title" id="planning-guides">Before you book</h2>
+          <ul className="guides-toc">
+            {guides.map(guide => <li key={guide.id}><a href={`#${guide.id}`}>{guide.title}</a></li>)}
+          </ul>
+          {guides.map(guide => (
+            <article className="guide" id={guide.id} key={guide.id}>
+              <h3>{guide.title}</h3>
+              {guide.paragraphs.map(paragraph => <p key={paragraph.slice(0, 40)}>{paragraph}</p>)}
+            </article>
+          ))}
+          <p className="guide"><Link href="/#book" className="guide-cta" style={linkStyle}>See dates and book</Link></p>
+        </section>
       </div>
       <footer style={footerStyle}>
         <span style={{ fontSize: '0.75rem', color: '#d4cfc4', opacity: 0.4 }}>© 2026 8 Lakes Tours · All rights reserved</span>

@@ -365,7 +365,7 @@ const LIGHTBOX_IMAGES: { src: string; alt: string }[] = Array.from(
       ...MAIN_ALBUM_IMAGES,
       ...TESTIMONIAL_CARDS,
       { src: '/images/suma-horseback-deel.jpg', alt: 'Suma on horseback in a traditional deel on the Mongolian steppe' },
-      { src: '/images/host-family-horses-deels.jpg', alt: 'Robert with the host family and their horses, all in traditional deels on the Mongolian steppe' },
+      { src: '/images/host-family-group-portrait.jpg', alt: 'Robert with the host family in traditional deels, two of their horses beside them on the steppe' },
     ].map(image => [image.src, { src: image.src, alt: image.alt }] as const),
   ).values(),
 );
@@ -1310,12 +1310,12 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
         .strip-item:hover img { transform: scale(1.04); }
         .partnership { background: var(--ink); display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
         .partnership-text { padding: 6rem; display: flex; flex-direction: column; justify-content: center; }
-        .partnership-inline-photo { display: none !important; position: relative; width: 100%; max-width: 30rem; height: auto; aspect-ratio: 1870 / 3072; margin: 2rem auto; overflow: hidden; border: 1px solid rgba(200,169,110,0.22); border-radius: var(--radius-photo); }
-        .partnership-inline-photo img { object-fit: cover; filter: saturate(0.88) contrast(1.04) brightness(0.9); }
+        .partnership-inline-photo { display: none !important; position: relative; width: 100%; max-width: 30rem; height: auto; aspect-ratio: 3 / 2; margin: 2rem auto; overflow: hidden; border: 1px solid rgba(200,169,110,0.22); border-radius: var(--radius-photo); }
+        .partnership-inline-photo img { object-fit: cover; filter: saturate(0.92) contrast(1.03); }
         .partnership-quote { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 1.6rem; font-style: italic; font-weight: 300; color: var(--cream); line-height: 1.6; border-left: 2px solid var(--gold); padding-left: 2rem; margin: 2.5rem 0; }
-        .partnership-img { position: relative; overflow: hidden; min-height: 600px; border-left: 1px solid rgba(200,169,110,0.18); background: #0f0f0d; }
-        .partnership-img::before { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(90deg, rgba(18,15,11,0.38), rgba(18,15,11,0.06) 42%, rgba(18,15,11,0.18)), linear-gradient(180deg, rgba(200,169,110,0.10), transparent 38%, rgba(14,12,9,0.30)); mix-blend-mode: multiply; }
-        .partnership-img img { width: 100%; height: 100%; object-fit: cover; object-position: 52% center; filter: saturate(0.84) contrast(1.08) brightness(0.88); }
+        .partnership-img { position: relative; overflow: hidden; align-self: center; aspect-ratio: 3 / 2; margin: 4rem 4rem 4rem 0; border: 1px solid rgba(200,169,110,0.22); border-radius: var(--radius-photo); background: #0f0f0d; }
+        .partnership-img::before { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(180deg, rgba(200,169,110,0.08), transparent 40%, rgba(14,12,9,0.18)); mix-blend-mode: multiply; }
+        .partnership-img img { width: 100%; height: 100%; object-fit: cover; object-position: center; filter: saturate(0.92) contrast(1.04); }
 
         .trust { background: var(--dark); padding: 5rem 5rem 6rem; }
         .trust-header { max-width: 760px; margin: 0 auto 3rem; text-align: center; }
@@ -1383,7 +1383,7 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
         .main-album-item:hover img { transform: scale(1.04); }
         .image-button { all: unset; display: block; width: 100%; height: 100%; position: relative; cursor: zoom-in; }
         .image-button.testimonial-photo { height: auto; aspect-ratio: 4 / 5; }
-        .image-button.partnership-inline-photo { height: auto; aspect-ratio: 1870 / 3072; max-width: 30rem; }
+        .image-button.partnership-inline-photo { height: auto; aspect-ratio: 3 / 2; max-width: 34rem; }
         .image-button:focus-visible { outline: 2px solid var(--gold); outline-offset: -2px; }
         .lightbox { position: fixed; inset: 0; z-index: 1000; background: rgba(14,12,9,0.96); display: flex; align-items: center; justify-content: center; padding: 1.5rem; cursor: zoom-out; overscroll-behavior: contain; touch-action: none; }
         .lightbox-frame { position: relative; width: min(96vw, 1800px); height: min(86vh, 1100px); display: flex; align-items: center; justify-content: center; }
@@ -1889,10 +1889,10 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
           <button
             type="button"
             className="image-button partnership-inline-photo"
-            aria-label="View larger image: Robert with the host family and their horses, all in traditional deels on the Mongolian steppe"
-            onClick={() => openLightbox('/images/host-family-horses-deels.jpg')}
+            aria-label="View larger image: Robert with the host family in traditional deels, two of their horses beside them on the steppe"
+            onClick={() => openLightbox('/images/host-family-group-portrait.jpg')}
           >
-            <Image src="/images/host-family-portrait.jpg" alt="Robert with the host family and their horses, all in traditional deels on the Mongolian steppe" fill quality={72} sizes="(max-width: 520px) 100vw, 480px" />
+            <Image src="/images/host-family-group-portrait.jpg" alt="Robert with the host family in traditional deels, two of their horses beside them on the steppe" fill quality={72} sizes="(max-width: 520px) 100vw, 480px" />
           </button>
           <p className="section-body">I met Ganbold while travelling through Mongolia on horseback. I meant to pass through, but his family opened their ger to me, as nomadic families have done for travellers for generations. We didn&apos;t speak the same language, but we shared an appreciation for the steppe and the way of life out there, and it didn&apos;t take long to feel like family. We rode together, cooked, drank tea and laughed a lot.</p>
           <p className="section-body" style={{marginTop:'1.2rem'}}>Suma, Ganbold&apos;s son, loves horses. He has ridden and worked with them his whole life, and he still herds his own horses and yaks across this valley. He likes guiding too, taking people out and showing them the land he grew up in. When the idea of bringing small groups here came up, he was up for it straight away.</p>
@@ -1903,10 +1903,10 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
           <button
             type="button"
             className="image-button"
-            aria-label="View larger image: Robert with the host family and their horses, all in traditional deels on the Mongolian steppe"
-            onClick={() => openLightbox('/images/host-family-horses-deels.jpg')}
+            aria-label="View larger image: Robert with the host family in traditional deels, two of their horses beside them on the steppe"
+            onClick={() => openLightbox('/images/host-family-group-portrait.jpg')}
           >
-            <Image src="/images/host-family-portrait.jpg" alt="Robert with the host family and their horses, all in traditional deels on the Mongolian steppe" fill quality={72} sizes="(max-width: 900px) 100vw, 50vw" />
+            <Image src="/images/host-family-group-portrait.jpg" alt="Robert with the host family in traditional deels, two of their horses beside them on the steppe" fill quality={72} sizes="(max-width: 900px) 100vw, 50vw" />
           </button>
         </div>
       </section>

@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import { NextResponse } from 'next/server';
 import { getInternalEmailRecipients, riderWaiverCustomerEmail, riderWaiverInternalEmail, sendEmail, type RiderWaiverRecord } from '@/lib/email';
 import { isSupabaseAdminConfigured } from '@/lib/ops-config';
@@ -14,6 +14,64 @@ function trustedIp(request: Request) {
   // Client-provided forwarding headers are intentionally ignored. The database stores no IP when absent.
   const candidate = (request.headers.get('x-vercel-forwarded-for') || '').split(',')[0].trim();
   return candidate.length <= 64 ? candidate : '';
+}
+
+type WaiverSnapshot = {
+  rider_name_snapshot: string;
+  rider_email_snapshot: string;
+  guardian_name_snapshot: string | null;
+  guardian_relationship_snapshot: string | null;
+  signature_snapshot: string;
+  signed_waiver_text: string;
+  server_signed_at: string;
+  trusted_ip_address: string | null;
+  user_agent: string | null;
+  is_minor: boolean;
+};
+
+async function dispatchWaiverEmail(input: {
+  waiverId: string;
+  destination: 'internal' | 'rider';
+  recipient: string;
+  email: Parameters<typeof sendEmail>[0];
+}) {
+  const db = createSupabaseAdminClient();
+  const claimToken = randomUUID();
+  const { data: claim, error: claimError } = await db.rpc('claim_rider_waiver_email_dispatch', {
+    p_waiver_id: input.waiverId,
+    p_destination: input.destination,
+    p_recipient_email: input.recipient,
+    p_claim_token: claimToken,
+  });
+  const dispatch = Array.isArray(claim) ? claim[0] : claim;
+  if (claimError || !dispatch?.should_send || !dispatch.dispatch_id || !dispatch.idempotency_key) return;
+
+  const { data: attempted, error: attemptError } = await db.rpc('mark_rider_waiver_email_provider_attempted', {
+    p_dispatch_id: dispatch.dispatch_id,
+    p_claim_token: claimToken,
+  });
+  if (attemptError || !attempted) return;
+
+  try {
+    const sent = await sendEmail({ ...input.email, idempotencyKey: dispatch.idempotency_key });
+    await db.rpc('complete_rider_waiver_email_dispatch', {
+      p_dispatch_id: dispatch.dispatch_id,
+      p_claim_token: claimToken,
+      p_sent: sent.sent,
+      // A normal Resend error response is a definite rejection. Exceptions are
+      // unknown provider outcomes and intentionally block blind resend.
+      p_definite_failure: !sent.sent,
+      p_provider_message_id: sent.id ?? null,
+    });
+  } catch {
+    await db.rpc('complete_rider_waiver_email_dispatch', {
+      p_dispatch_id: dispatch.dispatch_id,
+      p_claim_token: claimToken,
+      p_sent: false,
+      p_definite_failure: false,
+      p_provider_message_id: null,
+    });
+  }
 }
 
 // Records one rider's waiver signature before any email side effect. A matched
@@ -62,17 +120,15 @@ export async function POST(request: Request) {
   const stored = Array.isArray(data) ? data[0] : data;
   if (error || !stored?.waiver_id) return jsonError('We could not record your signature just now. Please try again, or email info@8lakestours.com.', 502);
 
-  // Retries must re-attempt dispatch after a provider failure, but never use
-  // request-supplied contact fields for an existing signature. Resend receives
-  // stable per-waiver keys so retrying this request cannot create duplicate mail.
-  // A durable delivery state/outbox is still required before treating a later
-  // provider timeout as safely retryable beyond Resend's idempotency window.
+  // Dispatch can only use the signed snapshot, never this retry's request fields.
+  // Durable claims record provider attempts before sending; a timeout becomes
+  // reconciliation_required rather than a blind retry beyond Resend's window.
   if (stored.match_status === 'matched') {
     const { data: snapshot, error: snapshotError } = await createSupabaseAdminClient()
       .from('rider_waivers')
-      .select('rider_name_snapshot,rider_email_snapshot,guardian_name_snapshot,guardian_relationship_snapshot,signature_snapshot,server_signed_at,trusted_ip,ip_provenance,user_agent')
+      .select('rider_name_snapshot,rider_email_snapshot,guardian_name_snapshot,guardian_relationship_snapshot,signature_snapshot,signed_waiver_text,server_signed_at,trusted_ip_address,user_agent,is_minor')
       .eq('id', stored.waiver_id)
-      .single();
+      .single<WaiverSnapshot>();
     if (!snapshotError && snapshot) {
       const persistedRecord: RiderWaiverRecord = {
         ...record,
@@ -82,16 +138,30 @@ export async function POST(request: Request) {
         guardianRelationship: snapshot.guardian_relationship_snapshot ?? '',
         signature: snapshot.signature_snapshot,
         signedAt: snapshot.server_signed_at,
-        ipAddress: snapshot.trusted_ip ?? '',
+        ipAddress: snapshot.trusted_ip_address ?? '',
         userAgent: snapshot.user_agent ?? '',
+        isMinor: snapshot.is_minor,
       };
-      const key = String(stored.waiver_id);
-      const internal = riderWaiverInternalEmail(persistedRecord, waiverText);
-      await sendEmail({ to: getInternalEmailRecipients(), replyTo: persistedRecord.riderEmail, idempotencyKey: `waiver-internal-${key}`, ...internal });
-      const customer = riderWaiverCustomerEmail(persistedRecord, waiverText);
-      await sendEmail({ to: persistedRecord.riderEmail, replyTo: getInternalEmailRecipients()[0], idempotencyKey: `waiver-copy-${key}`, ...customer });
+      const internalRecipients = getInternalEmailRecipients();
+      const internal = riderWaiverInternalEmail(persistedRecord, snapshot.signed_waiver_text);
+      await dispatchWaiverEmail({
+        waiverId: String(stored.waiver_id),
+        destination: 'internal',
+        recipient: internalRecipients.join(','),
+        email: { to: internalRecipients, replyTo: persistedRecord.riderEmail, ...internal },
+      });
+      const customer = riderWaiverCustomerEmail(persistedRecord, snapshot.signed_waiver_text);
+      await dispatchWaiverEmail({
+        waiverId: String(stored.waiver_id),
+        destination: 'rider',
+        recipient: persistedRecord.riderEmail,
+        email: { to: persistedRecord.riderEmail, replyTo: internalRecipients[0], ...customer },
+      });
     }
   }
 
-  return NextResponse.json({ ok: true, isMinor: Boolean(stored.is_minor), pendingReview: stored.match_status !== 'matched' });
+  // Do not disclose whether a booking/rider reference matched. The waiver page
+  // already has enough local validation to give input feedback without turning
+  // this endpoint into a booking-reference oracle.
+  return NextResponse.json({ ok: true });
 }

@@ -19,11 +19,14 @@ test('waiver persistence migration keeps signed evidence private and service-onl
   assert.match(sql, /guardian/i);
 });
 
-test('waiver API persists before email and only emails newly stored submissions', async () => {
+test('waiver API persists before email, retries matched delivery with stable keys, and reads a persisted snapshot', async () => {
   const source = await readFile(route, 'utf8');
   assert.match(source, /record_rider_waiver/);
-  assert.match(source, /should_email/);
-  assert.match(source, /if \(stored\.should_email\)/);
+  assert.match(source, /stored\.match_status === 'matched'/);
+  assert.match(source, /\.from\('rider_waivers'\)/);
+  assert.match(source, /rider_email_snapshot/);
+  assert.match(source, /waiver-internal-\$\{key\}/);
+  assert.match(source, /waiver-copy-\$\{key\}/);
   assert.match(source, /x-vercel-forwarded-for/);
   assert.doesNotMatch(source, /x-forwarded-for/);
 });

@@ -62,15 +62,34 @@ export async function POST(request: Request) {
   const stored = Array.isArray(data) ? data[0] : data;
   if (error || !stored?.waiver_id) return jsonError('We could not record your signature just now. Please try again, or email info@8lakestours.com.', 502);
 
-  // An unmatched or ambiguous submission remains private pending review and can
-  // never inflate the matched waiver count. Avoid an email that claims completion.
-  if (stored.should_email) {
-    if (stored.match_status === 'matched') {
-    const key = String(stored.waiver_id);
-    const internal = riderWaiverInternalEmail(record, waiverText);
-    await sendEmail({ to: getInternalEmailRecipients(), replyTo: record.riderEmail, idempotencyKey: `waiver-internal-${key}`, ...internal });
-    const customer = riderWaiverCustomerEmail(record, waiverText);
-    await sendEmail({ to: record.riderEmail, replyTo: getInternalEmailRecipients()[0], idempotencyKey: `waiver-copy-${key}`, ...customer });
+  // Retries must re-attempt dispatch after a provider failure, but never use
+  // request-supplied contact fields for an existing signature. Resend receives
+  // stable per-waiver keys so retrying this request cannot create duplicate mail.
+  // A durable delivery state/outbox is still required before treating a later
+  // provider timeout as safely retryable beyond Resend's idempotency window.
+  if (stored.match_status === 'matched') {
+    const { data: snapshot, error: snapshotError } = await createSupabaseAdminClient()
+      .from('rider_waivers')
+      .select('rider_name_snapshot,rider_email_snapshot,guardian_name_snapshot,guardian_relationship_snapshot,signature_snapshot,server_signed_at,trusted_ip,ip_provenance,user_agent')
+      .eq('id', stored.waiver_id)
+      .single();
+    if (!snapshotError && snapshot) {
+      const persistedRecord: RiderWaiverRecord = {
+        ...record,
+        riderName: snapshot.rider_name_snapshot,
+        riderEmail: snapshot.rider_email_snapshot,
+        guardianName: snapshot.guardian_name_snapshot ?? '',
+        guardianRelationship: snapshot.guardian_relationship_snapshot ?? '',
+        signature: snapshot.signature_snapshot,
+        signedAt: snapshot.server_signed_at,
+        ipAddress: snapshot.trusted_ip ?? '',
+        userAgent: snapshot.user_agent ?? '',
+      };
+      const key = String(stored.waiver_id);
+      const internal = riderWaiverInternalEmail(persistedRecord, waiverText);
+      await sendEmail({ to: getInternalEmailRecipients(), replyTo: persistedRecord.riderEmail, idempotencyKey: `waiver-internal-${key}`, ...internal });
+      const customer = riderWaiverCustomerEmail(persistedRecord, waiverText);
+      await sendEmail({ to: persistedRecord.riderEmail, replyTo: getInternalEmailRecipients()[0], idempotencyKey: `waiver-copy-${key}`, ...customer });
     }
   }
 

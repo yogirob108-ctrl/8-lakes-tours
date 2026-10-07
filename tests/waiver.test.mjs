@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { ageOn, validateRiderWaiver, WAIVER_SECTIONS, WAIVER_VERSION, waiverPlainText } from '../lib/waiver.mjs';
+import { ageOn, validateRiderWaiver, WAIVER_SECTIONS, WAIVER_TEXT_SHA256, WAIVER_VERSION, waiverPlainText } from '../lib/waiver.mjs';
+import { createHash } from 'node:crypto';
 import { normalizePublicBookingPayload } from '../lib/public-booking.mjs';
 
 const today = '2026-10-06';
@@ -51,6 +52,10 @@ test('the waiver covers medical consent, conduct, helmets and minors', () => {
   assert.match(waiverPlainText(), /binding upon myself/);
 });
 
+test('legal text hash freezes the exact text for its waiver version', () => {
+  assert.equal(createHash('sha256').update(waiverPlainText()).digest('hex'), WAIVER_TEXT_SHA256);
+});
+
 test('the booking form and the rider page render the same shared waiver text', async () => {
   const [home, page] = await Promise.all([
     readFile(new URL('../app/HomePageClient.tsx', import.meta.url), 'utf8'),
@@ -58,6 +63,13 @@ test('the booking form and the rider page render the same shared waiver text', a
   ]);
   for (const source of [home, page]) assert.match(source, /WAIVER_SECTIONS\.map/);
   assert.doesNotMatch(home, /\['1\. Nature of Activity'/);
+});
+
+test('waiver confirmation is generic and makes no email delivery promise', async () => {
+  const form = await readFile(new URL('../app/waiver/WaiverForm.tsx', import.meta.url), 'utf8');
+  assert.match(form, /Your waiver submission has been received\./);
+  assert.doesNotMatch(form, /is signed\./);
+  assert.doesNotMatch(form, /copy is on its way/i);
 });
 
 test('the lead booker must be 18 or older', () => {

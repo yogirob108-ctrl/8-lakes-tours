@@ -61,8 +61,8 @@ export default function WaiverForm({ initialReference }: { initialReference: str
   if (status === 'done') {
     return (
       <div role="status" style={{ marginTop: '2rem', padding: '1.4rem', border: '1px solid rgba(200,169,110,0.35)', borderRadius: '4px', background: 'rgba(200,169,110,0.06)' }}>
-        <p style={{ margin: 0, fontSize: '1rem', color: '#f5f0e8' }}>Thank you, the waiver for {riderName} is signed.</p>
-        <p style={{ margin: '0.6rem 0 0', fontSize: '0.9rem', lineHeight: 1.7 }}>A copy is on its way to {riderEmail}. If anyone else in your group still needs to sign, send them this page.</p>
+        <p style={{ margin: 0, fontSize: '1rem', color: '#f5f0e8' }}>Your waiver submission has been received.</p>
+        <p style={{ margin: '0.6rem 0 0', fontSize: '0.9rem', lineHeight: 1.7 }}>We will review it before departure. If anyone else in your group still needs to submit a waiver, send them this page.</p>
       </div>
     );
   }

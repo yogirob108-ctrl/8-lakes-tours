@@ -35,6 +35,10 @@ type EmailResult = {
   sent: boolean;
   id?: string;
   error?: string;
+  statusCode?: number | null;
+  // Provider error responses do not prove non-delivery: an ambiguous provider
+  // outcome must be reconciled rather than retried as a definite rejection.
+  definiteFailure?: boolean;
 };
 
 type LifecycleEmailInput = {
@@ -127,7 +131,7 @@ export function getInternalEmailRecipients() {
 
 export async function sendEmail({ to, subject, html, text, replyTo, idempotencyKey }: SendEmailInput): Promise<EmailResult> {
   const resend = getResendClient();
-  if (!resend) return { sent: false, error: 'RESEND_API_KEY is not configured' };
+  if (!resend) return { sent: false, error: 'RESEND_API_KEY is not configured', definiteFailure: true };
 
   const { data, error } = await resend.emails.send({
     from: process.env.EMAIL_FROM || DEFAULT_FROM,
@@ -138,8 +142,18 @@ export async function sendEmail({ to, subject, html, text, replyTo, idempotencyK
     replyTo,
   }, idempotencyKey ? { idempotencyKey } : undefined);
 
-  if (error) return { sent: false, error: error.message };
-  return { sent: true, id: data?.id };
+  if (error) {
+    const statusCode = typeof (error as { statusCode?: unknown }).statusCode === 'number'
+      ? (error as { statusCode: number }).statusCode
+      : null;
+    return {
+      sent: false,
+      error: error.message,
+      statusCode,
+      definiteFailure: false,
+    };
+  }
+  return { sent: true, id: data?.id, statusCode: null, definiteFailure: false };
 }
 
 export function bookingInternalEmail(input: {

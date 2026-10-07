@@ -1,3 +1,4 @@
+import * as waiverModule from '../lib/waiver.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -32,6 +33,7 @@ function harness({created=false, fail=false, conflict=false, manual=true}={}) {
   if(name==='@/lib/ops-config')return {isSupabaseAdminConfigured:true};
   if(name==='@/lib/supabase-admin')return {createSupabaseAdminClient:()=>db};
   if(name==='@/lib/public-booking.mjs')return normalizer;
+  if(name==='@/lib/waiver.mjs')return waiverModule;
   if(name==='@/lib/group-pricing.mjs')return pricing;
   if(name==='@/lib/booking-checkout')return {recoveryUrl:()=>'/pay/private'};
   if(name==='@/lib/newsletter')return {};

@@ -43,7 +43,7 @@ export default function TermsAndConditions() {
           },
           {
             title: '6. Liability Waiver',
-            body: 'All participants must sign the 8 Lakes Tours Liability Waiver & Release before departure (or as part of the booking process). By signing, you acknowledge the inherent risks of the activity and release 8 Lakes Tours, its guides, and the host family from liability for injury, illness, or death arising from participation. The waiver is legally binding.',
+            body: 'Every rider must sign their own 8 Lakes Tours Liability Waiver & Release before departure. The lead booker signs when booking, and each other rider signs at 8lakestours.com/waiver using the link in the booking confirmation. Riders aged 16 or 17 need a parent or legal guardian to sign for them, and the lead booker must be 18 or older. By signing, you acknowledge the inherent risks of the activity and release 8 Lakes Tours, its guides, and the host family from liability for injury, illness, or death arising from participation. The waiver is legally binding.',
           },
           {
             title: '7. Health & Fitness',

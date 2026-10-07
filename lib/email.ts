@@ -221,6 +221,21 @@ export function bookingInternalEmail(input: {
   };
 }
 
+export function waiverUrl(reference: string) {
+  return `${SITE_URL}/waiver?ref=${encodeURIComponent(reference)}`;
+}
+
+function waiverLines(reference: string, guestCount: number) {
+  const url = waiverUrl(reference);
+  const textLine = guestCount > 1
+    ? `Waivers: you signed yours when you booked. Every other rider in your group signs their own before the trip (about two minutes each). Please send them this link: ${url}\nRiders under 18 need a parent or guardian to sign for them.`
+    : `Waiver: you signed yours when you booked. If anyone joins you later, they can sign theirs here: ${url}`;
+  const htmlLine = guestCount > 1
+    ? `<strong>Waivers:</strong> you signed yours when you booked. Every other rider in your group signs their own before the trip (about two minutes each). Please send them this link: <a href="${escapeHtml(url)}" style="color:#1155cc">${escapeHtml(url)}</a><br>Riders under 18 need a parent or guardian to sign for them.`
+    : `<strong>Waiver:</strong> you signed yours when you booked. If anyone joins you later, they can sign theirs here: <a href="${escapeHtml(url)}" style="color:#1155cc">${escapeHtml(url)}</a>`;
+  return { textLine, htmlLine };
+}
+
 export function bookingCustomerEmail(input: { reference: string; firstName: string; tourDate: string; guestCount?: number; pricePerPersonUsd?: number; onlinePaymentUsd?: number; localFamilyPaymentUsd?: number; totalTripValueUsd?: number; requiresManualPaymentLink?: boolean; manualPaymentReason?: string | null; travellerNames?: string; paymentUrl?: string }) {
   const subject = `Your 8 Lakes Tours booking (${input.reference})`;
   const name = firstName(input.firstName);
@@ -231,6 +246,7 @@ export function bookingCustomerEmail(input: { reference: string; firstName: stri
   const familyCash = input.localFamilyPaymentUsd ? usd(input.localFamilyPaymentUsd) : FAMILY_CASH_USD;
   const totalTripValue = input.totalTripValueUsd ? usd(input.totalTripValueUsd) : TOTAL_PRICE_USD;
   const resumeLine = input.paymentUrl ? `Resume your secure payment (no new booking needed): ${input.paymentUrl}` : '';
+  const waiver = waiverLines(input.reference, guestCount);
 
   const paymentIntro = needsGroupInvoice
     ? `Since you are booking ${guestCount} guests together, Robert will email you one invoice for the ${onlinePayment} online amount so the whole group can pay in a single step. Your places are confirmed once that invoice is paid.`
@@ -267,6 +283,8 @@ Cash for the host family in Mongolia: ${familyCash}
 The ${familyCash} family portion is not collected online. Please plan to bring clean USD notes to Mongolia and pay the family directly. Many host families cannot reliably receive cards or bank transfers, so cash is what works.
 
 ${paymentIntro}
+
+${waiver.textLine}
 
 ${DASH_RULE_TEXT}
 
@@ -311,6 +329,7 @@ info@8lakestours.com`;
     p(`Total trip price: ${escapeHtml(pricePerPerson)} per person / ${escapeHtml(totalTripValue)} total<br>Online booking payment: ${escapeHtml(onlinePayment)}<br>Cash for the host family in Mongolia: ${escapeHtml(familyCash)}`),
     p(`The ${escapeHtml(familyCash)} family portion is not collected online. Please plan to bring clean USD notes to Mongolia and pay the family directly. Many host families cannot reliably receive cards or bank transfers, so cash is what works.`),
     p(paymentIntro),
+    p(waiver.htmlLine),
     sectionRuleHtml(),
     p('<strong>A few things worth knowing before you travel</strong>'),
     p(`<strong>Food:</strong> traditional host-family food is meat- and dairy-heavy. Families make their own milk from yaks or cows and serve it fresh as milk tea, yoghurt, cheese, and other traditional foods.`),
@@ -447,6 +466,8 @@ Getting around Ulaanbaatar: taxis are readily available, and the UBCab app works
 
 Insurance: please make sure you have travel insurance that covers horseback riding or adventure activity and emergency evacuation.
 
+Waivers: every rider needs their own signed waiver before departure, and riders under 18 need a parent or guardian to sign. If anyone in your group has not signed yet, send them this link: ${waiverUrl(input.reference)}
+
 ${DASH_RULE_TEXT}
 
 Any last questions, just reply to this email.
@@ -474,6 +495,7 @@ info@8lakestours.com`;
     p(`<strong>Getting from Ulaanbaatar to Bat-Ulzii:</strong> this part needs a little planning. Arrive in Ulaanbaatar at least <strong>two days before your tour date</strong> so there is time to sort the countryside bus and any schedule changes. Book a hostel or hotel in Ulaanbaatar and ask them to help book your bus ticket to Bat-Ulzii. These buses do not run every day, so please do not leave it until the last minute. Once your bus is booked, send us the details and we will coordinate the host-family pickup on the Bat-Ulzii side.`),
     p(`<strong>Getting around Ulaanbaatar:</strong> taxis are readily available, and the <a href="https://apps.apple.com/app/id863109199" style="color:#1155cc">UBCab app</a> works like Uber. For scooters and bicycles, the <a href="https://apps.apple.com/app/id1563199559" style="color:#1155cc">tapa. app</a> works well and accepts international cards.`),
     p(`<strong>Insurance:</strong> please make sure you have travel insurance that covers horseback riding or adventure activity and emergency evacuation.`),
+    p(`<strong>Waivers:</strong> every rider needs their own signed waiver before departure, and riders under 18 need a parent or guardian to sign. If anyone in your group has not signed yet, send them this link: <a href="${escapeHtml(waiverUrl(input.reference))}" style="color:#1155cc">${escapeHtml(waiverUrl(input.reference))}</a>`),
     sectionRuleHtml(),
     p(`Any last questions, just reply to this email.`),
     p(WHATSAPP_LINE_HTML),
@@ -723,4 +745,68 @@ export function leadCustomerEmail(input: { name: string }, now = new Date()) {
     text,
     html: wrap('Occasional 8 Lakes Tours news, offers, dates, blog posts, and field notes.', body),
   };
+}
+
+export type RiderWaiverRecord = {
+  reference: string;
+  riderName: string;
+  riderEmail: string;
+  age: number;
+  isMinor: boolean;
+  guardianName: string | null;
+  guardianRelationship: string | null;
+  signature: string;
+  waiverVersion: string;
+  signedAt: string;
+  ipAddress: string;
+  userAgent: string;
+};
+
+// The signed record for one rider. It goes to the team inbox as the durable
+// copy, so it carries everything needed to show who agreed to which text when.
+export function riderWaiverInternalEmail(record: RiderWaiverRecord, waiverText: string) {
+  const who = record.isMinor ? `${record.riderName} (under 18, signed by ${record.guardianRelationship} ${record.guardianName})` : record.riderName;
+  const subject = `Waiver signed: ${record.riderName} (${record.reference})`;
+  const pairs: Array<[string, string]> = [
+    ['Booking reference', record.reference],
+    ['Rider', record.riderName],
+    ['Rider email', record.riderEmail],
+    ['Age when signed', `${record.age}`],
+    ...(record.isMinor ? [['Parent/guardian', `${record.guardianName} (${record.guardianRelationship})`] as [string, string]] : []),
+    ['Typed signature', record.signature],
+    ['Waiver version', record.waiverVersion],
+    ['Signed at (UTC)', record.signedAt],
+    ['IP address', record.ipAddress || 'Unknown'],
+    ['Browser', record.userAgent || 'Unknown'],
+  ];
+  const text = `Rider waiver signed\n\n${pairs.map(([k, v]) => `${k}: ${v}`).join('\n')}\n\nAdd this to booking ${record.reference} in the ops dashboard.\n\nWaiver text agreed (version ${record.waiverVersion}):\n\n${waiverText}`;
+  const body = [
+    p(`<strong>${escapeHtml(who)}</strong> signed the liability waiver for booking <strong>${escapeHtml(record.reference)}</strong>.`),
+    detailsHtml(pairs.map(([k, v]) => [k, escapeHtml(v)])),
+    p(`Add this to the <a href="${OPS_URL}/ops/bookings/${escapeHtml(record.reference)}" style="color:#1155cc">booking record</a>. The full waiver text this rider agreed to is below.`),
+    `<pre style="white-space:pre-wrap;font-family:inherit;font-size:13px;line-height:1.6;color:#444">${escapeHtml(waiverText)}</pre>`,
+  ].join('\n');
+  return { subject, text, html: wrap(`${record.riderName} signed the waiver for ${record.reference}.`, body) };
+}
+
+export function riderWaiverCustomerEmail(record: RiderWaiverRecord, waiverText: string) {
+  const name = firstName(record.isMinor && record.guardianName ? record.guardianName : record.riderName);
+  const forWhom = record.isMinor ? ` on behalf of ${record.riderName}` : '';
+  const subject = `Your 8 Lakes Tours waiver (${record.reference})`;
+  const text = `Hi ${name},\n\nThanks for signing the liability waiver${forWhom}. This email is your copy.\n\nBooking reference: ${record.reference}\nRider: ${record.riderName}\nSigned as: ${record.signature}\nSigned at (UTC): ${record.signedAt}\nWaiver version: ${record.waiverVersion}\n\n${WHATSAPP_LINE_TEXT}\n\nRobert Zaher\n8 Lakes Tours\nwww.8lakestours.com\ninfo@8lakestours.com\n\n---\n\n${waiverText}`;
+  const body = [
+    p(`Hi ${escapeHtml(name)},`),
+    p(`Thanks for signing the liability waiver${escapeHtml(forWhom)}. This email is your copy.`),
+    detailsHtml([
+      ['Booking reference', escapeHtml(record.reference)],
+      ['Rider', escapeHtml(record.riderName)],
+      ['Signed as', escapeHtml(record.signature)],
+      ['Signed at (UTC)', escapeHtml(record.signedAt)],
+      ['Waiver version', escapeHtml(record.waiverVersion)],
+    ]),
+    p(WHATSAPP_LINE_HTML),
+    signoffHtml(),
+    `<pre style="white-space:pre-wrap;font-family:inherit;font-size:12px;line-height:1.6;color:#666;margin-top:24px">${escapeHtml(waiverText)}</pre>`,
+  ].join('\n');
+  return { subject, text, html: wrap(`Your signed waiver for booking ${record.reference}.`, body) };
 }

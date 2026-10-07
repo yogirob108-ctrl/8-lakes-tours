@@ -1,3 +1,4 @@
+import * as waiverModule from '../lib/waiver.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -32,6 +33,7 @@ function invalidApiHarness(email) {
       if (name === '@/lib/ops-config') return { isSupabaseAdminConfigured: true };
       if (name === '@/lib/supabase-admin') return { createSupabaseAdminClient: () => ({ rpc: async name => { calls.push(name); throw new Error(`unexpected ${name}`); } }) };
       if (name === '@/lib/public-booking.mjs') return normalizer;
+      if (name === '@/lib/waiver.mjs') return waiverModule;
       if (name === '@/lib/group-pricing.mjs') return pricing;
       if (name === '@/lib/booking-checkout') return { recoveryUrl: () => '/pay/private' };
       if (name === '@/lib/newsletter') return { subscribeToNewsletter: async () => { sent.push('newsletter'); } };

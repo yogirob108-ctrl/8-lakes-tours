@@ -8,6 +8,9 @@ import { hasExplicitNewsletterOptIn } from '@/lib/newsletter-consent.mjs';
 import { GROUP_INVOICE, isBookableTourDate, manualPaymentReason, normalizeTourDateSelection, requiresManualPaymentLink } from '@/lib/tour-booking.mjs';
 import { getGroupPricing } from '@/lib/group-pricing.mjs';
 import { normalizePublicBookingPayload } from '@/lib/public-booking.mjs';
+import { ADULT_AGE, WAIVER_VERSION, ageOn } from '@/lib/waiver.mjs';
+
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.8lakestours.com';
 import { recoveryUrl } from '@/lib/booking-checkout';
 
 export const runtime = 'nodejs';
@@ -178,7 +181,18 @@ export async function POST(request: Request) {
     `Traveller manifest:\n${travellerNames}`,
     attributionBlock,
   ].filter(Boolean).join('\n\n');
-  const customerNotes = [`Waiver signed online as: ${bookingInput.signature}`, attributionBlock].filter(Boolean).join('\n\n');
+  const signedAt = new Date().toISOString();
+  const today = signedAt.slice(0, 10);
+  const minors = travellers.filter(traveller => {
+    const age = ageOn(traveller.date_of_birth, today);
+    return age !== null && age < ADULT_AGE;
+  });
+  const waiverLines = [
+    `Waiver ${WAIVER_VERSION} signed online by the lead booker as: ${bookingInput.signature} (${signedAt})`,
+    travellers.length > 1 ? `Every other rider signs their own waiver at ${SITE_URL}/waiver?ref=<booking reference>.` : '',
+    minors.length ? `UNDER 18, parent/guardian waiver required: ${minors.map(t => `${t.first_name} ${t.last_name} (age ${ageOn(t.date_of_birth, today)})`).join('; ')}` : '',
+  ].filter(Boolean).join('\n');
+  const customerNotes = [waiverLines, attributionBlock].filter(Boolean).join('\n\n');
 
   const { data: rpcData, error: rpcError } = await supabase.rpc('create_public_booking', {
     p_submission_key: bookingInput.submission_key,

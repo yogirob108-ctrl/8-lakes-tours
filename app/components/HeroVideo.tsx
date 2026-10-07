@@ -4,8 +4,9 @@ import { useEffect, useRef } from 'react';
 
 // Hero background video. The poster still is painted by CSS on the wrapper, so
 // the video itself downloads nothing until the page has finished loading, and
-// it fades in only once it is actually playing. Skipped entirely for
-// reduced-motion and data-saver visitors.
+// it fades in only once it is actually playing. For a seamless loop, the second
+// decoder stays idle until shortly before the seam; every video element uses the
+// same media query sources, so a phone never selects the desktop resource.
 export default function HeroVideo({ className, desktopSrc, mobileSrc, label, dissolveAtLoop = false, fadeInSeconds = 0, loopFadeSeconds = 1.2 }: {
   className: string;
   desktopSrc: string;
@@ -35,12 +36,8 @@ export default function HeroVideo({ className, desktopSrc, mobileSrc, label, dis
     const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || connection?.saveData) return;
     const start = () => {
-      for (const video of [primary, secondaryRef.current]) {
-        if (!video) continue;
-        video.preload = 'auto';
-        video.load();
-      }
-      // Only the primary starts now; the second pass is cued by the crossfade.
+      primary.preload = 'auto';
+      primary.load();
       primary.play().catch(() => {});
     };
     if (document.readyState === 'complete') start();
@@ -55,18 +52,19 @@ export default function HeroVideo({ className, desktopSrc, mobileSrc, label, dis
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     const FADE_SECONDS = loopFadeSeconds;
-    // Eased rather than linear so the outgoing pass leaves full opacity gently
-    // instead of stepping off it.
+    // Give the incoming element a short decode runway without requesting it at
+    // initial page load. This keeps LCP work to one video and preserves the
+    // moving-to-moving handoff that avoids a visible loop seam.
+    const PREWARM_SECONDS = Math.max(FADE_SECONDS + 2, FADE_SECONDS * 2);
     const smoothstep = (t: number) => t * t * (3 - 2 * t);
     const clamp = (t: number) => Math.min(1, Math.max(0, t));
 
     let front = a;
     let back = b;
     let frame = 0;
+    let prepared = false;
     let cued = false;
     let startedAt = 0;
-    // Both passes scale by the arrival ramp, so the intro fade and the loop
-    // crossfade compose instead of fighting over the same opacity.
     const arrival = () => fadeInSeconds > 0 && startedAt
       ? smoothstep(clamp((performance.now() - startedAt) / (fadeInSeconds * 1000)))
       : 1;
@@ -78,20 +76,28 @@ export default function HeroVideo({ className, desktopSrc, mobileSrc, label, dis
       front.style.opacity = '0';
       show(back, 1);
       [front, back] = [back, front];
+      prepared = false;
       cued = false;
     };
 
     const tick = () => {
       frame = requestAnimationFrame(tick);
       const { duration, currentTime } = front;
-      if (!Number.isFinite(duration) || duration <= FADE_SECONDS * 2) return;
+      if (!Number.isFinite(duration) || duration <= PREWARM_SECONDS) return;
       const remaining = duration - currentTime;
+      if (remaining > PREWARM_SECONDS) {
+        show(front, 1);
+        return;
+      }
+      if (!prepared) {
+        prepared = true;
+        back.preload = 'auto';
+        back.load();
+      }
       if (remaining > FADE_SECONDS) {
         show(front, 1);
         return;
       }
-      // Start the incoming pass a full fade before the outgoing one ends, so it
-      // is decoding and moving by the time any of it is visible.
       if (!cued) {
         cued = true;
         back.currentTime = 0;
@@ -100,8 +106,6 @@ export default function HeroVideo({ className, desktopSrc, mobileSrc, label, dis
       const eased = smoothstep(clamp(1 - remaining / FADE_SECONDS));
       show(front, 1 - eased);
       show(back, eased);
-      // `ended` can be late by a frame or two; swap as soon as the tail is spent
-      // so the finished element never lingers at a visible opacity.
       if (front.ended || remaining <= 0.02) handOver();
     };
 
@@ -116,7 +120,6 @@ export default function HeroVideo({ className, desktopSrc, mobileSrc, label, dis
     if (!a.paused) onPlaying();
     return () => {
       cancelAnimationFrame(frame);
-      frame = 0;
       a.removeEventListener('playing', onPlaying);
       a.style.opacity = '';
       b.style.opacity = '';
@@ -148,8 +151,6 @@ export default function HeroVideo({ className, desktopSrc, mobileSrc, label, dis
     );
   }
 
-  // Looping is handed back and forth between the two elements rather than left
-  // to the `loop` attribute, whose seek is the stall this exists to avoid.
   return (
     <>
       <video

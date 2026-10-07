@@ -1337,7 +1337,7 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
         .itin-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--gold); transform: scaleX(0); transform-origin: left; transition: transform 0.4s ease; }
         .itin-card:hover::before { transform: scaleX(1); }
         .itin-card:hover { background: #1e1b15; }
-        .itin-days { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 3.4rem; font-weight: 300; color: rgba(200,169,110,0.24); position: absolute; top: 1.5rem; right: 1.5rem; line-height: 1; }
+        .itin-days { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 3.4rem; font-weight: 300; color: rgba(245,240,232,0.68); position: absolute; top: 1.5rem; right: 1.5rem; line-height: 1; }
         .itin-tag { font-size: 0.72rem; letter-spacing: 0.26em; text-transform: uppercase; color: var(--gold); margin-bottom: 1rem; display: block; }
         .itin-title { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 1.85rem; font-weight: 300; color: var(--cream); margin-bottom: 1.1rem; line-height: 1.15; }
         .itin-desc { font-size: 1rem; line-height: 1.8; color: rgba(245,240,232,0.78); opacity: 1; }
@@ -1424,7 +1424,7 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
         .scarcity-pill { display:inline-flex; max-width:100%; box-sizing:border-box; align-items:center; gap:0.6rem; margin-top:1.2rem; padding:0.6rem 1.1rem; background:rgba(185,74,48,0.12); border:1px solid rgba(185,74,48,0.35); border-radius: var(--radius-soft); overflow:hidden; }
         .scarcity-pill span:last-child { min-width:0; font-size:0.72rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--rust); line-height:1.45; overflow-wrap:anywhere; }
         .price-card { max-width:100%; box-sizing:border-box; overflow:hidden; background: var(--ink); border: 1px solid rgba(200,169,110,0.25); border-radius: var(--radius-card); padding: 3rem; }
-        .price-badge { max-width:100%; box-sizing:border-box; font-size: 0.6rem; letter-spacing: 0.3em; line-height:1.55; text-transform: uppercase; background: var(--rust); color: var(--cream); display: inline-block; padding: 0.4rem 1rem; margin-bottom: 1.5rem; border-radius: var(--radius-soft); overflow-wrap:anywhere; }
+        .price-badge { max-width:100%; box-sizing:border-box; font-size: 0.6rem; letter-spacing: 0.3em; line-height:1.55; text-transform: uppercase; background: #8f321f; color: var(--cream); display: inline-block; padding: 0.4rem 1rem; margin-bottom: 1.5rem; border-radius: var(--radius-soft); overflow-wrap:anywhere; }
         .price-amount { max-width:100%; font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: clamp(2.45rem, 8vw, 4rem); font-weight: 300; color: var(--gold); line-height: 0.98; margin-bottom: 0.4rem; overflow-wrap:anywhere; word-break: normal; }
         .price-per { max-width:100%; font-size: 0.75rem; letter-spacing: 0.15em; line-height:1.5; text-transform: uppercase; color: var(--mist); opacity: 0.6; margin-bottom: 2rem; overflow-wrap:anywhere; }
         .price-note { max-width:100%; box-sizing:border-box; font-size: 0.8rem; color: var(--mist); opacity: 0.7; line-height: 1.6; margin-bottom: 1rem; padding: 1rem; background: rgba(245,240,232,0.04); border-left: 2px solid var(--gold); border-radius: 0 var(--radius-soft) var(--radius-soft) 0; overflow-wrap:anywhere; }
@@ -1588,7 +1588,7 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
         .lead-form button:disabled { opacity: 0.86; cursor: default; color: rgba(14,12,9,0.88); }
         .lead-message { margin-top: 0.75rem; font-size: 0.74rem; line-height: 1.5; color: var(--gold); }
         .lead-message.error { color: #ffb4a6; }
-        .lead-privacy { margin-top: 0.75rem !important; margin-bottom: 0 !important; font-size: 0.68rem !important; line-height: 1.5 !important; color: rgba(212,207,196,0.56) !important; }
+        .lead-privacy { margin-top: 0.75rem !important; margin-bottom: 0 !important; font-size: 0.68rem !important; line-height: 1.5 !important; color: rgba(212,207,196,0.60) !important; }
         .lightbox-backdrop { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.94); display: flex; align-items: center; justify-content: center; padding: 2rem; cursor: zoom-out; }
         .gallery-handoff { background:#0f0f0d; border-top:1px solid rgba(200,169,110,0.14); border-bottom:1px solid rgba(200,169,110,0.14); padding: 1.6rem 6rem; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2rem; align-items:center; }
         .gallery-handoff-copy p:first-child { font-size:0.62rem; letter-spacing:0.26em; text-transform:uppercase; color:var(--gold); margin-bottom:0; }
@@ -2348,7 +2348,7 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
                 placeholder="Your full name"
                 style={{width:'100%', background:'rgba(255,255,255,0.04)', border:'1px solid rgba(200,169,110,0.3)', borderRadius:'var(--radius-soft)', padding:'0.7rem 1rem', color:'var(--cream)', fontSize:'0.95rem', fontFamily:"var(--font-cormorant), 'Cormorant Garamond', serif", fontStyle:'italic', outline:'none', boxSizing:'border-box'}}
               />
-              <p style={{fontSize:'0.7rem', color:'var(--mist)', opacity:0.5, marginTop:'0.4rem', lineHeight:1.5}}>Sign with your full legal name, as the lead booker (18 or older). Every other rider signs their own waiver from the link in your confirmation email.</p>
+              <p style={{fontSize:'0.7rem', color:'var(--mist)', opacity:0.82, marginTop:'0.4rem', lineHeight:1.5}}>Sign with your full legal name, as the lead booker (18 or older). Every other rider signs their own waiver from the link in your confirmation email.</p>
               <label className="waiver-agree">
                 <input type="checkbox" name="waiver_agreed" value="on" required checked={waiverAgreed} onChange={event => setWaiverAgreed(event.target.checked)} />
                 <span>I have read the liability waiver above, agree to it for myself, and confirm I am 18 or older.</span>
@@ -2456,11 +2456,11 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
               </div>
             )}
             <p style={{fontSize:'0.72rem', color:'var(--mist)', opacity:0.58, textAlign:'center', lineHeight:1.6}}>{requiresHumanConfirmation ? 'We\'ll reply by email with availability.' : 'Your booking is confirmed once the online payment is completed. If anything needs checking, we\'ll contact you directly.'}</p>
-            <p style={{fontSize:'0.7rem', color:'var(--mist)', opacity:0.4, textAlign:'center', lineHeight:1.6, marginTop:'0.5rem'}}>
+            <p style={{fontSize:'0.7rem', color:'var(--mist)', opacity:0.78, textAlign:'center', lineHeight:1.6, marginTop:'0.5rem'}}>
               By submitting this form you agree to our{' '}
-              <a href="/terms" style={{color:'var(--gold)', opacity:0.7, textDecoration:'underline', textUnderlineOffset:'3px'}}>Terms &amp; Conditions</a>
+              <a href="/terms" style={{color:'var(--gold)', opacity:1, textDecoration:'underline', textUnderlineOffset:'3px'}}>Terms &amp; Conditions</a>
               {' '}and{' '}
-              <a href="/privacy" style={{color:'var(--gold)', opacity:0.7, textDecoration:'underline', textUnderlineOffset:'3px'}}>Privacy Policy</a>.
+              <a href="/privacy" style={{color:'var(--gold)', opacity:1, textDecoration:'underline', textUnderlineOffset:'3px'}}>Privacy Policy</a>.
               Your data will be used to process your booking enquiry and send relevant transactional trip and preparation updates. Marketing emails are sent only if you select the optional newsletter checkbox above.
             </p>
           </form>

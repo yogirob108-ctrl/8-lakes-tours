@@ -155,8 +155,8 @@ export default function RootLayout({
         <Analytics />
         <SpeedInsights />
         <GoogleConsentBanner />
-        <Script src="https://www.googletagmanager.com/gtag/js?id=G-E9PW7T08LZ" strategy="afterInteractive" />
-        <Script id="google-analytics" strategy="afterInteractive">{`
+        <Script src="https://www.googletagmanager.com/gtag/js?id=G-E9PW7T08LZ" strategy="lazyOnload" />
+        <Script id="google-analytics" strategy="lazyOnload">{`
           gtag('js', new Date());
           gtag('config', 'G-E9PW7T08LZ', { allow_google_signals: false });
         `}</Script>

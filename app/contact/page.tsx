@@ -89,9 +89,9 @@ export default function Page() {
           <p style={pStyle}><a href="mailto:info@8lakestours.com" style={{ color: '#c8a96e' }}>info@8lakestours.com</a></p>
         </section>
         <section style={{ marginTop: '2.5rem' }} id="call">
-          <h2 style={h2Style}>Free 15-minute call</h2>
-          <p style={pStyle}>Not sure the trip is right for you? Talk it through with Robert before you book: riding level, food, getting there, what the days are really like. Send a few times that suit you and we&apos;ll set up a call by phone, WhatsApp or Zoom.</p>
-          <p style={{...pStyle, marginTop: '1rem'}}><a href={CALL_OFFER_HREF} style={{ color: '#c8a96e' }}>Book a free 15-minute call →</a></p>
+          <h2 style={h2Style}>Ask a question or book a call</h2>
+          <p style={pStyle}>Not sure the trip is right for you? Ask Robert anything before you book — about riding level, food, getting there, or what the days are really like. If you&apos;d rather talk it through, send a few times that suit you and we&apos;ll arrange a call by phone, WhatsApp or Zoom.</p>
+          <p style={{...pStyle, marginTop: '1rem'}}><a href={CALL_OFFER_HREF} style={{ color: '#c8a96e' }}>Ask a question or book a call →</a></p>
         </section>
         <section style={{ marginTop: '2.5rem' }}>
           <h2 style={h2Style}>Instagram</h2>

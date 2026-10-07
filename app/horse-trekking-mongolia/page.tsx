@@ -156,7 +156,7 @@ export default function HorseTrekkingMongoliaPage() {
           <p>Every booking includes a local family portion paid directly to your hosts in Mongolia. The split is explicit before you commit.</p>
           <div className={styles.trustLinks}>
             <Link href="/about">Meet the team</Link>
-            <a href={CALL_OFFER_HREF}>Book a free 15-minute call</a>
+            <a href={CALL_OFFER_HREF}>Ask a question or book a call</a>
             <a href="mailto:info@8lakestours.com">Email our team</a>
           </div>
         </div>

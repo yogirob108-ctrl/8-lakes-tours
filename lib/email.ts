@@ -743,7 +743,7 @@ export function leadCustomerEmail(input: { name: string }, now = new Date()) {
   const priceHold = isPriceHoldActive(now)
     ? `If you are thinking about riding next season, today's prices are held for bookings made by ${PRICE_HOLD_DEADLINE_LABEL}.`
     : '';
-  const callOffer = 'Want to talk it through first? Reply to this email and we can set up a free 15-minute call by phone, WhatsApp, or Zoom.';
+  const callOffer = 'Want to ask a question or talk it through? Reply to this email and we can arrange a call by phone, WhatsApp, or Zoom.';
   const text = `${greetingName ? `Hi ${greetingName},` : 'Hi,'}\n\nThanks for joining the 8 Lakes Tours newsletter. We send occasional updates about Mongolia horse trekking, new departure dates, offers, deals, blog posts, field notes, and news from the business.\n\n${priceHold ? `${priceHold}\n\n` : ''}${callOffer}\n\nNo booking has been made from this signup. If you ever want to reserve a place, you can do that on the website: ${SITE_URL}/#application\n\nYou can opt out any time by replying to this email.\n\nRobert Zaher\n8 Lakes Tours\nwww.8lakestours.com\ninfo@8lakestours.com`;
   const body = [
     p(greetingName ? `Hi ${escapeHtml(greetingName)},` : 'Hi,'),

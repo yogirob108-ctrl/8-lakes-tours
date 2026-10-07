@@ -2135,10 +2135,9 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
             </div>
             <div className="ask-card">
               <h3>Not sure if this fits?</h3>
-              <p>Ask before paying, or talk it through with Robert on a free 15-minute call. We&apos;re happy to check riding level, food restrictions, route expectations, dates, or whether this is the right kind of adventure for you.</p>
+              <p>Ask Robert a question or book a call before paying. We&apos;re happy to check riding level, food restrictions, route expectations, dates, or whether this is the right kind of adventure for you.</p>
               <div className="ask-card-links">
-                <a href={CALL_OFFER_HREF}>Book a free 15-minute call</a>
-                <a href="mailto:info@8lakestours.com?subject=Question%20before%20booking%208%20Lakes%20Tours">Ask a question first</a>
+                <a href={CALL_OFFER_HREF}>Ask a question or book a call</a>
               </div>
               <div className="ask-card-alt">
                 <p>Prefer to stay with the host family and ride daily, without the full camping trek to Eight Lakes? We can plan a custom riding stay around your dates.</p>
@@ -2532,7 +2531,7 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
               <a className="contact-card contact-card-call" href={CALL_OFFER_HREF}>
                 <span className="contact-card-icon" aria-hidden="true">☏</span>
                 <span className="contact-card-text">
-                  <span className="contact-card-label">Free 15-minute call</span>
+                  <span className="contact-card-label">Ask a question or book a call</span>
                   <span className="contact-card-value">Talk it through with Robert before you book</span>
                 </span>
               </a>

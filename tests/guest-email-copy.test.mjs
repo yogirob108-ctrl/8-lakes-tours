@@ -13,9 +13,10 @@ test('emails are signed and voiced as Robert throughout', () => {
   assert.doesNotMatch(source, /Rob Zaher|Robert will coordinate/);
 });
 
-test('newsletter welcome only promises the price hold while it runs, and offers the call', () => {
+test('newsletter welcome only promises the price hold while it runs, and offers a question-or-call conversation', () => {
   assert.match(source, /const priceHold = isPriceHoldActive\(now\)/);
-  assert.match(source, /free 15-minute call by phone, WhatsApp, or Zoom/);
+  assert.match(source, /Want to ask a question or talk it through\? Reply to this email and we can arrange a call by phone, WhatsApp, or Zoom/);
+  assert.doesNotMatch(source, new RegExp(['free', '15-minute', 'call'].join(' '), 'i'));
 });
 
 test('WhatsApp goes to booked guests only, never newsletter signups', () => {

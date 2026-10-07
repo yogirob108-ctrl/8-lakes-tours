@@ -63,13 +63,22 @@ test('privacy policy explains consent-controlled Google Ads measurement', async 
   assert.match(banner, /cookieless/i);
 });
 
-test('root layout sets denied defaults before loading Google Analytics', async () => {
-  const source = await readFile(new URL('../app/layout.tsx', import.meta.url), 'utf8');
+test('Google loads only after the visitor explicitly allows measurement', async () => {
+  const [source, banner] = await Promise.all([
+    readFile(new URL('../app/layout.tsx', import.meta.url), 'utf8'),
+    readFile(new URL('../app/components/GoogleConsentBanner.tsx', import.meta.url), 'utf8'),
+  ]);
   const defaultsIndex = source.indexOf('google-consent-defaults');
-  const loaderIndex = source.indexOf('googletagmanager.com/gtag/js');
 
   assert.notEqual(defaultsIndex, -1);
-  assert.notEqual(loaderIndex, -1);
-  assert.ok(defaultsIndex < loaderIndex);
+  assert.doesNotMatch(source, /googletagmanager\.com\/gtag\/js/);
+  assert.match(banner, /googletagmanager\.com\/gtag\/js/);
+  assert.match(banner, /nextChoice === 'measurement'/);
   assert.match(source, /GoogleConsentBanner/);
+});
+
+test('the first-visit consent notice is present in server HTML before hydration', async () => {
+  const banner = await readFile(new URL('../app/components/GoogleConsentBanner.tsx', import.meta.url), 'utf8');
+  assert.match(banner, /useState\(true\)/);
+  assert.doesNotMatch(banner, /requestAnimationFrame/);
 });

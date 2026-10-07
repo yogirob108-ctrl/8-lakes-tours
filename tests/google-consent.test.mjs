@@ -63,7 +63,7 @@ test('privacy policy explains consent-controlled Google Ads measurement', async 
   assert.match(banner, /cookieless/i);
 });
 
-test('Google loads only after the visitor explicitly allows measurement', async () => {
+test('Google loads after the page is idle while denied Consent Mode remains active', async () => {
   const [source, banner] = await Promise.all([
     readFile(new URL('../app/layout.tsx', import.meta.url), 'utf8'),
     readFile(new URL('../app/components/GoogleConsentBanner.tsx', import.meta.url), 'utf8'),
@@ -71,9 +71,10 @@ test('Google loads only after the visitor explicitly allows measurement', async 
   const defaultsIndex = source.indexOf('google-consent-defaults');
 
   assert.notEqual(defaultsIndex, -1);
-  assert.doesNotMatch(source, /googletagmanager\.com\/gtag\/js/);
-  assert.match(banner, /googletagmanager\.com\/gtag\/js/);
-  assert.match(banner, /nextChoice === 'measurement'/);
+  assert.match(source, /googletagmanager\.com\/gtag\/js/);
+  assert.match(source, /strategy="lazyOnload"/);
+  assert.match(source, /gtag\('config', 'G-E9PW7T08LZ', \{ allow_google_signals: false \}\)/);
+  assert.doesNotMatch(banner, /googletagmanager\.com\/gtag\/js/);
   assert.match(source, /GoogleConsentBanner/);
 });
 

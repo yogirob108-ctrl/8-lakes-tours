@@ -33,24 +33,10 @@ export default function GoogleConsentBanner() {
   // made this paragraph the late LCP candidate on a first visit.
   const [isOpen, setIsOpen] = useState(true);
 
-  function loadGoogleAnalytics() {
-    if (document.querySelector('script[data-eight-lakes-google-analytics]')) return;
-    const script = document.createElement('script');
-    script.src = 'https://www.googletagmanager.com/gtag/js?id=G-E9PW7T08LZ';
-    script.async = true;
-    script.dataset.eightLakesGoogleAnalytics = 'true';
-    script.addEventListener('load', () => {
-      window.gtag?.('js', new Date());
-      window.gtag?.('config', 'G-E9PW7T08LZ', { allow_google_signals: false });
-    }, { once: true });
-    document.head.appendChild(script);
-  }
-
   useEffect(() => {
     const stored = normalizeConsentChoice(window.localStorage.getItem(CONSENT_STORAGE_KEY)) as ConsentChoice | null;
     if (stored) {
       window.gtag?.('consent', 'update', consentUpdateForChoice(stored));
-      if (stored === 'measurement') loadGoogleAnalytics();
     }
     // Storage is only available after hydration. Defer the returned-visitor
     // update to the next task so the server-rendered first-visit notice paints
@@ -69,7 +55,6 @@ export default function GoogleConsentBanner() {
     window.localStorage.setItem(CONSENT_STORAGE_KEY, nextChoice);
     window.gtag?.('consent', 'update', consentUpdateForChoice(nextChoice));
     if (nextChoice === 'necessary') clearGoogleAnalyticsCookies();
-    if (nextChoice === 'measurement') loadGoogleAnalytics();
     setIsOpen(false);
   }
 

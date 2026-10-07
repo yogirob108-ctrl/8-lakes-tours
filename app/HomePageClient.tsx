@@ -1588,7 +1588,7 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
         .lead-form button:disabled { opacity: 0.86; cursor: default; color: rgba(14,12,9,0.88); }
         .lead-message { margin-top: 0.75rem; font-size: 0.74rem; line-height: 1.5; color: var(--gold); }
         .lead-message.error { color: #ffb4a6; }
-        .lead-privacy { margin-top: 0.75rem !important; margin-bottom: 0 !important; font-size: 0.68rem !important; line-height: 1.5 !important; color: rgba(212,207,196,0.56) !important; }
+        .lead-privacy { margin-top: 0.75rem !important; margin-bottom: 0 !important; font-size: 0.68rem !important; line-height: 1.5 !important; color: rgba(212,207,196,0.60) !important; }
         .lightbox-backdrop { position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.94); display: flex; align-items: center; justify-content: center; padding: 2rem; cursor: zoom-out; }
         .gallery-handoff { background:#0f0f0d; border-top:1px solid rgba(200,169,110,0.14); border-bottom:1px solid rgba(200,169,110,0.14); padding: 1.6rem 6rem; display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2rem; align-items:center; }
         .gallery-handoff-copy p:first-child { font-size:0.62rem; letter-spacing:0.26em; text-transform:uppercase; color:var(--gold); margin-bottom:0; }
@@ -2458,9 +2458,9 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
             <p style={{fontSize:'0.72rem', color:'var(--mist)', opacity:0.58, textAlign:'center', lineHeight:1.6}}>{requiresHumanConfirmation ? 'We\'ll reply by email with availability.' : 'Your booking is confirmed once the online payment is completed. If anything needs checking, we\'ll contact you directly.'}</p>
             <p style={{fontSize:'0.7rem', color:'var(--mist)', opacity:0.78, textAlign:'center', lineHeight:1.6, marginTop:'0.5rem'}}>
               By submitting this form you agree to our{' '}
-              <a href="/terms" style={{color:'var(--gold)', opacity:0.7, textDecoration:'underline', textUnderlineOffset:'3px'}}>Terms &amp; Conditions</a>
+              <a href="/terms" style={{color:'var(--gold)', opacity:1, textDecoration:'underline', textUnderlineOffset:'3px'}}>Terms &amp; Conditions</a>
               {' '}and{' '}
-              <a href="/privacy" style={{color:'var(--gold)', opacity:0.7, textDecoration:'underline', textUnderlineOffset:'3px'}}>Privacy Policy</a>.
+              <a href="/privacy" style={{color:'var(--gold)', opacity:1, textDecoration:'underline', textUnderlineOffset:'3px'}}>Privacy Policy</a>.
               Your data will be used to process your booking enquiry and send relevant transactional trip and preparation updates. Marketing emails are sent only if you select the optional newsletter checkbox above.
             </p>
           </form>

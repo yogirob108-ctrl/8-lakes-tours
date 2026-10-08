@@ -1297,11 +1297,11 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
         .partnership { background: var(--ink); display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
         .partnership-text { padding: 6rem; display: flex; flex-direction: column; justify-content: center; }
         .partnership-inline-photo { display: none !important; position: relative; width: 100%; max-width: 30rem; height: auto; aspect-ratio: 3 / 2; margin: 2rem auto; overflow: hidden; border: 1px solid rgba(200,169,110,0.22); border-radius: var(--radius-photo); }
-        .partnership-inline-photo img { object-fit: cover; filter: saturate(0.88) contrast(1.04) brightness(0.9); }
+        .partnership-inline-photo img { object-fit: cover; }
         .partnership-quote { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: 1.6rem; font-style: italic; font-weight: 300; color: var(--cream); line-height: 1.6; border-left: 2px solid var(--gold); padding-left: 2rem; margin: 2.5rem 0; }
         .partnership-img { position: relative; overflow: hidden; align-self: center; aspect-ratio: 3 / 2; margin: 4rem 4rem 4rem 0; border: 1px solid rgba(200,169,110,0.22); border-radius: var(--radius-photo); background: #0f0f0d; }
-        .partnership-img::before { content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(90deg, rgba(18,15,11,0.38), rgba(18,15,11,0.06) 42%, rgba(18,15,11,0.18)), linear-gradient(180deg, rgba(200,169,110,0.10), transparent 38%, rgba(14,12,9,0.30)); mix-blend-mode: multiply; }
-        .partnership-img img { width: 100%; height: 100%; object-fit: cover; object-position: center; filter: saturate(0.84) contrast(1.08) brightness(0.88); }
+        
+        .partnership-img img { width: 100%; height: 100%; object-fit: cover; object-position: center; }
 
         .trust { background: var(--dark); padding: 5rem 5rem 6rem; }
         .trust-header { max-width: 760px; margin: 0 auto 3rem; text-align: center; }

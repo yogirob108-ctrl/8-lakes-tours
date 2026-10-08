@@ -66,7 +66,7 @@ export default function GoogleConsentBanner() {
             <p className="consent-kicker">Privacy choices</p>
             <h2>Choose how Google measurement works.</h2>
             <p>
-              Necessary site functions always work. With optional storage denied, Google may still receive limited cookieless consent and measurement pings. Allow measurement to let Google Analytics and non-personalized Google Ads measurement use identifiers. We do not enable ad personalization.
+              Necessary functions always work. With optional storage denied, Google may still receive cookieless consent and measurement pings. Allow measurement lets Analytics and non-personalized Ads use identifiers; ad personalization stays off.
             </p>
             <Link href="/privacy">Read the privacy policy</Link>
           </div>
@@ -94,8 +94,7 @@ export default function GoogleConsentBanner() {
           border-radius: 12px;
           background: rgba(14, 12, 9, 0.97);
           color: #d4cfc4;
-          box-shadow: 0 24px 70px rgba(0, 0, 0, 0.48);
-          backdrop-filter: blur(18px);
+          box-shadow: 0 18px 48px rgba(0, 0, 0, 0.42);
           font-family: var(--font-jost), 'Jost', sans-serif;
         }
         .consent-kicker { margin: 0 0 0.35rem; color: #c8a96e; font-size: 0.6rem; letter-spacing: 0.24em; text-transform: uppercase; }

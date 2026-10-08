@@ -18,7 +18,7 @@ export default function TermsAndConditions() {
       <div style={{ maxWidth: '720px', margin: '0 auto', padding: '5rem 2rem' }}>
         <p style={{ fontSize: '0.65rem', letterSpacing: '0.3em', textTransform: 'uppercase', color: '#c8a96e', marginBottom: '1rem' }}>Legal</p>
         <h1 style={{ fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif", fontSize: '2.8rem', fontWeight: 300, color: '#f5f0e8', marginBottom: '0.5rem', lineHeight: 1.1 }}>Terms &amp; Conditions</h1>
-        <p style={{ fontSize: '0.8rem', color: '#d4cfc4', opacity: 0.5, marginBottom: '3rem' }}>Last updated: August 2026</p>
+        <p style={{ fontSize: '0.8rem', color: '#d4cfc4', opacity: 0.5, marginBottom: '3rem' }}>Last updated: September 2026</p>
 
         {[
           {
@@ -31,7 +31,7 @@ export default function TermsAndConditions() {
           },
           {
             title: '3. Tour Price',
-            body: 'The 2026 tour price depends on group size: $1,999 USD per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8 guests booking together for the same departure. Each price is made up of an online booking payment through 8 Lakes Tours and a local family cash payment made directly to the nomadic host families in Mongolia. The group discount is shared evenly between the two, so the online booking payment is $999 USD per guest for 1–2 guests, $974 for 3–4, $949 for 5–6, and $899 for 7–8, and the local family cash payment is $1,000 USD per guest for 1–2 guests, $975 for 3–4, $950 for 5–6, and $900 for 7–8. The tour price includes all accommodation, meals, horses and guiding as described on our website. Flights, travel insurance, visas, and personal expenses are not included.',
+            body: 'The tour price depends on group size: $1,999 USD per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8 guests booking together for the same departure. Each price is made up of an online booking payment through 8 Lakes Tours and a local family cash payment made directly to the nomadic host families in Mongolia. The group discount is shared evenly between the two, so the online booking payment is $999 USD per guest for 1–2 guests, $974 for 3–4, $949 for 5–6, and $899 for 7–8, and the local family cash payment is $1,000 USD per guest for 1–2 guests, $975 for 3–4, $950 for 5–6, and $900 for 7–8. The tour price includes all accommodation, meals, horses and guiding as described on our website. Flights, travel insurance, visas, and personal expenses are not included.',
           },
           {
             title: '4. Cancellation Policy',
@@ -43,7 +43,7 @@ export default function TermsAndConditions() {
           },
           {
             title: '6. Liability Waiver',
-            body: 'All participants must sign the 8 Lakes Tours Liability Waiver & Release before departure (or as part of the booking process). By signing, you acknowledge the inherent risks of the activity and release 8 Lakes Tours, its guides, and the host family from liability for injury, illness, or death arising from participation. The waiver is legally binding.',
+            body: 'Every rider must sign their own 8 Lakes Tours Liability Waiver & Release before departure. The lead booker signs when booking, and each other rider signs at 8lakestours.com/waiver using the link in the booking confirmation. Riders aged 16 or 17 need a parent or legal guardian to sign for them, and the lead booker must be 18 or older. By signing, you acknowledge the inherent risks of the activity and release 8 Lakes Tours, its guides, and the host family from liability for injury, illness, or death arising from participation. The waiver is legally binding.',
           },
           {
             title: '7. Health & Fitness',

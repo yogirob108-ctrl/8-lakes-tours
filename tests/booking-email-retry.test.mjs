@@ -1,3 +1,4 @@
+import * as waiverModule from '../lib/waiver.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
@@ -32,6 +33,7 @@ function harness({created=false, fail=false, conflict=false, manual=true}={}) {
   if(name==='@/lib/ops-config')return {isSupabaseAdminConfigured:true};
   if(name==='@/lib/supabase-admin')return {createSupabaseAdminClient:()=>db};
   if(name==='@/lib/public-booking.mjs')return normalizer;
+  if(name==='@/lib/waiver.mjs')return waiverModule;
   if(name==='@/lib/group-pricing.mjs')return pricing;
   if(name==='@/lib/booking-checkout')return {recoveryUrl:()=>'/pay/private'};
   if(name==='@/lib/newsletter')return {};
@@ -40,7 +42,7 @@ function harness({created=false, fail=false, conflict=false, manual=true}={}) {
   if(name==='@/lib/email')return {bookingCustomerEmail:()=>content,bookingInternalEmail:()=>content,getInternalEmailRecipients:()=>['ops@example.invalid'],sendEmail:async input=>{sent.push(input);return fail?{sent:false,error:'fault'}:{sent:true,id:'provider'};}};
   throw Error(name);
  }});
- const body={submission_key:'123e4567-e89b-42d3-a456-426614174111',tour_date:'scheduled',guest_count:1,signature:'Test Guest',travellers:[{first_name:'Test',last_name:'Guest',email:'test@example.invalid',nationality:'Testland',gender:'Female',date_of_birth:'1990-01-01',riding_experience:'Beginner — little to none'}]};
+ const body={submission_key:'123e4567-e89b-42d3-a456-426614174111',tour_date:'scheduled',guest_count:1,signature:'Test Guest',waiver_agreed:'on',travellers:[{first_name:'Test',last_name:'Guest',email:'test@example.invalid',nationality:'Testland',gender:'Female',date_of_birth:'1990-01-01',riding_experience:'Beginner — little to none'}]};
  return {calls,sent,events,recover(){fail=false;},run:()=>exports.POST(new Request('https://example.invalid',{method:'POST',body:JSON.stringify(body)}))};
 }
 test('changed retry returns a conflict instead of a saved tick',async()=>{

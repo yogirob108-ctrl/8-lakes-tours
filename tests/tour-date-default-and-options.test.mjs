@@ -24,7 +24,7 @@ test('mid-2027 keeps selling the rest of the 2027 season', () => {
   // Every 2026 departure has expired; the remaining 2027 dates stay bookable.
   const now = new Date('2027-06-02T10:00:00Z');
   const visible = getVisibleTourDates(TOUR_DATES, now);
-  assert.equal(getDefaultTourDate(TOUR_DATES, now), 'June 15 – 23, 2027');
+  assert.equal(getDefaultTourDate(TOUR_DATES, now), 'June 5 – 13, 2027');
   assert.equal(visible.every(option => !option.startDate || option.startDate.startsWith('2027')), true);
   assert.equal(visible.some(option => option.date === REQUEST_ONLY_OPTION_DATE), true);
 });

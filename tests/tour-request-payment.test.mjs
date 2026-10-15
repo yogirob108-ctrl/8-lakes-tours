@@ -24,18 +24,25 @@ test('scheduled inventory is 2026 and 2027 only, and every one of it is directly
 test('the 2027 season runs fortnightly from May to October and is nine days long', () => {
   const season = TOUR_DATES.filter(option => option.startDate?.startsWith('2027'));
   const day = 86400000;
+  // June 1 – 9 moved to June 5 – 13 on 2026-10-15; the old date stays as a
+  // closed entry, and the moved departure is the one break in the fortnightly rhythm.
+  const moved = 'June 5 – 13, 2027';
+  const fortnightly = season.filter(option => !option.closed && option.date !== moved);
 
-  assert.equal(season.length, 13);
+  assert.equal(season.length, 14);
   assert.equal(season[0].startDate, '2027-05-04');
   assert.equal(season.at(-1).endDate, '2027-10-27');
-  for (const [index, option] of season.entries()) {
+  assert.equal(season.find(option => option.date === 'June 1 – 9, 2027')?.closed, true);
+  for (const option of season) {
     const start = Date.parse(`${option.startDate}T00:00:00Z`);
     assert.equal((Date.parse(`${option.endDate}T00:00:00Z`) - start) / day, 8, `${option.date} must be 9 days / 8 nights`);
     assert.match(option.detail, /9 Days · 8 Nights/);
-    if (index > 0) {
-      const previous = Date.parse(`${season[index - 1].startDate}T00:00:00Z`);
-      assert.equal((start - previous) / day, 14, `${option.date} must fall a fortnight after the previous departure`);
-    }
+  }
+  for (const [index, option] of fortnightly.entries()) {
+    if (index === 0 || option.startDate === '2027-06-15') continue;
+    const start = Date.parse(`${option.startDate}T00:00:00Z`);
+    const previous = Date.parse(`${fortnightly[index - 1].startDate}T00:00:00Z`);
+    assert.equal((start - previous) / day, 14, `${option.date} must fall a fortnight after the previous departure`);
   }
 });
 

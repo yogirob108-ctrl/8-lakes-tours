@@ -39,7 +39,6 @@ export const GALLERY_IMAGES: GalleryImage[] = [
   { src: '/images/gallery-extra/snow-peaks-above-the-larch-valley.jpg', alt: 'Fresh snow on the peaks above the larch valley, broken cloud overhead and volcanic rock in the foreground', width: 1125, height: 2000, orientation: 'portrait' },
   { src: '/images/gallery-extra/leading-the-pack-horse-below-the-cliffs.jpg', alt: 'A rider leading a loaded pack horse along the valley track below the cliffs', width: 2000, height: 1500, orientation: 'landscape' },
   { src: '/images/gallery-extra/horseman-portrait-on-the-ridge.jpg', alt: 'A horseman in a deel on his horse above the valley', width: 1333, height: 2000, orientation: 'portrait' },
-  { src: '/images/gallery-extra/suma-rifle-mountain-portrait.jpg', alt: 'Suma resting beside a rifle above the mountain valley', width: 864, height: 1152, orientation: 'portrait' },
   { src: '/images/gallery-extra/three-men-in-deels-below-the-green-hills.jpg', alt: 'Three men of the host family in traditional deels and hats below the green hills', width: 2000, height: 1333, orientation: 'landscape' },
   { src: '/images/gallery-extra/resting-with-the-horses-in-the-shade.jpg', alt: 'Resting in the shade while the horses graze', width: 2000, height: 1333, orientation: 'landscape' },
   { src: '/images/gallery-extra/rider-in-motion-monochrome.jpg', alt: 'Rider guiding a horse, caught mid-motion in black and white', width: 1334, height: 2000, orientation: 'portrait' },

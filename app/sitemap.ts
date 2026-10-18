@@ -32,7 +32,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${siteUrl}/faq`,
-      lastModified,
+      lastModified: new Date('2026-10-17'),
       changeFrequency: 'monthly',
       priority: 0.8,
     },

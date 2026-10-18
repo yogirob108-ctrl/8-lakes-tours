@@ -23,6 +23,7 @@ export default function FaqAccordion({ items }: { items: readonly FaqItem[] }) {
         const panelId = `faq-panel-${question.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')}`;
         return (
           <div key={question} className={`faq-item ${isOpen ? 'open' : ''}`}>
+            <h3 className="faq-heading">
             <button
               type="button"
               className="faq-question"
@@ -33,6 +34,7 @@ export default function FaqAccordion({ items }: { items: readonly FaqItem[] }) {
               <span>{question}</span>
               <span className="faq-icon" aria-hidden="true">+</span>
             </button>
+            </h3>
             <div id={panelId} className="faq-panel">
               <div className="faq-panel-inner">
                 <p>{answer}</p>
@@ -48,6 +50,10 @@ export default function FaqAccordion({ items }: { items: readonly FaqItem[] }) {
         }
         .faq-item {
           border-top: 1px solid rgba(200,169,110,0.15);
+        }
+        .faq-heading {
+          margin: 0;
+          font: inherit;
         }
         .faq-question {
           width: 100%;

@@ -10,18 +10,18 @@ import { PRICE_AFTER_HOLD_USD, PRICE_HOLD_DEADLINE_LABEL, PRICE_INCREASE_DATE_LA
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: 'FAQ',
+  title: { absolute: 'Mongolia Horse Trekking FAQ: Best Time, Cost & Beginners | 8 Lakes Tours' },
   description: 'Frequently asked questions about 8 Lakes Tours and Mongolian horse trekking, plus planning guides: the best time to ride in Mongolia, what a horse trek costs, whether you need riding experience, and the Orkhon Valley vs Khövsgöl vs the Gobi.',
   alternates: { canonical: 'https://www.8lakestours.com/faq' },
   openGraph: {
-    title: '8 Lakes Tours FAQ',
+    title: 'Mongolia Horse Trekking FAQ | 8 Lakes Tours',
     description: 'Answers about Mongolian horse trekking dates, payment split, insurance, riding experience, food, safety, and booking.',
     url: 'https://www.8lakestours.com/faq',
     images: [{ url: '/images/og-8-lakes-horseback-2026.jpg', width: 1200, height: 630, alt: '8 Lakes Tours Mongolia horseback expedition' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: '8 Lakes Tours FAQ',
+    title: 'Mongolia Horse Trekking FAQ | 8 Lakes Tours',
     description: 'Answers about Mongolian horse trekking dates, payment split, insurance, riding experience, food, safety, and booking.',
     images: ['/images/og-8-lakes-horseback-2026.jpg'],
   },
@@ -180,7 +180,7 @@ export default function Page() {
         </div>
         <div className="page-hero-copy">
           <p className="page-hero-eyebrow">FAQ</p>
-          <h1>Common Questions</h1>
+          <h1>Mongolia Horse Trekking FAQ</h1>
           <p className="page-hero-intro">Clear answers for travellers comparing Mongolian horse trekking trips, checking payment structure, or asking an AI assistant to explain 8 Lakes Tours.</p>
         </div>
       </header>

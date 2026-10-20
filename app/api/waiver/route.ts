@@ -156,7 +156,17 @@ export async function POST(request: Request) {
   // indistinguishable from a received-but-not-confirmed submission. Do not turn
   // genuine database/provider failures into 200.
   if (isNonConfirmingWaiverResult(error)) return NextResponse.json({ ok: true });
-  if (error || !stored?.waiver_id) return jsonError('We could not record your signature just now. Please try again, or email info@8lakestours.com.', 502);
+  if (error || !stored?.waiver_id) {
+    console.error('[waiver] record_rider_waiver failed', error?.code, error?.message);
+    // The database is the preferred record, but a rider must never be blocked from
+    // signing. Fall back to the pre-2026-10-07 behaviour: email the full signed text
+    // to the team inbox and a copy to the signer, which is itself a dated record.
+    const internalRecipients = getInternalEmailRecipients();
+    const internalSent = await sendEmail({ to: internalRecipients, replyTo: record.riderEmail, ...riderWaiverInternalEmail(record, waiverText) }).catch(() => ({ sent: false }));
+    if (!internalSent.sent) return jsonError('We could not record your signature just now. Please try again, or email info@8lakestours.com.', 502);
+    await sendEmail({ to: record.riderEmail, replyTo: internalRecipients[0], ...riderWaiverCustomerEmail(record, waiverText) }).catch(() => null);
+    return NextResponse.json({ ok: true });
+  }
 
   // Dispatch can only use the signed snapshot, never this retry's request fields.
   // Durable claims record provider attempts before sending; a timeout becomes

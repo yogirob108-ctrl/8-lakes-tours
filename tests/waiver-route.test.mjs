@@ -97,11 +97,18 @@ test('dispatch finalization failure does not turn a stored waiver into an API fa
 
 test('a missing booking uses the same generic public response while an outage remains an error', async () => {
   const missing = harness({ recordError: { code: 'P0002', message: 'booking not found for waiver reference' } });
-  const outage = harness({ recordError: { code: '08006', message: 'connection failure' } });
   const missingResponse = await missing.run();
   assert.equal(missingResponse.status, 200);
   assert.equal(missingResponse.body.ok, true);
-  assert.equal((await outage.run()).status, 502);
+  assert.equal(missing.sentEmails.length, 0, 'an unknown reference sends nothing');
+  // A database outage must not block a rider from signing: the signed text is
+  // emailed to the team and the rider instead. It is only an error if that fails too.
+  const outage = harness({ recordError: { code: '08006', message: 'connection failure' } });
+  const outageResponse = await outage.run();
+  assert.equal(outageResponse.status, 200);
+  assert.equal(outage.sentEmails.length, 2);
+  const emailDown = harness({ recordError: { code: '08006', message: 'connection failure' }, sendResult: { sent: false, error: 'down', statusCode: null } });
+  assert.equal((await emailDown.run()).status, 502);
 });
 
 test('route ignores spoofed legal version and text fields and persists the canonical text hash', async () => {

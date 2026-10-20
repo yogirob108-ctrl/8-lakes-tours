@@ -163,6 +163,7 @@ export async function POST(request: Request) {
     // to the team inbox and a copy to the signer, which is itself a dated record.
     const internalRecipients = getInternalEmailRecipients();
     const internalSent = await sendEmail({ to: internalRecipients, replyTo: record.riderEmail, ...riderWaiverInternalEmail(record, waiverText) }).catch(() => ({ sent: false }));
+    if (!internalSent.sent) console.error('[waiver] fallback email failed', JSON.stringify(internalSent).slice(0, 300));
     if (!internalSent.sent) return jsonError('We could not record your signature just now. Please try again, or email info@8lakestours.com.', 502);
     await sendEmail({ to: record.riderEmail, replyTo: internalRecipients[0], ...riderWaiverCustomerEmail(record, waiverText) }).catch(() => null);
     return NextResponse.json({ ok: true });

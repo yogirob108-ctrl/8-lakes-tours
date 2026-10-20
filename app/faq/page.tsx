@@ -179,9 +179,9 @@ export default function Page() {
           <div className="page-hero-overlay" />
         </div>
         <div className="page-hero-copy">
-          <p className="page-hero-eyebrow">FAQ</p>
-          <h1>Mongolia Horse Trekking FAQ</h1>
-          <p className="page-hero-intro">Clear answers for travellers comparing Mongolian horse trekking trips, checking payment structure, or asking an AI assistant to explain 8 Lakes Tours.</p>
+          <p className="page-hero-eyebrow">FAQ · Mongolia Horse Trekking</p>
+          <h1>Common Questions</h1>
+          <p className="page-hero-intro">Everything people usually ask before riding with us: dates, cost, riding experience, what to pack and how the payment works.</p>
         </div>
       </header>
       <div style={{...wrapperStyle, paddingTop: '3.5rem'}}>

@@ -202,7 +202,7 @@ export default function Page() {
         </section>
       </div>
       <footer style={footerStyle}>
-        <span style={{ fontSize: '0.75rem', color: '#d4cfc4', opacity: 0.4 }}>© 2026 8 Lakes Tours · All rights reserved</span>
+        <span style={{ fontSize: '0.75rem', color: '#d4cfc4', opacity: 0.4 }}>© 2026 8 Lakes Tours LLC · All rights reserved</span>
         <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
           <Link href="/terms" style={{...linkStyle, opacity: 0.75}}>Terms</Link>
           <Link href="/privacy" style={{...linkStyle, opacity: 0.75}}>Privacy</Link>

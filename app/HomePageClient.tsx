@@ -1041,6 +1041,7 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
         provider: {
           '@type': 'Organization',
           name: '8 Lakes Tours',
+          legalName: '8 Lakes Tours LLC',
           url: 'https://www.8lakestours.com',
           email: 'info@8lakestours.com',
           sameAs: ['https://www.instagram.com/8lakestours', 'https://www.instagram.com/robzaher108', 'https://www.pinterest.com/8lakestours', 'https://maps.google.com/?cid=8222919180686158972'],
@@ -2592,7 +2593,7 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
           </nav>
         </div>
         <div className="footer-note">
-          <span>© 2026 8 Lakes Tours. All rights reserved.</span>
+          <span>© 2026 8 Lakes Tours LLC. All rights reserved.</span>
         </div>
       </footer>
 

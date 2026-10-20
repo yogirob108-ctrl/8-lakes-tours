@@ -180,7 +180,7 @@ export default function Page() {
       </section>
 
       <footer className="about-footer">
-        <span>© 2026 8 Lakes Tours · All rights reserved</span>
+        <span>© 2026 8 Lakes Tours LLC · All rights reserved</span>
         <div>
           <Link href="/terms">Terms</Link>
           <Link href="/privacy">Privacy</Link>

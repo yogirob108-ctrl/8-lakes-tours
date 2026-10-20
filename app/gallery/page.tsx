@@ -64,7 +64,7 @@ export default function GalleryPage() {
       <GalleryClient images={GALLERY_IMAGES} />
 
       <footer className="gallery-footer">
-        <span>© 2026 8 Lakes Tours</span>
+        <span>© 2026 8 Lakes Tours LLC</span>
         <Link href="/#book">Reserve a spot</Link>
       </footer>
 

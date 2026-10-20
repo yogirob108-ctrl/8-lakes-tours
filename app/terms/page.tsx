@@ -18,7 +18,7 @@ export default function TermsAndConditions() {
       <div style={{ maxWidth: '720px', margin: '0 auto', padding: '5rem 2rem' }}>
         <p style={{ fontSize: '0.65rem', letterSpacing: '0.3em', textTransform: 'uppercase', color: '#c8a96e', marginBottom: '1rem' }}>Legal</p>
         <h1 style={{ fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif", fontSize: '2.8rem', fontWeight: 300, color: '#f5f0e8', marginBottom: '0.5rem', lineHeight: 1.1 }}>Terms &amp; Conditions</h1>
-        <p style={{ fontSize: '0.8rem', color: '#d4cfc4', opacity: 0.5, marginBottom: '3rem' }}>Last updated: September 2026</p>
+        <p style={{ fontSize: '0.8rem', color: '#d4cfc4', opacity: 0.5, marginBottom: '3rem' }}>Last updated: October 2026</p>
 
         {[
           {
@@ -31,7 +31,7 @@ export default function TermsAndConditions() {
           },
           {
             title: '3. Tour Price',
-            body: 'The tour price depends on group size: $1,999 USD per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8 guests booking together for the same departure. Each price is made up of an online booking payment through 8 Lakes Tours and a local family cash payment made directly to the nomadic host families in Mongolia. The group discount is shared evenly between the two, so the online booking payment is $999 USD per guest for 1–2 guests, $974 for 3–4, $949 for 5–6, and $899 for 7–8, and the local family cash payment is $1,000 USD per guest for 1–2 guests, $975 for 3–4, $950 for 5–6, and $900 for 7–8. The tour price includes all accommodation, meals, horses and guiding as described on our website. Flights, travel insurance, visas, and personal expenses are not included.',
+            body: 'The tour price depends on group size: $1,999 USD per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8 guests booking together for the same departure. Each price is made up of an online booking payment through 8 Lakes Tours and a local family cash payment made directly to the nomadic host families in Mongolia. The group discount is shared evenly between the two, so the online booking payment is $999 USD per guest for 1–2 guests, $974 for 3–4, $949 for 5–6, and $899 for 7–8, and the local family cash payment is $1,000 USD per guest for 1–2 guests, $975 for 3–4, $950 for 5–6, and $900 for 7–8. The tour price includes all accommodation, meals, horses and guiding as described on our website. Flights, travel insurance, visas, and personal expenses are not included. The local family payment is a direct payment from you to the host family in Mongolia for accommodation, meals, horses and local services. It is not collected by, paid to or held by 8 Lakes Tours LLC.',
           },
           {
             title: '4. Cancellation Policy',
@@ -63,10 +63,22 @@ export default function TermsAndConditions() {
           },
           {
             title: '11. Governing Law',
-            body: 'These Terms & Conditions are governed by the laws of Mongolia for activities conducted on Mongolian territory, and by the laws of the jurisdiction of the operator for pre-departure matters. Any disputes shall be resolved in good faith between the parties.',
+            body: 'These Terms & Conditions, and any dispute relating to them or to a tour, are governed by the laws of the State of New Jersey, USA, without regard to conflict-of-laws rules, wherever the tour takes place. Any claim must be brought only in the state or federal courts located in New Jersey. We will always try to resolve any concern with you in good faith first.',
           },
           {
-            title: '12. Contact',
+            title: '12. Independent Providers',
+            body: '8 Lakes Tours LLC arranges tours and works with independent local providers, including the host family, guides, horse handlers, coordinators and transport providers. They are not employees, agents or partners of 8 Lakes Tours LLC, and 8 Lakes Tours LLC does not own or control their horses, land, accommodation or vehicles.',
+          },
+          {
+            title: '13. Limitation of Liability',
+            body: 'To the fullest extent permitted by law, the total liability of 8 Lakes Tours LLC to you for any claim relating to a booking or tour is limited to the online booking payment you made to 8 Lakes Tours LLC for that tour, and 8 Lakes Tours LLC is not liable for indirect or consequential losses. Nothing in these terms limits liability that cannot be limited by law. Your separate Liability Waiver & Release also applies.',
+          },
+          {
+            title: '14. Severability',
+            body: 'If any provision of these terms is found invalid or unenforceable, the remaining provisions remain in full force and effect.',
+          },
+          {
+            title: '15. Contact',
             body: 'For any questions regarding these terms, contact us at info@8lakestours.com.',
           },
         ].map(({ title, body }) => (

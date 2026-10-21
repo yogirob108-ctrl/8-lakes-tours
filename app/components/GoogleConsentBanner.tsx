@@ -29,21 +29,20 @@ function clearGoogleAnalyticsCookies() {
 }
 
 export default function GoogleConsentBanner() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isReady, setIsReady] = useState(false);
+  // Render the legal notice in the server HTML. Delaying it until hydration
+  // made this paragraph the late LCP candidate on a first visit.
+  const [isOpen, setIsOpen] = useState(true);
 
   useEffect(() => {
     const stored = normalizeConsentChoice(window.localStorage.getItem(CONSENT_STORAGE_KEY)) as ConsentChoice | null;
     if (stored) {
       window.gtag?.('consent', 'update', consentUpdateForChoice(stored));
     }
-
-    const frame = window.requestAnimationFrame(() => {
-      if (!stored) setIsOpen(true);
-      setIsReady(true);
-    });
-
-    return () => window.cancelAnimationFrame(frame);
+    // Storage is only available after hydration. Defer the returned-visitor
+    // update to the next task so the server-rendered first-visit notice paints
+    // without a synchronous effect render.
+    const hideStoredChoice = window.setTimeout(() => setIsOpen(!stored), 0);
+    return () => window.clearTimeout(hideStoredChoice);
   }, []);
 
   useEffect(() => {
@@ -58,8 +57,6 @@ export default function GoogleConsentBanner() {
     if (nextChoice === 'necessary') clearGoogleAnalyticsCookies();
     setIsOpen(false);
   }
-
-  if (!isReady) return null;
 
   return (
     <>

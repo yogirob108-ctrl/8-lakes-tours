@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import SiteNav from '../components/SiteNav';
+import HeroVideo from '../components/HeroVideo';
 
 export const metadata: Metadata = {
   title: 'Trip Preparation',
@@ -23,8 +24,6 @@ export const metadata: Metadata = {
 
 const pageStyle = { background: '#0e0c09', minHeight: '100vh', color: '#d4cfc4', fontFamily: "var(--font-jost), 'Jost', sans-serif", fontWeight: 300 } as const;
 const wrapperStyle = { maxWidth: '860px', margin: '0 auto', padding: '5.5rem 2rem' } as const;
-const eyebrowStyle = { fontSize: '0.65rem', letterSpacing: '0.3em', textTransform: 'uppercase', color: '#c8a96e', marginBottom: '1rem' } as const;
-const h1Style = { fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif", fontSize: 'clamp(2.8rem, 8vw, 5rem)', fontWeight: 300, color: '#f5f0e8', marginBottom: '1rem', lineHeight: 0.98 } as const;
 const h2Style = { fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif", fontSize: '1.65rem', fontWeight: 400, color: '#f5f0e8', marginBottom: '0.7rem' } as const;
 const pStyle = { fontSize: '0.96rem', lineHeight: 1.85, color: '#d4cfc4', opacity: 0.86 } as const;
 const linkStyle = { color: '#c8a96e', textUnderlineOffset: '3px' } as const;
@@ -44,6 +43,8 @@ const sections = [
       'Pack for all seasons, even in summer. The Mongolian steppe can swing from warm sun to cold wind, rain, and freezing-feeling nights quickly.',
       'Bring more warm layers than you think you need: base layers, fleece or down, warm socks, hat, gloves, and a proper waterproof shell.',
       'Comfortable riding trousers, waterproof outer layer, sun protection, and sturdy shoes or boots suitable for camp life.',
+      'If you wear a bra, bring sports bras. Riding days involve a lot of trotting and everyday underwear is not comfortable over that distance.',
+      'A power bank and a universal adapter plug. The host camp has Starlink and a solar-powered inverter for charging, but remote trek days are off-grid and you will not always reach a socket.',
       'A personal first-aid kit, blister care, prescriptions, painkillers or anti-inflammatory medication you normally use and can safely take, toiletries, and any personal medical essentials.',
     ],
   },
@@ -69,7 +70,7 @@ const sections = [
     items: [
       'Once you leave the city, do not expect Western flush toilets. Countryside facilities are usually simple outhouses with squat toilets.',
       'Accommodation can still be warm, welcoming, and comfortable in a rural way, but bathroom facilities are basic and there are no regular showers in the countryside.',
-      'Bring wet wipes for cleaning hands and body between river washes. Optional daily river ice baths are part of the simple, therapeutic steppe rhythm when conditions allow.',
+      'Bring wet wipes for cleaning hands and body between river washes. Optional daily river cold plunges are part of the simple, therapeutic steppe rhythm when conditions allow.',
     ],
   },
   {
@@ -112,13 +113,37 @@ export default function PreparationPage() {
     <main style={pageStyle}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <SiteNav />
-      <div style={wrapperStyle}>
-        <p style={eyebrowStyle}>Preparation</p>
-        <h1 style={h1Style}>How to prepare for the steppe.</h1>
-        <p style={{ ...pStyle, fontSize: '1.08rem', maxWidth: '700px' }}>
-          This page gives practical preparation guidance for booked guests and serious travellers: what to bring, how to pack for Mongolia&apos;s fast-changing steppe weather, how the cash split works, what food is like, and what mindset fits a remote Mongolian horse trek.
-        </p>
-
+      <style>{`
+        .page-hero { position: relative; display: flex; align-items: flex-end; justify-content: center; min-height: 58vh; padding: 8rem 2rem 3rem; text-align: center; overflow: hidden; }
+        .page-hero-media { position: absolute; inset: 0; background: #0e0c09 url('/videos/prep-rider-poster.jpg?v=5') center / cover no-repeat; }
+        /* No entrance: the poster is the clip's first frame, so the video takes
+           over instantly and simply plays. The dissolve belongs to the loop
+           seam alone and is driven per frame in HeroVideo, which sets opacity
+           inline — deliberately no CSS transition here, or it would fight the
+           per-frame ramp and reintroduce the stutter it exists to remove. */
+        .page-hero-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 40%; opacity: 0; }
+        .page-hero-video.is-playing { opacity: 1; }
+        @media (max-width: 900px) { .page-hero-media { background-image: url('/videos/prep-rider-poster-mobile.jpg?v=5'); } }
+        @media (prefers-reduced-motion: reduce) { .page-hero-video { display: none; } }
+        .page-hero-overlay { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 35%, rgba(14,12,9,0) 28%, rgba(14,12,9,0.5) 100%), linear-gradient(to top, rgba(14,12,9,1) 2%, rgba(14,12,9,0.76) 30%, rgba(14,12,9,0.34) 68%, rgba(14,12,9,0.66) 100%); }
+        .page-hero-copy { position: relative; z-index: 1; max-width: 820px; }
+        .page-hero-copy .page-hero-eyebrow { font-size: 0.65rem; letter-spacing: 0.3em; text-transform: uppercase; color: #c8a96e; margin: 0 0 1rem; }
+        .page-hero-copy h1 { font-family: var(--font-cormorant), 'Cormorant Garamond', serif; font-size: clamp(2.8rem, 8vw, 5rem); font-weight: 300; line-height: 0.98; color: #f5f0e8; margin: 0; }
+        .page-hero-copy .page-hero-intro { margin: 1.4rem auto 0; max-width: 660px; font-size: 1rem; line-height: 1.8; color: rgba(212,207,196,0.86); }
+        @media (max-width: 900px) { .page-hero { min-height: 48vh; padding: 6rem 1.25rem 2.25rem; } }
+      `}</style>
+      <header className="page-hero">
+        <div className="page-hero-media" role="img" aria-label="Rider on horseback resting a hand on the horse&apos;s head">
+          <HeroVideo className="page-hero-video" desktopSrc="/videos/prep-rider-loop.mp4?v=5" mobileSrc="/videos/prep-rider-loop-mobile.mp4?v=5" dissolveAtLoop />
+          <div className="page-hero-overlay" />
+        </div>
+        <div className="page-hero-copy">
+          <p className="page-hero-eyebrow">Preparation</p>
+          <h1>How to prepare for the steppe.</h1>
+          <p className="page-hero-intro">This page gives practical preparation guidance for booked guests and serious travellers: what to bring, how to pack for Mongolia&apos;s fast-changing steppe weather, how the cash split works, what food is like, and what mindset fits a remote Mongolian horse trek.</p>
+        </div>
+      </header>
+      <div style={{...wrapperStyle, paddingTop: '3.5rem'}}>
         <div style={{ display: 'grid', gap: '1.1rem', marginTop: '3rem' }}>
           {sections.map(section => (
             <section key={section.title} style={{ border: '1px solid rgba(200,169,110,0.18)', borderRadius: '12px', background: 'rgba(245,240,232,0.035)', padding: '1.35rem' }}>

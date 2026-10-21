@@ -3,6 +3,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { createSupabaseAdminClient } from '@/lib/supabase-admin';
 import { getDryRun, reconcileStripeProviderEvidence } from '@/lib/public-lifecycle.mjs';
 import { collectStripeLifecycleEvidence } from '@/lib/stripe-lifecycle-evidence.mjs';
+import { fetchAllPages } from '@/lib/paginated-read.mjs';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -28,18 +29,27 @@ export async function GET(request: Request) {
 
   try {
     const db = createSupabaseAdminClient();
-    const { data: bookings, error } = await db
-      .from('bookings')
-      .select('id, public_reference, online_due_usd, customer:customers(email)')
-      .in('status', ['awaiting_payment', 'confirmed', 'prep_sent', 'ready_for_departure'])
-      .limit(200);
-    if (error) throw error;
+    const bookings = await fetchAllPages(async (from: number, to: number) => {
+      const { data, error } = await db
+        .from('bookings')
+        .select('id, public_reference, online_due_usd, customer:customers(email)')
+        .in('status', ['awaiting_payment', 'confirmed', 'prep_sent', 'ready_for_departure'])
+        .order('id', { ascending: true })
+        .range(from, to);
+      if (error) throw error;
+      return data || [];
+    });
 
-    const { data: approvedBindings, error: bindingsError } = await db
-      .from('approved_payment_bindings')
-      .select('booking_id, provider_object_id')
-      .eq('provider', 'stripe');
-    if (bindingsError) throw bindingsError;
+    const approvedBindings = await fetchAllPages(async (from: number, to: number) => {
+      const { data, error } = await db
+        .from('approved_payment_bindings')
+        .select('booking_id, provider_object_id')
+        .eq('provider', 'stripe')
+        .order('booking_id', { ascending: true })
+        .range(from, to);
+      if (error) throw error;
+      return data || [];
+    });
 
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { maxNetworkRetries: 0, timeout: 5000 });
     const provider = await collectStripeLifecycleEvidence({ stripe, pageBudget: 90 });

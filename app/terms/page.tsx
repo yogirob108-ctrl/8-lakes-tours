@@ -18,12 +18,12 @@ export default function TermsAndConditions() {
       <div style={{ maxWidth: '720px', margin: '0 auto', padding: '5rem 2rem' }}>
         <p style={{ fontSize: '0.65rem', letterSpacing: '0.3em', textTransform: 'uppercase', color: '#c8a96e', marginBottom: '1rem' }}>Legal</p>
         <h1 style={{ fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif", fontSize: '2.8rem', fontWeight: 300, color: '#f5f0e8', marginBottom: '0.5rem', lineHeight: 1.1 }}>Terms &amp; Conditions</h1>
-        <p style={{ fontSize: '0.8rem', color: '#d4cfc4', opacity: 0.5, marginBottom: '3rem' }}>Last updated: August 2026</p>
+        <p style={{ fontSize: '0.8rem', color: '#d4cfc4', opacity: 0.5, marginBottom: '3rem' }}>Last updated: October 2026</p>
 
         {[
           {
             title: '1. Agreement',
-            body: 'By submitting a booking enquiry or making a payment through 8 Lakes Tours, you agree to these Terms & Conditions in full. These terms constitute the entire agreement between you and 8 Lakes Tours (operated by Robert Zaher, contact: info@8lakestours.com).',
+            body: 'By submitting a booking enquiry or making a payment through 8 Lakes Tours, you agree to these Terms & Conditions in full. These terms constitute the entire agreement between you and 8 Lakes Tours LLC (contact: info@8lakestours.com).',
           },
           {
             title: '2. Booking & Payment Structure',
@@ -31,7 +31,7 @@ export default function TermsAndConditions() {
           },
           {
             title: '3. Tour Price',
-            body: 'The 2026 tour price depends on group size: $1,999 USD per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8 guests booking together for the same departure. Each price is made up of an online booking payment through 8 Lakes Tours and a local family cash payment made directly to the nomadic host families in Mongolia. The group discount is shared evenly between the two, so the online booking payment is $999 USD per guest for 1–2 guests, $974 for 3–4, $949 for 5–6, and $899 for 7–8, and the local family cash payment is $1,000 USD per guest for 1–2 guests, $975 for 3–4, $950 for 5–6, and $900 for 7–8. The tour price includes all accommodation, meals, horses and guiding as described on our website. Flights, travel insurance, visas, and personal expenses are not included.',
+            body: 'The tour price depends on group size: $1,999 USD per person for 1–2 guests, $1,949 for 3–4, $1,899 for 5–6, and $1,799 for 7–8 guests booking together for the same departure. Each price is made up of an online booking payment through 8 Lakes Tours and a local family cash payment made directly to the nomadic host families in Mongolia. The group discount is shared evenly between the two, so the online booking payment is $999 USD per guest for 1–2 guests, $974 for 3–4, $949 for 5–6, and $899 for 7–8, and the local family cash payment is $1,000 USD per guest for 1–2 guests, $975 for 3–4, $950 for 5–6, and $900 for 7–8. The tour price includes all accommodation, meals, horses and guiding as described on our website. Flights, travel insurance, visas, and personal expenses are not included. The local family payment is a direct payment from you to the host family in Mongolia for accommodation, meals, horses and local services. It is not collected by, paid to or held by 8 Lakes Tours LLC.',
           },
           {
             title: '4. Cancellation Policy',
@@ -43,7 +43,7 @@ export default function TermsAndConditions() {
           },
           {
             title: '6. Liability Waiver',
-            body: 'All participants must sign the 8 Lakes Tours Liability Waiver & Release before departure (or as part of the booking process). By signing, you acknowledge the inherent risks of the activity and release 8 Lakes Tours, its guides, and the host family from liability for injury, illness, or death arising from participation. The waiver is legally binding.',
+            body: 'Every rider must sign their own 8 Lakes Tours Liability Waiver & Release before departure. The lead booker signs when booking, and each other rider signs at 8lakestours.com/waiver using the link in the booking confirmation. Riders aged 16 or 17 need a parent or legal guardian to sign for them, and the lead booker must be 18 or older. By signing, you acknowledge the inherent risks of the activity and release 8 Lakes Tours, its guides, and the host family from liability for injury, illness, or death arising from participation. The waiver is legally binding.',
           },
           {
             title: '7. Health & Fitness',
@@ -63,10 +63,22 @@ export default function TermsAndConditions() {
           },
           {
             title: '11. Governing Law',
-            body: 'These Terms & Conditions are governed by the laws of Mongolia for activities conducted on Mongolian territory, and by the laws of the jurisdiction of the operator for pre-departure matters. Any disputes shall be resolved in good faith between the parties.',
+            body: 'These Terms & Conditions, and any dispute relating to them or to a tour, are governed by the laws of the State of New Jersey, USA, without regard to conflict-of-laws rules, wherever the tour takes place. Any claim must be brought only in the state or federal courts located in New Jersey. We will always try to resolve any concern with you in good faith first.',
           },
           {
-            title: '12. Contact',
+            title: '12. Independent Providers',
+            body: '8 Lakes Tours LLC arranges tours and works with independent local providers, including the host family, guides, horse handlers, coordinators and transport providers. They are not employees, agents or partners of 8 Lakes Tours LLC, and 8 Lakes Tours LLC does not own or control their horses, land, accommodation or vehicles.',
+          },
+          {
+            title: '13. Limitation of Liability',
+            body: 'To the fullest extent permitted by law, the total liability of 8 Lakes Tours LLC to you for any claim relating to a booking or tour is limited to the online booking payment you made to 8 Lakes Tours LLC for that tour, and 8 Lakes Tours LLC is not liable for indirect or consequential losses. Nothing in these terms limits liability that cannot be limited by law. Your separate Liability Waiver & Release also applies.',
+          },
+          {
+            title: '14. Severability',
+            body: 'If any provision of these terms is found invalid or unenforceable, the remaining provisions remain in full force and effect.',
+          },
+          {
+            title: '15. Contact',
             body: 'For any questions regarding these terms, contact us at info@8lakestours.com.',
           },
         ].map(({ title, body }) => (
@@ -78,7 +90,7 @@ export default function TermsAndConditions() {
       </div>
 
       <footer style={{ borderTop: '1px solid rgba(200,169,110,0.15)', padding: '2rem 4rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-        <span style={{ fontSize: '0.75rem', color: '#d4cfc4', opacity: 0.4 }}>© 2026 8 Lakes Tours · All rights reserved</span>
+        <span style={{ fontSize: '0.75rem', color: '#d4cfc4', opacity: 0.4 }}>© 2026 8 Lakes Tours LLC · All rights reserved</span>
         <div style={{ display: 'flex', gap: '1.5rem' }}>
           <Link href="/terms" style={{ fontSize: '0.7rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#c8a96e', opacity: 0.7, textDecoration: 'none' }}>Terms & Conditions</Link>
           <Link href="/privacy" style={{ fontSize: '0.7rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#c8a96e', opacity: 0.7, textDecoration: 'none' }}>Privacy Policy</Link>

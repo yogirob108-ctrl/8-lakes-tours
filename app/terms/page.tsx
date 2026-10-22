@@ -55,7 +55,7 @@ export default function TermsAndConditions() {
           },
           {
             title: '9. Group Size & Availability',
-            body: 'Tours are limited to a maximum of 8 participants. 8 Lakes Tours reserves the right to cancel a tour date if minimum participant numbers are not reached, or for reasons beyond our control. In such cases, the online amount paid to us will be refunded minus unrecoverable Stripe/payment processing fees. The local family cash payment is not collected online before departure.',
+            body: 'Tours are limited to a maximum of 8 participants. There is no minimum group size, and solo bookings are welcome; if you are the only rider on a date, we may offer to move you to another departure, but you are not required to. 8 Lakes Tours reserves the right to cancel a tour date for reasons beyond our control. In such cases, the online amount paid to us will be refunded minus unrecoverable Stripe/payment processing fees. The local family cash payment is not collected online before departure.',
           },
           {
             title: '10. Force Majeure',

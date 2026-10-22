@@ -85,7 +85,7 @@ const sections = [
     title: 'Communication and translation',
     items: [
       'Guides and organisers handle the main logistics, but the host-family setting is cross-cultural and not every moment happens in perfect English.',
-      'So far, Grok has worked best for simple back-and-forth communication with family members whose English is limited. ChatGPT voice mode also works well for translation. You can say: “Please translate the following sentence into Mongolian for me,” then speak naturally and play or show the translation.',
+      'So far, Grok works best for simple back-and-forth communication with family members whose English is limited. ChatGPT voice mode also works well for translation. You can say: “Please translate the following sentence into Mongolian for me,” then speak naturally and play or show the translation.',
       'Other translation apps can still help, but Grok and ChatGPT are the two we would suggest trying first for real conversation.',
       'The host nomadic camp has strong Starlink and a solar-powered inverter for charging phones, cameras, and other electronics. It is surprisingly well equipped for modern essentials — even coffee makers — while remote trek days can still be more offline.',
     ],

@@ -1513,10 +1513,9 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
         .form-textarea { resize: vertical; min-height: 80px; }
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
         .form-check { display: flex; align-items: flex-start; gap: 0.75rem; font-size: 0.8rem; color: var(--mist); opacity: 0.8; line-height: 1.5; cursor: pointer; }
-        .group-pricing-card { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:0.85rem; border:1px solid rgba(200,169,110,0.28); background:rgba(200,169,110,0.075); border-radius:var(--radius-card); padding:1rem; }
-        .group-pricing-card div { min-width:0; }
-        .group-pricing-card strong { display:block; color:var(--cream); font-family:var(--font-cormorant), 'Cormorant Garamond', serif; font-size:1.35rem; line-height:1.05; font-weight:400; }
-        .group-pricing-card small, .group-pricing-card span { display:block; color:var(--mist); font-size:0.74rem; line-height:1.45; opacity:0.76; margin-top:0.28rem; }
+        .group-pricing-card { display:block; border:1px solid rgba(200,169,110,0.28); background:rgba(200,169,110,0.075); border-radius:var(--radius-card); padding:1rem; }
+        .group-pricing-card strong { display:block; color:var(--cream); font-family:var(--font-cormorant), 'Cormorant Garamond', serif; font-size:1.6rem; line-height:1.05; font-weight:400; }
+        .group-pricing-card small { display:block; color:var(--mist); font-size:0.74rem; line-height:1.45; opacity:0.76; margin-top:0.28rem; }
         .group-pricing-eyebrow { font-size:0.58rem; letter-spacing:0.18em; text-transform:uppercase; color:var(--gold); margin:0 0 0.45rem; }
         .form-check input[type="checkbox"] { appearance: none; width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; border: 1px solid rgba(245,240,232,0.3); border-radius: 4px; background: transparent; cursor: pointer; position: relative; }
         .form-check input[type="checkbox"]:checked { background: var(--gold); border-color: var(--gold); }
@@ -1758,8 +1757,8 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
           .partnership-inline-photo + .section-body { margin-top: 0.35rem; }
           .partnership-img { display: none; }
           .form-grid { grid-template-columns: 1fr; }
-          .group-pricing-card { grid-template-columns:1fr; padding:0.82rem; gap:0.7rem; }
-          .group-pricing-card strong { font-size:1.18rem; }
+          .group-pricing-card { padding:0.82rem; }
+          .group-pricing-card strong { font-size:1.4rem; }
           .packing-grid { grid-template-columns: 1fr; }
           .payment-checkout-card { padding:0.8rem 0.55rem; }
           .checkout-eyebrow { font-size:0.58rem; letter-spacing:0.13em; }
@@ -2200,16 +2199,10 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
               </div>
               <p className="sr-only" aria-live="polite" aria-atomic="true">{travellerAnnouncement}</p>
               <div className="group-pricing-card" aria-live="polite">
-                <div>
-                  <p className="group-pricing-eyebrow">Private group pricing</p>
-                  <strong>{pricing.tourPrice} per person</strong>
-                  <small>{groupPricing.tier.label}{groupPricing.perPersonSavingsUsd > 0 ? ` · save $${groupPricing.perPersonSavingsUsd} pp` : ' · standard rate'}</small>
-                </div>
-                <div>
-                  <span>{groupPricing.guestCount} guest{groupPricing.guestCount === 1 ? '' : 's'} total</span>
-                  <strong>${groupPricing.totalTripValueUsd.toLocaleString('en-US')}</strong>
-                  <small>${groupPricing.onlinePaymentUsd.toLocaleString('en-US')} online · ${groupPricing.localFamilyPaymentUsd.toLocaleString('en-US')} cash to family</small>
-                </div>
+                <p className="group-pricing-eyebrow">Your price{groupPricing.guestCount > 1 ? ` · ${groupPricing.guestCount} guests` : ''}</p>
+                <strong>${groupPricing.totalTripValueUsd.toLocaleString('en-US')}</strong>
+                {groupPricing.perPersonSavingsUsd > 0 && <small>${groupPricing.perPersonUsd.toLocaleString('en-US')} each, group rate saves ${groupPricing.perPersonSavingsUsd} per person</small>}
+                <small>${groupPricing.onlinePaymentUsd.toLocaleString('en-US')} paid online today · ${groupPricing.localFamilyPaymentUsd.toLocaleString('en-US')} in USD cash to the host family in Mongolia</small>
               </div>
               <input type="hidden" name="price_per_person_usd" value={groupPricing.perPersonUsd} />
               <input type="hidden" name="online_payment_usd" value={groupPricing.onlinePaymentUsd} />

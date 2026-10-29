@@ -32,7 +32,7 @@ test('homepage booking copy keeps pricing and dates without year-based selling',
   const homepage = await readFile(homepageUrl, 'utf8');
 
   assert.match(homepage, /<h2 className="section-title">Reserve your spot<\/h2>/);
-  assert.match(homepage, /The trip is \$1,999 per person, and group rates apply for 3–8 guests\./);
+  assert.doesNotMatch(homepage, /The trip is \$1,999 per person/);
   assert.match(homepage, /<div className="price-per">Per Person · 9 Days \/ 8 Nights<\/div>/);
   assert.match(homepage, /<summary className="payment-summary">See group rates \(3–8 guests\)<\/summary>/);
   assert.doesNotMatch(homepage, /<div className="price-per">[^<]*Group rates apply for 3–8 guests[^<]*<\/div>/);

@@ -2071,7 +2071,6 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
       <section className="booking" id="book">
         <div className="booking-lead reveal">
           <h2 className="section-title">Reserve your spot</h2>
-          <p className="section-body">The trip is $1,999 per person, and group rates apply for 3–8 guests.</p>
         </div>
 
         <div className="reveal">

@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next'
 
 const siteUrl = 'https://www.8lakestours.com'
-const lastModified = new Date('2026-06-18')
+const lastModified = new Date('2026-10-05')
 
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
@@ -32,7 +32,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: `${siteUrl}/faq`,
-      lastModified,
+      lastModified: new Date('2026-10-22'),
       changeFrequency: 'monthly',
       priority: 0.8,
     },

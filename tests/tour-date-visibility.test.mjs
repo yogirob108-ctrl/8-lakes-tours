@@ -41,3 +41,20 @@ test('FAQ does not advertise a fixed count that becomes stale', async () => {
 
   assert.doesNotMatch(source, /shows seven fixed 2026 departures/i);
 });
+
+test('closed departures never show, even before they start', () => {
+  const dates = [
+    { date: 'October 7 – 15, 2026', startDate: '2026-10-07', closed: true },
+    { date: 'May 4 – 12, 2027', startDate: '2027-05-04' },
+  ];
+  const visible = getVisibleTourDates(dates, new Date('2026-09-30T00:00:00Z'));
+  assert.deepEqual(visible.map(option => option.date), ['May 4 – 12, 2027']);
+});
+
+test('the 2027 season is sold May to September; October 2027 is closed', async () => {
+  const { TOUR_DATES } = await import('../lib/tour-dates.mjs');
+  const visible = getVisibleTourDates(TOUR_DATES, new Date('2026-10-01T00:00:00Z')).filter(option => option.startDate);
+  assert.equal(visible.at(-1).date, 'September 21 – 29, 2027');
+  assert.equal(visible.some(option => option.startDate.startsWith('2027-10')), false);
+  assert.equal(visible[0].date, 'May 4 – 12, 2027');
+});

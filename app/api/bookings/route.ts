@@ -28,16 +28,6 @@ function clean(value: unknown) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-function attributionNote(attribution: Record<string, string>) {
-  const labels: Record<string, string> = {
-    source: 'UTM source', medium: 'UTM medium', campaign: 'UTM campaign', term: 'UTM term', content: 'UTM content',
-    gclid: 'Google click ID', fbclid: 'Meta click ID', ttclid: 'TikTok click ID', msclkid: 'Microsoft click ID',
-    referrer: 'Referrer', landing_url: 'Landing URL', current_url: 'Current URL', ga_client_id: 'GA client ID', ga_session_id: 'GA session ID',
-  };
-  const lines = Object.entries(labels).flatMap(([key, label]) => attribution[key] ? [`${label}: ${attribution[key]}`] : []);
-  return lines.length ? ['--- Attribution ---', ...lines].join('\n') : '';
-}
-
 function jsonError(message: string, status = 400) {
   return NextResponse.json({ ok: false, error: message }, { status });
 }
@@ -123,7 +113,7 @@ export async function POST(request: Request) {
       how_heard: string;
       notes: string;
       signature: string;
-      attribution: Record<string, string>;
+      attribution: Record<string, unknown>;
       travellers: Array<{
         position: number; is_lead: boolean; first_name: string; last_name: string;
         email: string | null; phone: string | null; nationality: string; gender: string;
@@ -166,7 +156,6 @@ export async function POST(request: Request) {
   const groupPricing = getGroupPricing(travellers.length);
   const manualPaymentRequired = requiresManualPaymentLink(tourDate, groupPricing.guestCount);
   const manualReason = manualPaymentReason(tourDate, groupPricing.guestCount);
-  const attributionBlock = attributionNote(bookingInput.attribution);
   const travellerNames = travellers
     .map(traveller => `${traveller.position}. ${traveller.first_name} ${traveller.last_name}${traveller.is_lead ? ' (lead)' : ''}${traveller.gender ? ` — ${traveller.gender}` : ''}`)
     .join('\n');
@@ -179,7 +168,6 @@ export async function POST(request: Request) {
     bookingInput.how_heard ? `How they heard about us: ${bookingInput.how_heard}` : '',
     bookingInput.notes,
     `Traveller manifest:\n${travellerNames}`,
-    attributionBlock,
   ].filter(Boolean).join('\n\n');
   const signedAt = new Date().toISOString();
   const today = signedAt.slice(0, 10);
@@ -192,7 +180,7 @@ export async function POST(request: Request) {
     travellers.length > 1 ? `Every other rider signs their own waiver at ${SITE_URL}/waiver?ref=<booking reference>.` : '',
     minors.length ? `UNDER 18, parent/guardian waiver required: ${minors.map(t => `${t.first_name} ${t.last_name} (age ${ageOn(t.date_of_birth, today)})`).join('; ')}` : '',
   ].filter(Boolean).join('\n');
-  const customerNotes = [waiverLines, attributionBlock].filter(Boolean).join('\n\n');
+  const customerNotes = waiverLines;
 
   const { data: rpcData, error: rpcError } = await supabase.rpc('create_public_booking', {
     p_submission_key: bookingInput.submission_key,
@@ -208,6 +196,7 @@ export async function POST(request: Request) {
     p_customer_notes: customerNotes,
     p_booking_notes: bookingNotes,
     p_travellers: travellers,
+    p_attribution: bookingInput.attribution,
   });
   const booking = (Array.isArray(rpcData) ? rpcData[0] : rpcData) as BookingRpcRow | null;
   if (rpcError?.message === 'submission key already belongs to a different booking payload') {

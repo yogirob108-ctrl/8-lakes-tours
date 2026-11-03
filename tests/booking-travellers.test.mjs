@@ -117,7 +117,9 @@ test('normalizes and bounds top-level public booking fields', () => {
     assert.match(invalid.error, /too long/i);
   }
   assert.match(normalizePublicBookingPayload(validPayload({ submission_key: 'not-a-uuid' }), { today: '2026-09-10' }).error, /submission/i);
-  assert.match(normalizePublicBookingPayload(validPayload({ attribution: { source: 'x'.repeat(201) } }), { today: '2026-09-10' }).error, /attribution/i);
+  const oversizedAttribution = normalizePublicBookingPayload(validPayload({ attribution: { version: 1, current_visit: { captured_at: '2026-10-01T12:00:00.000Z', type: 'tagged_campaign', page: { host: 'www.8lakestours.com', path: '/' }, tagged_link: { source: 'x'.repeat(201) } } } }), { today: '2026-09-10' });
+  assert.equal(oversizedAttribution.ok, true);
+  assert.equal(oversizedAttribution.value.attribution.current_visit.tagged_link, undefined, 'oversized attribution is excluded instead of persisted');
 });
 
 test('migration defines atomic idempotent service-role booking RPC and schema invariants', async () => {

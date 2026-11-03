@@ -168,16 +168,18 @@ test('ga session id is a permitted booking attribution field that survives norma
     signature: 'Test Guest',
     waiver_agreed: 'on',
     travellers: [{ position: 1, is_lead: true, first_name: 'Test', last_name: 'Guest', email: 'lead@example.invalid', phone: null, nationality: 'US', gender: 'Female', date_of_birth: '1990-01-01', riding_experience: 'Intermediate — comfortable riding', dietary_notes: null }],
-    attribution: { ga_client_id: '111222.333444', ga_session_id: '1785492000', email: 'nope@example.invalid' },
+    attribution: { version: 1, current_visit: { captured_at: '2026-10-01T12:00:00.000Z', type: 'direct', page: { host: 'www.8lakestours.com', path: '/' }, ga_client_id: '111222.333444', ga_session_id: '1785492000' } },
   });
   assert.ok(result.ok, JSON.stringify(result));
-  assert.equal(result.value.attribution.ga_session_id, '1785492000');
-  assert.equal(result.value.attribution.email, undefined, 'PII stays rejected from attribution');
+  assert.equal(result.value.attribution.current_visit.ga_session_id, '1785492000');
+  assert.equal(result.value.attribution.current_visit.email, undefined, 'PII stays rejected from attribution');
 });
 
-test('attribution notes label the ga session id for the webhook to read', async () => {
-  const source = readFileSync(new URL('../app/api/bookings/route.ts', import.meta.url), 'utf8');
-  assert.match(source, /ga_session_id/, 'bookings route must carry a GA session ID attribution label');
+test('webhook reads GA session attribution from structured submission payload with legacy notes fallback', async () => {
+  const source = readFileSync(new URL('../app/api/stripe/webhook/route.ts', import.meta.url), 'utf8');
+  assert.match(source, /submission_payload/, 'webhook must select durable structured attribution');
+  assert.match(source, /ga_session_id\?: unknown/, 'webhook must read the structured GA session id');
+  assert.match(source, /Historical note evidence remains readable only/, 'legacy evidence must not be fabricated or rewritten');
 });
 
 // ------------------------- existing retry/privacy suite -------------------------

@@ -13,6 +13,7 @@ import { BASE_LOCAL_FAMILY_PAYMENT_USD, BASE_ONLINE_PAYMENT_USD, BASE_PRICE_USD,
 import { GENDERS, normalizeBookingTravellers } from '@/lib/booking-travellers.mjs';
 import { composeDateOfBirth, splitDateOfBirth } from '@/lib/date-of-birth-fields.mjs';
 import { CONSENT_STORAGE_KEY, normalizeConsentChoice } from '@/lib/google-consent.mjs';
+import { buildAttributionCapture } from '@/lib/booking-attribution.mjs';
 import MobileNavMenu from './components/MobileNavMenu';
 
 type FunnelEventProperties = Record<string, string | number | boolean>;
@@ -28,22 +29,7 @@ type TourDateOption = {
   requiresConfirmation?: boolean;
 };
 
-type AttributionPayload = {
-  landing_url?: string;
-  current_url?: string;
-  referrer?: string;
-  source?: string;
-  medium?: string;
-  campaign?: string;
-  term?: string;
-  content?: string;
-  gclid?: string;
-  fbclid?: string;
-  ttclid?: string;
-  msclkid?: string;
-  ga_client_id?: string;
-  ga_session_id?: string;
-};
+type AttributionPayload = Record<string, unknown>;
 
 declare global {
   interface Window {
@@ -123,68 +109,30 @@ function getGaSessionIdFromCookie(): string {
 }
 
 async function collectAttributionWithGaRetry() {
-  const attribution = collectAttribution();
-  if (!hasMeasurementConsent()) return attribution;
+  const base = collectAttribution();
+  if (!hasMeasurementConsent()) return base;
   const [clientId, sessionId] = await Promise.all([getGtagValue('client_id'), getGtagValue('session_id')]);
-  const next = { ...attribution, ga_client_id: clientId || attribution.ga_client_id || '', ga_session_id: sessionId || attribution.ga_session_id || '' };
-  try {
-    const stored = window.localStorage.getItem(ATTRIBUTION_STORAGE_KEY);
-    const first = stored ? JSON.parse(stored) as AttributionPayload : {};
-    window.localStorage.setItem(ATTRIBUTION_STORAGE_KEY, JSON.stringify({ ...first, ga_client_id: first.ga_client_id || next.ga_client_id, ga_session_id: first.ga_session_id || next.ga_session_id }));
-  } catch {
-    // Storage can be blocked; the current submit payload still carries current identifiers.
-  }
-  return next;
+  return collectAttribution({ gaClientId: clientId || getGaClientId() || undefined, gaSessionId: sessionId || getGaSessionIdFromCookie() || undefined });
 }
 
-function collectAttribution(): AttributionPayload {
+function collectAttribution({ gaClientId = getGaClientId(), gaSessionId = getGaSessionIdFromCookie() }: { gaClientId?: string; gaSessionId?: string } = {}): AttributionPayload {
   if (typeof window === 'undefined') return {};
-
-  const params = new URLSearchParams(window.location.search);
-  const current: AttributionPayload = {
-    landing_url: window.location.href,
-    current_url: window.location.href,
-    referrer: document.referrer || '',
-    source: params.get('utm_source') || '',
-    medium: params.get('utm_medium') || '',
-    campaign: params.get('utm_campaign') || '',
-    term: params.get('utm_term') || '',
-    content: params.get('utm_content') || '',
-    gclid: params.get('gclid') || '',
-    fbclid: params.get('fbclid') || '',
-    ttclid: params.get('ttclid') || '',
-    msclkid: params.get('msclkid') || '',
-    ga_client_id: getGaClientId(),
-    ga_session_id: getGaSessionIdFromCookie(),
-  };
-
-  let first: AttributionPayload = {};
   try {
-    const stored = window.localStorage.getItem(ATTRIBUTION_STORAGE_KEY);
-    first = stored ? JSON.parse(stored) as AttributionPayload : {};
+    const result = buildAttributionCapture({
+      locationHref: window.location.href,
+      referrer: document.referrer || '',
+      stored: window.localStorage.getItem(ATTRIBUTION_STORAGE_KEY),
+      measurementConsent: hasMeasurementConsent(),
+      gaClientId,
+      gaSessionId,
+    });
+    window.localStorage.setItem(ATTRIBUTION_STORAGE_KEY, result.storage);
+    const { storage: _storage, ...attribution } = result;
+    return attribution;
   } catch {
-    first = {};
+    // Storage can be blocked or legacy data malformed; capture remains best-effort.
+    return {};
   }
-
-  if (!first.landing_url) {
-    first = current;
-    try {
-      window.localStorage.setItem(ATTRIBUTION_STORAGE_KEY, JSON.stringify(first));
-    } catch {
-      // Storage can be blocked in private browsing; attribution is best-effort.
-    }
-  }
-
-  const measurementAllowed = hasMeasurementConsent();
-  return {
-    ...first,
-    current_url: current.current_url,
-    // Never resurrect a stored GA identifier after consent was declined or
-    // withdrawn. Session identifiers are current-visit-only to avoid joining a
-    // paid event to an earlier visitor session.
-    ga_client_id: measurementAllowed ? current.ga_client_id || first.ga_client_id || '' : '',
-    ga_session_id: measurementAllowed ? current.ga_session_id : '',
-  };
 }
 
 type CurrencyCode = 'USD' | 'EUR' | 'GBP' | 'RUB' | 'MNT';

@@ -50,17 +50,29 @@ function getPaymentIntentId(value: Stripe.PaymentIntent | string | null) {
   return typeof value === 'string' ? value : value.id;
 }
 
-function extractGaClientId(notes: unknown) {
-  if (typeof notes !== 'string') return '';
-  const match = notes.match(/^GA client ID:\s*(.+)$/im);
-  return match?.[1]?.trim() || '';
+function extractGaClientId(booking: { submission_payload?: unknown; notes?: unknown }) {
+  const current = booking.submission_payload && typeof booking.submission_payload === 'object'
+    ? (booking.submission_payload as { attribution?: { current_visit?: { ga_client_id?: unknown } } }).attribution?.current_visit
+    : undefined;
+  const candidate = typeof current?.ga_client_id === 'string' ? current.ga_client_id : '';
+  if (/^\d{1,20}\.\d{1,20}$/.test(candidate)) return candidate;
+  // Historical note evidence remains readable only; new bookings do not write it.
+  if (typeof booking.notes !== 'string') return '';
+  const match = booking.notes.match(/^GA client ID:\s*(.+)$/im);
+  const legacy = match?.[1]?.trim() || '';
+  return /^\d{1,20}\.\d{1,20}$/.test(legacy) ? legacy : '';
 }
 
-function extractGaSessionId(notes: unknown) {
-  if (typeof notes !== 'string') return '';
-  const match = notes.match(/^GA session ID:\s*(.+)$/im);
-  const sessionId = match?.[1]?.trim() || '';
-  return /^\d{1,20}$/.test(sessionId) ? sessionId : '';
+function extractGaSessionId(booking: { submission_payload?: unknown; notes?: unknown }) {
+  const current = booking.submission_payload && typeof booking.submission_payload === 'object'
+    ? (booking.submission_payload as { attribution?: { current_visit?: { ga_session_id?: unknown } } }).attribution?.current_visit
+    : undefined;
+  const candidate = typeof current?.ga_session_id === 'string' ? current.ga_session_id : '';
+  if (/^\d{1,20}$/.test(candidate)) return candidate;
+  if (typeof booking.notes !== 'string') return '';
+  const match = booking.notes.match(/^GA session ID:\s*(.+)$/im);
+  const legacy = match?.[1]?.trim() || '';
+  return /^\d{1,20}$/.test(legacy) ? legacy : '';
 }
 
 async function sendGa4PaymentReceived(input: {
@@ -149,7 +161,7 @@ const GA4_EVENT_SKIPPED_TITLE = 'GA4 payment_received event skipped';
  * retroactive conversions for bookings that predate GA4 collection.
  */
 async function ensureGa4PaymentEvent(supabase: ReturnType<typeof createSupabaseAdminClient>, input: {
-  booking: { id: string; tour_date: string | null; notes: string | null };
+  booking: { id: string; tour_date: string | null; notes: string | null; submission_payload?: unknown };
   sessionId: string;
   amountUsd: number;
   currency: string;
@@ -192,8 +204,8 @@ async function ensureGa4PaymentEvent(supabase: ReturnType<typeof createSupabaseA
 
   const eventId = crypto.randomUUID();
   const gaResult = await sendGa4PaymentReceived({
-    clientId: extractGaClientId(input.booking.notes),
-    sessionId: extractGaSessionId(input.booking.notes),
+    clientId: extractGaClientId(input.booking),
+    sessionId: extractGaSessionId(input.booking),
     amountUsd: input.amountUsd,
     currency: input.currency,
     tourDate: input.booking.tour_date || 'TBC',
@@ -410,7 +422,7 @@ async function handleCheckoutSessionPaid(session: Stripe.Checkout.Session) {
   }
   const paymentIntentId = getPaymentIntentId(session.payment_intent);
   const supabase = createSupabaseAdminClient();
-  const bookingSelect = 'id, public_reference, status, online_paid_usd, online_due_usd, family_cash_due_usd, tour_date, guest_count, notes, customer_id, customer:customers(first_name, last_name, email)';
+  const bookingSelect = 'id, public_reference, status, online_paid_usd, online_due_usd, family_cash_due_usd, tour_date, guest_count, notes, submission_payload, customer_id, customer:customers(first_name, last_name, email)';
 
   const existingPayment = await findExistingStripePayment({
     sessionId: session.id,

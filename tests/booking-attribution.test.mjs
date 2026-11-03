@@ -81,6 +81,8 @@ test('withdrawn measurement consent removes GA and click IDs without changing no
   assert.equal(withdrawn.current_visit.ga_session_id, undefined);
   assert.equal(withdrawn.current_visit.click_ids, undefined);
   assert.equal(withdrawn.first_touch.tagged_link.source, 'google');
+  assert.equal(first.first_touch.tagged_link.click_ids, undefined, 'click IDs never persist in first-touch storage');
+  assert.equal(withdrawn.first_touch.tagged_link.click_ids, undefined, 'withdrawal cannot replay a previously captured click ID');
 });
 
 test('internal referrers are not observed external referrals', () => {

@@ -317,8 +317,8 @@ test('unpaid booking_form_submit funnel event carries no monetized value or curr
   const call = source.slice(start, end);
   assert.ok(!/value:/.test(call), 'unpaid booking_form_submit must not send a monetary value');
   assert.ok(!/currency:/.test(call), 'unpaid booking_form_submit must not send currency');
-  const clickStart = source.indexOf("trackFunnelEvent('stripe_payment_click'");
-  const clickEnd = source.indexOf('});', clickStart);
-  const clickCall = source.slice(clickStart, clickEnd);
-  assert.ok(/value:/.test(clickCall) && /currency:/.test(clickCall), 'genuine payment click keeps monetized semantics');
+  const checkoutStart = source.indexOf("trackFunnelEvent('begin_checkout'");
+  const checkoutEnd = source.indexOf('});', checkoutStart);
+  const checkoutCall = source.slice(checkoutStart, checkoutEnd);
+  assert.ok(/value:/.test(checkoutCall) && /currency:/.test(checkoutCall), 'confirmed checkout session keeps monetized semantics');
 });

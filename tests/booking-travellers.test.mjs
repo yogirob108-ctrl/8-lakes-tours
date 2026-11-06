@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-import { normalizeBookingTravellers } from '../lib/booking-travellers.mjs';
+import { GENDERS, normalizeBookingTravellers } from '../lib/booking-travellers.mjs';
 import { normalizePublicBookingPayload } from '../lib/public-booking.mjs';
 
 const RIDING_LEVELS = [
@@ -32,6 +32,7 @@ const validPayload = (overrides = {}) => ({
   how_heard: 'Friend',
   notes: 'Window seat if possible',
   signature: 'Ada Lovelace',
+  waiver_agreed: 'on',
   travellers: [validTraveller()],
   attribution: { source: 'google', landing_url: 'https://www.8lakestours.com/' },
   ...overrides,
@@ -116,7 +117,9 @@ test('normalizes and bounds top-level public booking fields', () => {
     assert.match(invalid.error, /too long/i);
   }
   assert.match(normalizePublicBookingPayload(validPayload({ submission_key: 'not-a-uuid' }), { today: '2026-09-10' }).error, /submission/i);
-  assert.match(normalizePublicBookingPayload(validPayload({ attribution: { source: 'x'.repeat(201) } }), { today: '2026-09-10' }).error, /attribution/i);
+  const oversizedAttribution = normalizePublicBookingPayload(validPayload({ attribution: { version: 1, current_visit: { captured_at: '2026-10-01T12:00:00.000Z', type: 'tagged_campaign', page: { host: 'www.8lakestours.com', path: '/' }, tagged_link: { source: 'x'.repeat(201) } } } }), { today: '2026-09-10' });
+  assert.equal(oversizedAttribution.ok, true);
+  assert.equal(oversizedAttribution.value.attribution.current_visit.tagged_link, undefined, 'oversized attribution is excluded instead of persisted');
 });
 
 test('migration defines atomic idempotent service-role booking RPC and schema invariants', async () => {
@@ -210,4 +213,31 @@ test('privacy policy discloses traveller manifest details including dates of bir
   assert.match(privacy, /date of birth/i);
   assert.match(privacy, /permission to provide (?:their|these) details/i);
   assert.match(privacy, /lead booker[^.]+waiver/i);
+});
+
+test('gender must be one of the offered options', () => {
+  const invalid = normalizeBookingTravellers(1, [validTraveller({ gender: 'unspecified' })]);
+  assert.equal(invalid.ok, false);
+  assert.match(invalid.error, /Traveller 1 gender is invalid/);
+  for (const gender of GENDERS) {
+    const result = normalizeBookingTravellers(1, [validTraveller({ gender })]);
+    assert.equal(result.ok, true);
+    assert.equal(result.travellers[0].gender, gender);
+  }
+});
+
+test('a signature must read as a name and the waiver must be explicitly agreed', () => {
+  // Two keystrokes used to pass, and nothing recorded that the waiver was read.
+  for (const signature of ['ab', 'Ada', 'A L', 'x'.repeat(3)]) {
+    const result = normalizePublicBookingPayload(validPayload({ signature }));
+    assert.equal(result.ok, false, `${signature} must not pass as a signature`);
+    assert.match(result.error, /full legal name/);
+  }
+  assert.equal(normalizePublicBookingPayload(validPayload({ signature: 'Ada Lovelace' })).ok, true);
+
+  for (const waiver of ['', undefined, 'yes', 'true']) {
+    const result = normalizePublicBookingPayload(validPayload({ waiver_agreed: waiver }));
+    assert.equal(result.ok, false, `waiver_agreed=${waiver} must not pass`);
+    assert.match(result.error, /liability waiver/);
+  }
 });

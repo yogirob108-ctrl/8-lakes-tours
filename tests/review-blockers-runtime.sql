@@ -11,15 +11,21 @@ begin
  insert into booking_checkout_ownership(booking_id,spec,expected,session_id,invalidated) values(b,jsonb_build_object('line_items',jsonb_build_array(jsonb_build_object('price_data',jsonb_build_object('unit_amount',292200)))),expected,'cs_review',false) returning generation into g;
  insert into payments(booking_id,provider,stripe_checkout_session_id,amount_usd,status) values(b,'stripe','cs_review',2922,'pending') returning id into pay;
  update abandoned_checkout_recovery set eligible_at=now()-interval '1 minute' where booking_id=b;
+ -- Stage-cadence contract: claim may stage the attempt, but a review-fenced
+ -- ownership record can never be authorized - the send-commit boundary refuses
+ -- invalidated state (claim-time flags churn on payment/status probes).
  update booking_checkout_ownership set invalidated=true where booking_id=b;
+ -- Runtime probe of the fixture-gate allowlist (a real enable runs the same
+ -- durable update); the review fences themselves are asserted at authorize.
+ update abandoned_cadence_rollout set mode='test_allowlist';
+ perform public.abandoned_cadence_activate_booking(b,'8L-REVIEW-PROBE');
  a:=claim_abandoned_checkout(b,array['Scheduled fixture'],'{"to":"review-blockers@example.invalid","subject":"local only","text":"local only"}');
- if (a->>'should_send')::boolean then raise exception 'REPRO: invalidated pending Session authorized reminder'; end if;
+ if authorize_abandoned_checkout_v3(b,(a->>'claim_token')::uuid,array['Scheduled fixture'],g,array['cs_review'],'abandoned_checkout_1') then raise exception 'REPRO: invalidated pending Session authorized reminder'; end if;
  update booking_checkout_ownership set invalidated=false where booking_id=b;
- a:=claim_abandoned_checkout(b,array['Scheduled fixture'],'{"to":"review-blockers@example.invalid","subject":"local only","text":"local only"}');
- if not (a->>'should_send')::boolean then raise exception 'valid generation not claimed'; end if;
+ if not authorize_abandoned_checkout_v3(b,(a->>'claim_token')::uuid,array['Scheduled fixture'],g,array['cs_review'],'abandoned_checkout_1') then raise exception 'valid generation not authorized'; end if;
  if authorize_abandoned_checkout(b,(a->>'claim_token')::uuid,array['Scheduled fixture']) then raise exception 'v1 authorizes without provider evidence'; end if;
  if authorize_abandoned_checkout_v2(b,(a->>'claim_token')::uuid,array['Scheduled fixture'],g,array[]::text[]) then raise exception 'empty provider evidence authorized'; end if;
- if not authorize_abandoned_checkout_v2(b,(a->>'claim_token')::uuid,array['Scheduled fixture'],g,array['cs_review']) then raise exception 'verified expiry denied'; end if;
+ if not authorize_abandoned_checkout_v3(b,(a->>'claim_token')::uuid,array['Scheduled fixture'],g,array['cs_review'],'abandoned_checkout_1') then raise exception 'verified expiry denied'; end if;
  update bookings set online_due_usd=4000 where id=b;
  update payments set status='paid' where id=pay;
  r:=confirm_paid_booking_v2(b,'cs_review',expected,'test-token',now());

@@ -3,6 +3,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { createSupabaseAdminClient } from '@/lib/supabase-admin';
 import { recoveryUrl } from '@/lib/booking-checkout';
 import { sendEmail } from '@/lib/email';
+import { runCapacityReconciliation } from '@/lib/capacity-reconciliation.mjs';
 import { runAbandonedCheckoutRecovery } from '@/lib/abandoned-checkout.mjs';
 import { runPreSubmitDraftRecovery } from '@/lib/pre-submit-draft-recovery.mjs';
 import { getVisibleTourDates, TOUR_DATES } from '@/lib/tour-dates.mjs';
@@ -28,11 +29,16 @@ export async function GET(request: Request) {
    ? await runPreSubmitDraftRecovery({db,recoveryUrl:(token:string)=>`https://www.8lakestours.com/resume-draft?token=${encodeURIComponent(token)}`,sendEmail,dryRun})
    : {eligible:0,sent:0,failed:0,suppressed:0,enabled:false};
   let result: {sent:number;failed:number;suppressed:number;eligible?:number}={sent:0,failed:0,suppressed:0,eligible:0};
+  let capacity={scanned:0,released_expired:0,released_cancelled_refunded:0,retained:0,provider_errors:0};
   if(postSubmitEnabled || dryRun) {
    if(!process.env.STRIPE_SECRET_KEY) throw new Error('Provider evidence unavailable');
    const stripe=new Stripe(process.env.STRIPE_SECRET_KEY,{maxNetworkRetries:0,timeout:5000});
-   result=await runAbandonedCheckoutRecovery({db,allowedDates,recoveryUrl,sendEmail,retrieveSession:(id:string)=>stripe.checkout.sessions.retrieve(id),dryRun});
+   const retrieveSession=(id:string)=>stripe.checkout.sessions.retrieve(id,{expand:['payment_intent.latest_charge']});
+   // Capacity is reconciled before the reminder queue so it is never coupled to
+   // email eligibility, email presence, or exhausted reminder stages.
+   capacity=await runCapacityReconciliation({db,retrieveSession,dryRun});
+   result=await runAbandonedCheckoutRecovery({db,allowedDates,recoveryUrl,sendEmail,retrieveSession,dryRun});
   }
-  return Response.json({dry_run:dryRun,post_submit_enabled:postSubmitEnabled,pre_submit_draft_enabled:preSubmitEnabled,...result,draft_recovery:draftResult},{headers});
+  return Response.json({dry_run:dryRun,post_submit_enabled:postSubmitEnabled,pre_submit_draft_enabled:preSubmitEnabled,...result,capacity_reconciliation:capacity,draft_recovery:draftResult},{headers});
  } catch { return Response.json({error:'Recovery run incomplete; retry safely.'},{status:503,headers}); }
 }

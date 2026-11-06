@@ -18,6 +18,10 @@ test('date selector is required, validates before submit, and restoration cannot
   ]);
   assert.match(source, /<select id="tour_date"[\s\S]*required/);
   assert.match(source, /Choose a tour date before continuing\./);
+  // One control for the whole decision: the seasons are groups inside it, and
+  // a second picker elsewhere on the page must not come back.
+  assert.match(source, /<optgroup key=\{season\.year\}/, 'seasons are groups inside the one select');
+  assert.doesNotMatch(source, /id=\{`season_\$\{season\.year\}`\}/, 'the separate season pickers must not return');
   assert.match(source, /if \(!tourDateTouchedRef\.current && draftTourDate\) setSelectedTourDate\(draftTourDate\)/, 'a draft date lands only while the visitor has not touched a date control');
   assert.match(api, /if \(!tourDate \|\| !isBookableTourDate\(tourDate\)\) return jsonError/);
   assert.ok(api.indexOf('!tourDate || !isBookableTourDate') < api.indexOf('!isSupabaseAdminConfigured'));

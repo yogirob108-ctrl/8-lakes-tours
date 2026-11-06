@@ -18,12 +18,12 @@ export default function PrivacyPolicy() {
       <div style={{ maxWidth: '720px', margin: '0 auto', padding: '5rem 2rem' }}>
         <p style={{ fontSize: '0.65rem', letterSpacing: '0.3em', textTransform: 'uppercase', color: '#c8a96e', marginBottom: '1rem' }}>Legal</p>
         <h1 style={{ fontFamily: "var(--font-cormorant), 'Cormorant Garamond', serif", fontSize: '2.8rem', fontWeight: 300, color: '#f5f0e8', marginBottom: '0.5rem', lineHeight: 1.1 }}>Privacy Policy</h1>
-        <p style={{ fontSize: '0.8rem', color: '#d4cfc4', opacity: 0.5, marginBottom: '3rem' }}>Last updated: September 2026</p>
+        <p style={{ fontSize: '0.8rem', color: '#d4cfc4', opacity: 0.5, marginBottom: '3rem' }}>Last updated: October 2026</p>
 
         {[
           {
             title: '1. Who We Are',
-            body: '8 Lakes Tours is operated by Robert Zaher. Our contact email is info@8lakestours.com. We are the data controller for personal data collected through this website.',
+            body: '8 Lakes Tours is operated by 8 Lakes Tours LLC. Our contact email is info@8lakestours.com. We are the data controller for personal data collected through this website.',
           },
           {
             title: '2. What Data We Collect',
@@ -70,7 +70,7 @@ export default function PrivacyPolicy() {
       </div>
 
       <footer style={{ borderTop: '1px solid rgba(200,169,110,0.15)', padding: '2rem 4rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-        <span style={{ fontSize: '0.75rem', color: '#d4cfc4', opacity: 0.4 }}>© 2026 8 Lakes Tours · All rights reserved</span>
+        <span style={{ fontSize: '0.75rem', color: '#d4cfc4', opacity: 0.4 }}>© 2026 8 Lakes Tours LLC · All rights reserved</span>
         <div style={{ display: 'flex', gap: '1.5rem' }}>
           <Link href="/terms" style={{ fontSize: '0.7rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#c8a96e', opacity: 0.7, textDecoration: 'none' }}>Terms & Conditions</Link>
           <Link href="/privacy" style={{ fontSize: '0.7rem', letterSpacing: '0.15em', textTransform: 'uppercase', color: '#c8a96e', opacity: 0.7, textDecoration: 'none' }}>Privacy Policy</Link>

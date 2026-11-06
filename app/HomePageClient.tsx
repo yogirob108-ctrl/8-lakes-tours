@@ -39,15 +39,24 @@ declare global {
 
 const GA_MEASUREMENT_ID = 'G-E9PW7T08LZ';
 
-function trackFunnelEvent(name: string, properties: FunnelEventProperties = {}) {
-  track(name, properties);
+// Funnel destinations only receive this allowlisted, low-cardinality contract.
+// Booking references, identifiers, URLs and form values stay in operational storage.
+const FUNNEL_EVENT_PARAMS: Record<string, readonly string[]> = {
+  view_tour: ['surface'], booking_cta_click: ['placement'], booking_form_start: [],
+  booking_form_submit: ['guest_count', 'tour_class', 'booking_type'],
+  begin_checkout: ['currency', 'value', 'guest_count', 'booking_type'],
+  checkout_redirect_started: ['currency', 'value', 'guest_count', 'booking_type'],
+  booking_form_error: ['status'], newsletter_signup: ['source'],
+};
 
+function trackFunnelEvent(name: keyof typeof FUNNEL_EVENT_PARAMS, properties: FunnelEventProperties = {}) {
+  const allowed = new Set(FUNNEL_EVENT_PARAMS[name]);
+  const safeProperties = Object.fromEntries(Object.entries(properties).filter(([key]) => allowed.has(key)));
+  track(name, safeProperties);
   if (typeof window === 'undefined' || typeof window.gtag !== 'function') return;
-
-  window.gtag('event', name, {
-    event_category: 'booking_funnel',
-    ...properties,
-  });
+  // Advanced Consent Mode remains initialized with denied defaults; gtag applies
+  // its configured cookieless behavior until the visitor grants measurement.
+  window.gtag('event', name, { event_category: 'booking_funnel', ...safeProperties });
 }
 
 const ATTRIBUTION_STORAGE_KEY = 'eight_lakes_first_attribution';
@@ -468,7 +477,8 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const groupPricing = useMemo(() => getGroupPricing(guestCount), [guestCount]);
   const bookingFormStartedRef = useRef(false);
-  const stripeClickTrackedRef = useRef(false);
+  const checkoutCreatedTrackedRef = useRef(false);
+  const tourViewTrackedRef = useRef(false);
   const formSubmittingRef = useRef(false);
   const submissionKeyRef = useRef<string | null>(null);
   const draftTimerRef = useRef<number | null>(null);
@@ -591,16 +601,20 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
     trackFunnelEvent('booking_form_start');
   };
 
-  const trackStripePaymentClick = () => {
-    if (!canPay || stripeClickTrackedRef.current) return;
-    stripeClickTrackedRef.current = true;
-    trackFunnelEvent('stripe_payment_click', {
-      reference: bookingReference || 'unknown',
-      currency: 'USD',
-      value: groupPricing.onlinePaymentUsd,
-    });
-  };
+  useEffect(() => {
+    const target = document.getElementById('trip-details');
+    if (!target || tourViewTrackedRef.current) return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry?.isIntersecting || tourViewTrackedRef.current) return;
+      tourViewTrackedRef.current = true;
+      trackFunnelEvent('view_tour', { surface: 'homepage' });
+      observer.disconnect();
+    }, { threshold: 0.35 });
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, []);
 
+  const trackBookingCta = (placement: string) => () => trackFunnelEvent('booking_cta_click', { placement });
 
   const scrollToTourDates = (event: MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
@@ -771,6 +785,12 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
     if (!response.ok || !checkout?.url) throw new Error('Secure checkout could not be opened. Use the private payment link below to retry without submitting another booking. Your place is not confirmed until payment is verified.');
     const destination = new URL(checkout.url);
     if (destination.origin !== 'https://checkout.stripe.com' || destination.username || destination.password) throw new Error('Secure checkout is unavailable. Please use the private payment link below.');
+    // A usable Stripe URL proves session creation; clicks and failed requests do not.
+    if (!checkoutCreatedTrackedRef.current) {
+      checkoutCreatedTrackedRef.current = true;
+      trackFunnelEvent('begin_checkout', { currency: 'USD', value: groupPricing.onlinePaymentUsd, guest_count: groupPricing.guestCount, booking_type: 'scheduled' });
+    }
+    trackFunnelEvent('checkout_redirect_started', { currency: 'USD', value: groupPricing.onlinePaymentUsd, guest_count: groupPricing.guestCount, booking_type: 'scheduled' });
     window.location.assign(destination.href);
   };
 
@@ -932,13 +952,11 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
 
       setBookingReference(payload.reference);
       setPaymentUrl(payload.paymentUrl || '');
-      stripeClickTrackedRef.current = false;
+      checkoutCreatedTrackedRef.current = false;
       trackFunnelEvent('booking_form_submit', {
-        tour_date: String(formData.get('tour_date') || 'TBC'),
         guest_count: groupPricing.guestCount,
-        price_per_person_usd: groupPricing.perPersonUsd,
-        riding_experience: String(formData.get('riding_experience') || 'Not provided'),
-        reference: payload.reference,
+        tour_class: requiresHumanConfirmation ? 'confirmation_required' : 'scheduled',
+        booking_type: requiresHumanConfirmation ? 'request' : 'scheduled',
       });
       setFormSubmitted(true);
       if (payload.paymentUrl) await openSecureCheckout(payload.paymentUrl);
@@ -1727,7 +1745,7 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
           <a href="/preparation" className="nav-social">Prep</a>
           <a href="/faq" className="nav-social">FAQ</a>
           <a href="/contact" className="nav-social">Contact</a>
-          <a href="#application" className="nav-cta">Reserve</a>
+          <a href="#application" className="nav-cta" onClick={trackBookingCta('nav')}>Reserve</a>
         </div>
         <div className="nav-mobile-actions">
           <MobileNavMenu reserveHref="#application" />
@@ -1765,7 +1783,7 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
             <span className="desktop-line">Nine days of horseback riding in Mongolia, through the vastness of the Orkhon Valley and Eight Lakes, living alongside nomadic families whose way of life is still attuned to the steppe. Small groups, local horsemen, beginner and intermediate riders welcome.</span>
           </p>
           <div className="hero-actions">
-            <a href="#application" className="btn-primary">Reserve Online</a>
+            <a href="#application" className="btn-primary" onClick={trackBookingCta('hero')}>Reserve Online</a>
             <a href="#experience" className="btn-ghost">Explore the Journey</a>
           </div>
         </div>
@@ -2363,8 +2381,6 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
                   <div
                     className="checkout-button-wrap stripe-embed-wrap"
                     aria-disabled={!canPay}
-                    onMouseDown={trackStripePaymentClick}
-                    onTouchStart={trackStripePaymentClick}
                   >
                     {canPay ? (
                       <>
@@ -2374,7 +2390,6 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
                           href={checkoutFallbackHref}
                           target="_blank"
                           rel="noopener noreferrer"
-                          onClick={trackStripePaymentClick}
                         >
                           Open Stripe checkout
                         </a>
@@ -2518,7 +2533,7 @@ export default function Home({ tourDates, priceHoldActive = false }: { tourDates
             <div className="footer-kicker">Mongolia · Small-group horseback expeditions</div>
             <div className="footer-logo">8 Lakes<br />Tours</div>
             <div className="footer-tagline">A horseback journey through the Orkhon Valley and Eight Lakes region.</div>
-            <a className="footer-cta" href="#application">Reserve a Spot</a>
+            <a className="footer-cta" href="#application" onClick={trackBookingCta('footer')}>Reserve a Spot</a>
           </div>
           <nav className="footer-links" aria-label="Footer navigation">
             <a className="footer-link" href="https://www.instagram.com/8lakestours" target="_blank" rel="noopener noreferrer">Instagram</a>
